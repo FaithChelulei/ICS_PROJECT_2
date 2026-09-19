@@ -1,0 +1,29 @@
+Total sessions: 470591
+Malicious sessions (label=1): 1831
+
+=== device_connect_count ===
+count    470591.000000
+mean          0.334530
+std           1.272008
+min           0.000000
+25%           0.000000
+50%           0.000000
+75%           0.000000
+max          10.000000
+Name: device_connect_count, dtype: float64
+% of sessions with device_connect_count > 0: 11.85%
+Mean device_connect_count by label:
+label
+0    0.328923
+1    1.770071
+Name: device_connect_count, dtype: float64
+
+=== file type counts: % of sessions with each > 0 ===
+filecount_doc     nonzero=  8.42%   mean(normal)=0.470   mean(malicious)=1.175
+filecount_pdf     nonzero=  5.78%   mean(normal)=0.145   mean(malicious)=0.348
+filecount_txt     nonzero=  2.75%   mean(normal)=0.038   mean(malicious)=0.080
+filecount_jpg     nonzero=  2.74%   mean(normal)=0.038   mean(malicious)=0.091
+filecount_zip     nonzero=  2.73%   mean(normal)=0.037   mean(malicious)=0.091
+filecount_exe     nonzero=  0.46%   mean(normal)=0.005   mean(malicious)=0.010
+
+Done.

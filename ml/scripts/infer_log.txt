@@ -1,0 +1,63 @@
+Loading processed sessions...
+
+======================================================================
+ROLE: Caregiver
+======================================================================
+threshold used: 0.11
+sessions scored: 412130  flagged as anomalous: 85216 (20.7%)
+real insider-threat sessions in this role: 1505  caught by model: 915
+
+Top 10 highest-risk sessions:
+ session_id    user      pc       session_start  risk_score  flagged  label
+     299750 MCF0600 PC-8790 2010-09-20 23:52:19    0.944505        1      1
+      42014 BAJ0654 PC-2550 2010-04-27 20:45:38    0.940404        1      0
+     194091 HRL0540 PC-4124 2011-02-25 20:35:20    0.938786        1      0
+      42023 BAJ0654 PC-4024 2010-01-22 21:19:19    0.934770        1      0
+      42017 BAJ0654 PC-3124 2010-06-23 20:30:17    0.894487        1      0
+     194078 HRL0540 PC-4124 2010-07-29 20:59:44    0.842326        1      0
+      42388 BAJ0654 PC-9358 2011-05-05 20:54:45    0.839508        1      0
+     194069 HRL0540 PC-4124 2010-04-16 20:08:19    0.747919        1      0
+      42002 BAJ0654 PC-0616 2011-01-24 20:08:33    0.727391        1      0
+     194086 HRL0540 PC-4124 2010-12-14 20:27:20    0.726022        1      0
+
+======================================================================
+ROLE: SecurityAuditor
+======================================================================
+threshold used: 0.31
+sessions scored: 9699  flagged as anomalous: 745 (7.7%)
+real insider-threat sessions in this role: 7  caught by model: 3
+
+Top 10 highest-risk sessions:
+ session_id    user      pc       session_start  risk_score  flagged  label
+     246039 JRG0207 PC-8908 2011-01-18 05:15:57    0.969181        1      0
+     281146 LBF0214 PC-3819 2011-01-21 20:43:11    0.967013        1      0
+     281065 LBF0214 PC-3819 2010-12-07 20:44:59    0.953119        1      0
+     281349 LBF0214 PC-3819 2011-05-13 20:00:20    0.584985        1      0
+     280545 LBF0214 PC-3819 2010-02-17 23:34:18    0.571020        1      0
+     281087 LBF0214 PC-3819 2010-12-20 04:56:48    0.539478        1      0
+     281388 LBF0214 PC-4124 2010-05-06 08:35:12    0.536070        1      0
+     281404 LBF0214 PC-4124 2010-07-17 12:30:30    0.526712        1      0
+     280813 LBF0214 PC-3819 2010-07-19 22:54:37    0.524006        1      0
+     281276 LBF0214 PC-3819 2011-04-03 23:17:47    0.523459        1      0
+
+======================================================================
+ROLE: SysAdmin
+======================================================================
+threshold used: 0.22
+sessions scored: 48762  flagged as anomalous: 5701 (11.7%)
+real insider-threat sessions in this role: 319  caught by model: 101
+
+Top 10 highest-risk sessions:
+ session_id    user      pc       session_start  risk_score  flagged  label
+     318716 MPM0220 PC-2344 2010-05-07 22:56:47    0.772985        1      0
+     318631 MPM0220 PC-2344 2010-03-09 04:57:11    0.768770        1      0
+     450146 WDD0366 PC-0155 2011-02-22 23:07:52    0.756503        1      0
+     318626 MPM0220 PC-2344 2010-03-05 01:35:49    0.745149        1      0
+     202397 IBB0359 PC-4195 2010-07-30 03:04:09    0.744769        1      0
+     318905 MPM0220 PC-2344 2010-09-28 22:07:41    0.743477        1      0
+     202141 IBB0359 PC-4195 2010-01-14 22:02:44    0.719980        1      0
+     318595 MPM0220 PC-2344 2010-02-11 21:04:05    0.715738        1      0
+     318886 MPM0220 PC-2344 2010-09-15 23:40:25    0.711389        1      0
+     202415 IBB0359 PC-4195 2010-08-12 22:02:54    0.708078        1      0
+
+Done. label=1 means CERT ground truth marks this as a real insider-threat session (used only to check the model, never fed into training). flagged=1 means the model's risk_score crossed this role's threshold.

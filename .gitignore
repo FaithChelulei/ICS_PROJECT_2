@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Raw CERT log files are too large for a normal GitHub push (file.csv is
+# ~193MB, over GitHub's 100MB hard limit) and aren't needed to run the
+# trained models — only to regenerate sessions_features.csv from scratch.
+ml/data/logon.csv
+ml/data/file.csv
+ml/data/device.csv
+
+desktop.ini
+Thumbs.db
+~$*
+
+# Personal working notes -- not for the published repo
+PROJECT_INDEX.md

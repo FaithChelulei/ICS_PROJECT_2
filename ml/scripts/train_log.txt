@@ -1,0 +1,35 @@
+Loading processed sessions...
+total sessions: 470591
+
+============================================================
+ROLE: Caregiver (mapped_role=0)
+train (normal only): 328500  test: 83630 (normal=82125, malicious=1505)
+Training Isolation Forest...
+Training Autoencoder...
+AUC=0.7687  best_threshold=0.11  F1=0.0955  precision=0.0518  recall=0.6080
+accuracy=0.7926  FPR=0.2040  FNR=0.3920  (TP=915 FP=16751 TN=65374 FN=590)
+
+============================================================
+ROLE: SecurityAuditor (mapped_role=1)
+train (normal only): 7754  test: 1945 (normal=1938, malicious=7)
+Training Isolation Forest...
+Training Autoencoder...
+AUC=0.6649  best_threshold=0.31  F1=0.0368  precision=0.0192  recall=0.4286
+accuracy=0.9193  FPR=0.0789  FNR=0.5714  (TP=3 FP=153 TN=1785 FN=4)
+
+============================================================
+ROLE: SysAdmin (mapped_role=2)
+train (normal only): 38755  test: 10007 (normal=9688, malicious=319)
+Training Isolation Forest...
+Training Autoencoder...
+AUC=0.7187  best_threshold=0.22  F1=0.1270  precision=0.0795  recall=0.3166
+accuracy=0.8613  FPR=0.1208  FNR=0.6834  (TP=101 FP=1170 TN=8518 FN=218)
+
+============================================================
+OVERALL (pooled across all 3 roles)
+pooled n_test=95582 malicious=1831
+AUC=0.7627  best_threshold=0.11  F1=0.0950  precision=0.0514  recall=0.6346
+accuracy=0.7685  FPR=0.2289  FNR=0.3654  (TP=1162 FP=21462 TN=72289 FN=669)
+
+Saved all models and metrics to ml\models\
+Done.

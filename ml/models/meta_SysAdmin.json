@@ -1,0 +1,26 @@
+{
+  "features": [
+    "files_accessed_per_session",
+    "events_prev_day",
+    "events_prev_hour",
+    "unique_pcs_used_that_day",
+    "session_duration_minutes",
+    "is_after_hours",
+    "is_own_pc"
+  ],
+  "iso_train_min": 0.37286620692005035,
+  "iso_train_max": 0.7740433007400119,
+  "ae_train_min": 1.2388968834650132e-06,
+  "ae_train_max": 0.2519590798181529,
+  "best_threshold": 0.22000000000000003,
+  "auc": 0.7186740407290536,
+  "f1": 0.1270440251572327,
+  "precision": 0.07946498819826908,
+  "recall": 0.3166144200626959,
+  "accuracy": 0.8612970920355751,
+  "fpr": 0.12076796036333609,
+  "fnr": 0.6833855799373041,
+  "n_train": 38755,
+  "n_test": 10007,
+  "n_malicious_test": 319
+}

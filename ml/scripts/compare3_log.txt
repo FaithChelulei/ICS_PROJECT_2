@@ -1,0 +1,6 @@
+Role                           17 (full)          7 (portable)  9 (portable+doc/pdf)
+Caregiver                         0.8052                0.7685                0.7805
+SecurityAuditor                   0.6594                0.6592                0.6387
+SysAdmin                          0.7292                0.7171                0.7071
+
+Done.

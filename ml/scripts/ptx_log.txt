@@ -1,0 +1,32 @@
+
+=== Caregiver ===
+risk_score range in test set: min=0.000 max=0.945 99th pct=0.390
+  threshold=0.05  n_flagged= 33374  precision=0.0401  recall=0.8890
+  threshold=0.10  n_flagged= 19450  precision=0.0512  recall=0.6611
+  threshold=0.20  n_flagged= 11507  precision=0.0288  recall=0.2199
+  threshold=0.30  n_flagged=  4640  precision=0.0136  recall=0.0419
+  threshold=0.50  n_flagged=    10  precision=0.2000  recall=0.0013
+  threshold=0.70  n_flagged=     3  precision=0.3333  recall=0.0007
+  threshold=0.90  n_flagged=     1  precision=1.0000  recall=0.0007
+
+=== SecurityAuditor ===
+risk_score range in test set: min=0.000 max=0.967 99th pct=0.418
+  threshold=0.05  n_flagged=  1003  precision=0.0050  recall=0.7143
+  threshold=0.10  n_flagged=   637  precision=0.0063  recall=0.5714
+  threshold=0.20  n_flagged=   355  precision=0.0085  recall=0.4286
+  threshold=0.30  n_flagged=   181  precision=0.0166  recall=0.4286
+  threshold=0.50  n_flagged=     3  precision=0.0000  recall=0.0000
+  threshold=0.70  n_flagged=     1  precision=0.0000  recall=0.0000
+  threshold=0.90  n_flagged=     1  precision=0.0000  recall=0.0000
+
+=== SysAdmin ===
+risk_score range in test set: min=0.001 max=0.711 99th pct=0.386
+  threshold=0.05  n_flagged=  7127  precision=0.0425  recall=0.9498
+  threshold=0.10  n_flagged=  4788  precision=0.0528  recall=0.7931
+  threshold=0.20  n_flagged=  1625  precision=0.0751  recall=0.3824
+  threshold=0.30  n_flagged=   426  precision=0.0681  recall=0.0909
+  threshold=0.50  n_flagged=    22  precision=0.1364  recall=0.0094
+  threshold=0.70  n_flagged=     1  precision=0.0000  recall=0.0000
+  threshold=0.90  n_flagged=     0  precision=0.0000  recall=0.0000
+
+Done.

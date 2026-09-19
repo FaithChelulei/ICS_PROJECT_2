@@ -1,0 +1,12 @@
+Loading raw logs...
+Recomputing events_prev_hour/day WITHOUT device.csv...
+
+events_prev_hour changed in 1.25% of sessions, mean abs diff=0.0240, max diff=18
+events_prev_day  changed in 18.86% of sessions, mean abs diff=1.3747, max diff=40
+
+Role                  AUC (with device)    AUC (no device)     Diff
+Caregiver                        0.7685             0.7269  -0.0416
+SecurityAuditor                  0.6592             0.6403  -0.0189
+SysAdmin                         0.7171             0.6926  -0.0245
+
+Done.

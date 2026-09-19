@@ -1,0 +1,18 @@
+feature                       corr with label
+device_connect_count                   0.0705
+events_prev_day                        0.0357
+filecount_doc                          0.0201
+files_accessed_per_session             0.0198
+filecount_pdf                          0.0169
+unique_pcs_used_that_day               0.0147
+filecount_zip                          0.0132
+filecount_jpg                          0.0129
+is_after_hours                         0.0120
+events_prev_hour                       0.0104
+filecount_txt                          0.0102
+session_duration_minutes               0.0069
+is_weekend                            -0.0063
+filecount_exe                          0.0048
+is_own_pc                             -0.0044
+day_of_week                            0.0015
+hour_of_day                            0.0015

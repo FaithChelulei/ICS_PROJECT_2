@@ -1,0 +1,31 @@
+{
+  "_design": "2-threshold response system (FINAL, v2). One statistical threshold per role (review_threshold), but crossing it triggers TWO things at once: (1) an immediate automatic containment action that does not require a human to be online, and (2) a parallel queue item for human review. See _rationale and _why_one_threshold.",
+  "_rationale": "Checked precision at fixed risk-score checkpoints (0.05 to 0.90) per role using the actual trained models (ml/scripts/11_precision_at_thresholds.py, log: ml/scripts/ptx_log.txt). Precision is NOT monotonic with risk score: it rises to a peak near review_threshold below, then FALLS as the threshold increases further (e.g. Caregiver: 5.1% precision at 0.10, drops to 2.9% at 0.20, 1.4% at 0.30). Past roughly 0.30-0.50, sessions flagged collapse to single digits (3-22 sessions), so any 'precision' computed there is statistical noise, not a usable high-confidence signal. This rules out a hard, punitive automatic action (e.g. permanent account suspension) at any threshold -- the data can't support the confidence that requires.",
+  "_why_one_threshold": "An earlier attempt (ml/scripts/10_roc_pr_tiers.py) tried to carve out a THIRD, higher threshold above review_threshold for a 'high confidence' auto-action. It failed to find one worth having: the computed 'high' threshold came out almost identical to review_threshold for every role (e.g. Caregiver 0.1103 vs 0.110). That is itself a finding, not a bug -- it means there is no natural second cut point in this model's risk scores. Rather than invent an artificial one, the automatic action below is triggered at the SAME review_threshold as the human-review flag. This works because the automatic action chosen (see response_policy) is reversible and low-cost when wrong, so it does not need account-suspension-level precision to be worth firing.",
+  "Caregiver": {
+    "review_threshold": 0.110,
+    "auc": 0.7687,
+    "precision_at_threshold": 0.0512,
+    "recall_at_threshold": 0.6611
+  },
+  "SecurityAuditor": {
+    "review_threshold": 0.310,
+    "auc": 0.6649,
+    "precision_at_threshold": 0.0166,
+    "recall_at_threshold": 0.4286,
+    "note": "Only 7 malicious test sessions exist for this role -- precision numbers here are the least statistically stable of the three roles. Treat as directional, not precise."
+  },
+  "SysAdmin": {
+    "review_threshold": 0.220,
+    "auc": 0.7187,
+    "precision_at_threshold": 0.0751,
+    "recall_at_threshold": 0.3824
+  },
+  "response_policy": {
+    "below_review_threshold": "Log only. Session is scored and stored for audit trail; no alert, no action.",
+    "at_or_above_review_threshold_automatic": "Two things happen immediately, automatically, with no human required: (1) the current session token is invalidated -- the user is logged out and must re-authenticate; (2) an email is sent to the account's registered address describing the flagged activity (timestamp, PC used, action type, role) with two response options: 'This was me' (session cleared, user resumes normal access after re-login, event logged as confirmed-benign) or 'This was NOT me' (account is locked pending a mandatory password reset before next login, and the Security Auditor queue item below is escalated to urgent).",
+    "at_or_above_review_threshold_human": "In parallel with the automatic step above, the same session is queued for the Security Auditor to review independently -- regardless of what the account owner clicks in the email. This matters because a genuine attacker with access to the account's email could also click 'This was me'; the human review is the backstop that does not rely on the account owner's own honesty.",
+    "auto_suspend": "Still not implemented as a silent, unilateral action on a single risk score. The closest equivalent -- locking the account pending a password reset -- only happens when the account owner themselves reports the activity as not theirs, or when the Security Auditor confirms it during review. This keeps a human (the owner or the auditor) in the loop for anything with lasting consequences, while still responding automatically and immediately at the moment of detection.",
+    "why_this_works_at_low_precision": "At 2-8% precision, most sessions crossing review_threshold are innocent. That's tolerable here because the automatic action is a yes/no confirmation email plus a forced re-login -- trivial for a genuine user to clear -- not a punitive lock. This is the same pattern banks and major web services use for 'unusual activity' alerts."
+  }
+}

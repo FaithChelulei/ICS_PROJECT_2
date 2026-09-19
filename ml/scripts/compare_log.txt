@@ -1,0 +1,6 @@
+Role                AUC (17 feat)   AUC (7 feat)     Diff
+Caregiver                  0.8052         0.7685  -0.0367
+SecurityAuditor            0.6594         0.6592  -0.0002
+SysAdmin                   0.7292         0.7171  -0.0121
+
+Done. (Isolation-Forest-only AUC, used as a fast proxy for the full hybrid model.)

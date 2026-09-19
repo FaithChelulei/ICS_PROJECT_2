@@ -1,0 +1,2 @@
+ session_id    user      pc       session_start  filecount_doc  filecount_pdf  filecount_txt  filecount_jpg  filecount_zip  filecount_exe  device_connect_count  label
+     380109 RKD0604 PC-9379 2010-07-15 20:23:21             14              4              0              2              2              0                     9      1
