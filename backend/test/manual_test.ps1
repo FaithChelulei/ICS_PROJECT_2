@@ -3,7 +3,7 @@
 #
 # Usage:  .\test\manual_test.ps1
 #
-# Watch the server's own terminal window while this runs — that's where
+# Watch the server's own terminal window while this runs -- that's where
 # the MFA code gets printed (no real email is sent yet).
 
 $base = 'http://localhost:4000'
@@ -88,7 +88,7 @@ $tempPassword = Read-Host "Paste the temp password you see there"
 Write-Host "`n--- 13. New Caregiver logs in with that temp password ---" -ForegroundColor Cyan
 $body = @{ email = 'jane.test.caregiver@example.com'; password = $tempPassword } | ConvertTo-Json
 $newUserRes = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
-if ($newUserRes.token) { Write-Host "SUCCESS — new account works end to end." -ForegroundColor Green }
+if ($newUserRes.token) { Write-Host "SUCCESS -- new account works end to end." -ForegroundColor Green }
 
 Write-Host "`n--- 14. That same Caregiver tries the admin route (should be 403) ---" -ForegroundColor Cyan
 try {
