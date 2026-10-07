@@ -10,8 +10,12 @@ const TEST_PASSWORD = 'DevTest123!';
 
 const USERS = [
   { email: 'caregiver.test@example.com', role: 'Caregiver', mfa: false },
-  { email: 'auditor.test@example.com', role: 'SecurityAuditor', mfa: true },
-  { email: 'admin.test@example.com', role: 'SysAdmin', mfa: true },
+  // Real email for the two MFA roles, so the console-logged code (or a
+  // real email once SMTP is configured) is addressed to Faith's own inbox.
+  // Plus-addressing keeps the two logins distinct (DB requires unique
+  // emails) while still delivering to the same real mailbox.
+  { email: 'faith.chelulei+auditor@strathmore.edu', role: 'SecurityAuditor', mfa: true },
+  { email: 'faith.chelulei+admin@strathmore.edu', role: 'SysAdmin', mfa: true },
 ];
 
 async function main() {

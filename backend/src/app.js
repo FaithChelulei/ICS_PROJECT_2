@@ -14,6 +14,11 @@ app.use('/auth', authRoutes);
 // routes land here on Thursday/Friday as those pieces are built.
 
 app.use((err, req, res, next) => {
+  // Body-parser errors (malformed JSON, etc.) carry their own 4xx status —
+  // surface that honestly instead of masking every error as a scary 500.
+  if (err.status && err.status < 500) {
+    return res.status(err.status).json({ error: err.message || 'Bad request' });
+  }
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
 });
