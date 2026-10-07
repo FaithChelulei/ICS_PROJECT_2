@@ -19,6 +19,7 @@ const PERMISSIONS = {
     'manage_roles',
     'configure_system_settings',
     'view_audit_log',
+    'manage_registration_requests',
   ],
 };
 

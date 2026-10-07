@@ -28,6 +28,7 @@ CREATE TABLE users (
     mfa_required    BOOLEAN NOT NULL DEFAULT FALSE, -- true for SecurityAuditor & SysAdmin
     is_locked       BOOLEAN NOT NULL DEFAULT FALSE,
     locked_reason   VARCHAR(255),
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE, -- true right after admin approval (temp password)
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -51,6 +52,28 @@ CREATE TABLE sessions (
     revoked_at      TIMESTAMPTZ,
     revoked_reason  VARCHAR(255)
 );
+
+-- Public registration request, reviewed by a SysAdmin before any account
+-- exists. Nobody can self-create an account — this table is the only way
+-- a `users` row ever gets created for a Caregiver or SecurityAuditor (a
+-- SysAdmin account is created directly by another SysAdmin, never via this
+-- public form — see registrationController.js).
+CREATE TYPE registration_status_t AS ENUM ('pending', 'approved', 'rejected');
+
+CREATE TABLE registration_requests (
+    id                  SERIAL PRIMARY KEY,
+    full_name           VARCHAR(255) NOT NULL,
+    email               VARCHAR(255) NOT NULL,
+    requested_role_id   INTEGER NOT NULL REFERENCES roles(id),
+    reason              TEXT,
+    status              registration_status_t NOT NULL DEFAULT 'pending',
+    reviewed_by         INTEGER REFERENCES users(id),
+    reviewed_at         TIMESTAMPTZ,
+    rejection_reason    TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_registration_requests_status ON registration_requests(status);
 
 -- ============================================================
 -- CHILD DATA — identity and developmental records kept apart

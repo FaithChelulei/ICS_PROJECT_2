@@ -61,4 +61,40 @@ try {
   Write-Host "Correctly rejected:" $_.ErrorDetails.Message -ForegroundColor Green
 }
 
+Write-Host "`n--- 9. Public registration request (no auth needed) ---" -ForegroundColor Cyan
+$body = @{ fullName = 'Jane Test Caregiver'; email = 'jane.test.caregiver@example.com'; requestedRole = 'Caregiver'; reason = 'Testing the registration flow' } | ConvertTo-Json
+$regRes = Invoke-RestMethod -Uri "$base/auth/register" -Method Post -ContentType 'application/json' -Body $body
+$regRes | ConvertTo-Json
+
+Write-Host "`n--- 10. SysAdmin logs in to review requests (MFA required) ---" -ForegroundColor Cyan
+$body = @{ email = 'faith.chelulei+admin@strathmore.edu'; password = 'DevTest123!' } | ConvertTo-Json
+$adminStep1 = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
+Write-Host "Check Window 1 for the admin's MFA code." -ForegroundColor Yellow
+$adminCode = Read-Host "Type the 6-digit code you see there"
+$body = @{ userId = $adminStep1.userId; code = $adminCode } | ConvertTo-Json
+$adminFinal = Invoke-RestMethod -Uri "$base/auth/verify-mfa" -Method Post -ContentType 'application/json' -Body $body
+$adminHeaders = @{ Authorization = "Bearer $($adminFinal.token)" }
+
+Write-Host "`n--- 11. Admin views the pending request queue ---" -ForegroundColor Cyan
+$pending = Invoke-RestMethod -Uri "$base/admin/registration-requests?status=pending" -Method Get -Headers $adminHeaders
+$pending | ConvertTo-Json
+$requestId = ($pending.requests | Where-Object { $_.email -eq 'jane.test.caregiver@example.com' }).id
+
+Write-Host "`n--- 12. Admin approves it (watch Window 1 for the temp password) ---" -ForegroundColor Cyan
+Invoke-RestMethod -Uri "$base/admin/registration-requests/$requestId/approve" -Method Post -Headers $adminHeaders | ConvertTo-Json
+Write-Host "Look at Window 1 for: '[DEV - no SMTP configured] Account approved for jane.test.caregiver@example.com ... Temp password: ...'" -ForegroundColor Yellow
+$tempPassword = Read-Host "Paste the temp password you see there"
+
+Write-Host "`n--- 13. New Caregiver logs in with that temp password ---" -ForegroundColor Cyan
+$body = @{ email = 'jane.test.caregiver@example.com'; password = $tempPassword } | ConvertTo-Json
+$newUserRes = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
+if ($newUserRes.token) { Write-Host "SUCCESS — new account works end to end." -ForegroundColor Green }
+
+Write-Host "`n--- 14. That same Caregiver tries the admin route (should be 403) ---" -ForegroundColor Cyan
+try {
+  Invoke-RestMethod -Uri "$base/admin/registration-requests?status=pending" -Method Get -Headers @{ Authorization = "Bearer $($newUserRes.token)" }
+} catch {
+  Write-Host "Correctly rejected:" $_.ErrorDetails.Message -ForegroundColor Green
+}
+
 Write-Host "`n--- All tests complete ---" -ForegroundColor Cyan
