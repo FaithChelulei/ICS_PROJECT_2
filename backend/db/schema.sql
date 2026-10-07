@@ -28,6 +28,7 @@ CREATE TABLE users (
     mfa_required    BOOLEAN NOT NULL DEFAULT FALSE, -- true for SecurityAuditor & SysAdmin
     is_locked       BOOLEAN NOT NULL DEFAULT FALSE,
     locked_reason   VARCHAR(255),
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE, -- true right after admin approval (temp password)
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -52,6 +53,28 @@ CREATE TABLE sessions (
     revoked_reason  VARCHAR(255)
 );
 
+-- Public registration request, reviewed by a SysAdmin before any account
+-- exists. Nobody can self-create an account — this table is the only way
+-- a `users` row ever gets created for a Caregiver or SecurityAuditor (a
+-- SysAdmin account is created directly by another SysAdmin, never via this
+-- public form — see registrationController.js).
+CREATE TYPE registration_status_t AS ENUM ('pending', 'approved', 'rejected');
+
+CREATE TABLE registration_requests (
+    id                  SERIAL PRIMARY KEY,
+    full_name           VARCHAR(255) NOT NULL,
+    email               VARCHAR(255) NOT NULL,
+    requested_role_id   INTEGER NOT NULL REFERENCES roles(id),
+    reason              TEXT,
+    status              registration_status_t NOT NULL DEFAULT 'pending',
+    reviewed_by         INTEGER REFERENCES users(id),
+    reviewed_at         TIMESTAMPTZ,
+    rejection_reason    TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_registration_requests_status ON registration_requests(status);
+
 -- ============================================================
 -- CHILD DATA — identity and developmental records kept apart
 -- ============================================================
@@ -65,20 +88,18 @@ CREATE TABLE child_profiles (
 CREATE TABLE child_identifiers (
     id                  SERIAL PRIMARY KEY,
     child_profile_id    INTEGER UNIQUE NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-    full_name_enc       BYTEA NOT NULL,   -- AES-256-GCM ciphertext
+    full_name_enc       BYTEA NOT NULL,   -- AES-256-GCM: iv || ciphertext || authTag, self-contained
     date_of_birth_enc   BYTEA NOT NULL,
-    family_background_enc BYTEA,
-    enc_iv              BYTEA NOT NULL    -- per-row initialization vector
+    family_background_enc BYTEA
 );
 
 CREATE TABLE developmental_records (
     id                  SERIAL PRIMARY KEY,
     child_profile_id    INTEGER NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-    milestone_enc       BYTEA NOT NULL,
+    milestone_enc       BYTEA NOT NULL,   -- AES-256-GCM: iv || ciphertext || authTag, self-contained
     health_indicator_enc BYTEA NOT NULL,
     assessment_score_enc BYTEA NOT NULL,
     progress_notes_enc  BYTEA,
-    enc_iv              BYTEA NOT NULL,
     created_by          INTEGER NOT NULL REFERENCES users(id),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );

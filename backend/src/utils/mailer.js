@@ -55,4 +55,50 @@ This session has also been queued for independent review by a Security Auditor.`
   });
 }
 
-module.exports = { sendMfaCodeEmail, sendRiskAlertEmail };
+// Sent when a SysAdmin approves a registration request — this is the only
+// moment a plaintext password ever exists outside the user's own head, so
+// it goes straight to their inbox and nowhere else (never logged, never
+// returned in an API response body — see registrationController.js).
+async function sendAccountApprovedEmail(toEmail, { fullName, role, tempPassword }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] Account approved for ${toEmail} (${role}). Temp password: ${tempPassword}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'Your account has been approved',
+    text: `Hi ${fullName},
+
+Your request for ${role} access has been approved.
+
+Email: ${toEmail}
+Temporary password: ${tempPassword}
+
+Please log in and you will be asked to change this password. If you did not request this account, contact the system administrator immediately.`,
+  });
+}
+
+async function sendAccountRejectedEmail(toEmail, { fullName, reason }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] Account request rejected for ${toEmail}. Reason: ${reason || '(none given)'}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'Your account request was not approved',
+    text: `Hi ${fullName},
+
+Your request for system access was not approved.${reason ? `\n\nReason: ${reason}` : ''}
+
+If you believe this is a mistake, contact the system administrator.`,
+  });
+}
+
+module.exports = {
+  sendMfaCodeEmail,
+  sendRiskAlertEmail,
+  sendAccountApprovedEmail,
+  sendAccountRejectedEmail,
+};
