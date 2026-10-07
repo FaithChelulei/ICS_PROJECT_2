@@ -15,3 +15,8 @@ Thumbs.db
 
 # Personal working notes -- not for the published repo
 PROJECT_INDEX.md
+
+# Backend (Node/Express)
+backend/node_modules/
+backend/.env
+backend/npm-debug.log*
