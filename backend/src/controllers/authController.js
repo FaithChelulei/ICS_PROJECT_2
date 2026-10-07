@@ -1,9 +1,9 @@
-// Login flow:
+// Login flow (MFA required for every role — see registrationController.js
+// for why this now covers Caregiver too, not just SecurityAuditor/SysAdmin):
 //   1. POST /auth/login          { email, password }
-//        -> Caregiver: returns a token straight away
-//        -> SecurityAuditor/SysAdmin: emails a 6-digit code, returns
-//           { mfaRequired: true, userId } instead of a token
-//   2. POST /auth/verify-mfa     { userId, code }   (only for step-2 roles)
+//        -> emails a 6-digit code, returns { mfaRequired: true, userId }
+//           instead of a token
+//   2. POST /auth/verify-mfa     { userId, code }
 //        -> returns the token
 //
 // "Token" here means: a new row in `sessions`, and a JWT whose payload
