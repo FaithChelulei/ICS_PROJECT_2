@@ -11,7 +11,7 @@
 // is how the system logs someone out before their JWT would naturally
 // expire — see src/middleware/auth.js.
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs'); // pure-JS bcrypt — avoids native build tooling (node-gyp) on Windows and its tar/node-pre-gyp CVEs, same hash()/compare() API
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');

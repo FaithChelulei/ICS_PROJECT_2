@@ -3,13 +3,23 @@
 // (2) the risk-tier "This was me / This was NOT me" confirmation email.
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-});
+const smtpConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+
+const transporter = smtpConfigured
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    })
+  : null;
 
 async function sendMfaCodeEmail(toEmail, code) {
+  if (!transporter) {
+    // Dev fallback: no SMTP configured yet. Log instead of failing, so the
+    // MFA flow can still be tested end-to-end before real email is wired up.
+    console.log(`[DEV — no SMTP configured] MFA code for ${toEmail}: ${code}`);
+    return;
+  }
   await transporter.sendMail({
     from: process.env.SMTP_FROM,
     to: toEmail,
@@ -23,6 +33,10 @@ async function sendMfaCodeEmail(toEmail, code) {
 // confirmUrl / denyUrl point at the "This was me" / "This was NOT me"
 // endpoints built on Friday alongside the risk-response route.
 async function sendRiskAlertEmail(toEmail, { timestamp, pcName, actionType, role, confirmUrl, denyUrl }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] Risk alert for ${toEmail}: confirm=${confirmUrl} deny=${denyUrl}`);
+    return;
+  }
   await transporter.sendMail({
     from: process.env.SMTP_FROM,
     to: toEmail,
