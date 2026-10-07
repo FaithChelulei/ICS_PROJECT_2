@@ -98,7 +98,12 @@ async function approveRequest(req, res) {
 
   const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
-  const mfaRequired = request.requested_role === 'SecurityAuditor';
+  // MFA is required for every role now, Caregiver included: a compromised
+  // Caregiver account exposes that family's child data just as directly as
+  // a compromised staff account exposes system-wide data, so the same
+  // second factor applies across the board (updated from the original
+  // proposal, which only required it for SecurityAuditor/SysAdmin).
+  const mfaRequired = true;
 
   const client = await db.pool.connect();
   try {

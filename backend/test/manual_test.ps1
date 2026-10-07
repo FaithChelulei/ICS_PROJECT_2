@@ -3,18 +3,24 @@
 #
 # Usage:  .\test\manual_test.ps1
 #
-# Watch the server's own terminal window while this runs -- that's where
-# the MFA code gets printed (no real email is sent yet).
+# MFA codes now arrive as real emails (SMTP is configured) -- check your
+# inbox. Window 1 (the server) still prints a dev fallback line too if
+# SMTP isn't set up on a given machine.
 
 $base = 'http://localhost:4000'
 
-Write-Host "`n--- 1. Caregiver login (no MFA) ---" -ForegroundColor Cyan
-$body = @{ email = 'caregiver.test@example.com'; password = 'DevTest123!' } | ConvertTo-Json
-$result = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
-$result | ConvertTo-Json
+Write-Host "`n--- 1. Caregiver login (MFA required -- same as every role now) ---" -ForegroundColor Cyan
+$body = @{ email = 'faith.chelulei+caregiver@strathmore.edu'; password = 'DevTest123!' } | ConvertTo-Json
+$cgStep1 = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
+$cgStep1 | ConvertTo-Json
+Write-Host "Check Window 1 (or your inbox) for the Caregiver's MFA code." -ForegroundColor Yellow
+$cgCode = Read-Host "Type the 6-digit code you see there"
+$body = @{ userId = $cgStep1.userId; code = $cgCode } | ConvertTo-Json
+$result = Invoke-RestMethod -Uri "$base/auth/verify-mfa" -Method Post -ContentType 'application/json' -Body $body
+Write-Host "Caregiver MFA verified, session token issued." -ForegroundColor Green
 
 Write-Host "`n--- 2. Wrong password (should be rejected) ---" -ForegroundColor Cyan
-$body = @{ email = 'caregiver.test@example.com'; password = 'wrong' } | ConvertTo-Json
+$body = @{ email = 'faith.chelulei+caregiver@strathmore.edu'; password = 'wrong' } | ConvertTo-Json
 try {
   Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
 } catch {
