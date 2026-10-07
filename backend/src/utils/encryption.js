@@ -3,9 +3,18 @@
 // PostgreSQL database"). GCM gives us both confidentiality and a built-in
 // tamper check (the auth tag) — a modified ciphertext fails to decrypt
 // instead of silently returning garbage.
+//
+// IMPORTANT: each field gets its OWN random IV, bundled into the same
+// buffer as the ciphertext (iv || ciphertext || authTag). Reusing one IV
+// across multiple encrypted fields under the same key (the original design
+// — one shared enc_iv column per row) breaks AES-GCM's security guarantees
+// if that IV is ever reused, so each *_enc column is now fully
+// self-contained and there is no separate enc_iv column.
 const crypto = require('crypto');
 
 const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 12;   // 96-bit IV, the GCM standard size
+const TAG_LENGTH = 16;
 
 function getKey() {
   const key = Buffer.from(process.env.ENCRYPTION_KEY || '', 'base64');
@@ -18,12 +27,11 @@ function getKey() {
   return key;
 }
 
-// Encrypts one plaintext string. Returns the pieces the schema stores:
-// ciphertext + IV, each as a Buffer (BYTEA columns). The GCM auth tag is
-// appended to the ciphertext so one BYTEA column is enough to hold both.
+// Encrypts one plaintext string. Returns a single Buffer: IV + ciphertext
+// + auth tag, ready to store directly in one BYTEA column.
 function encryptField(plaintext) {
   const key = getKey();
-  const iv = crypto.randomBytes(12); // 96-bit IV, the GCM standard size
+  const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
   const ciphertext = Buffer.concat([
@@ -32,18 +40,16 @@ function encryptField(plaintext) {
   ]);
   const authTag = cipher.getAuthTag();
 
-  return {
-    ciphertext: Buffer.concat([ciphertext, authTag]), // stored in *_enc
-    iv,                                                // stored in enc_iv
-  };
+  return Buffer.concat([iv, ciphertext, authTag]);
 }
 
 // Reverses encryptField. Throws if the ciphertext was tampered with or the
-// wrong key/IV is used — that's GCM's auth tag doing its job, not a bug.
-function decryptField(ciphertextWithTag, iv) {
+// wrong key is used — that's GCM's auth tag doing its job, not a bug.
+function decryptField(bundle) {
   const key = getKey();
-  const authTag = ciphertextWithTag.subarray(ciphertextWithTag.length - 16);
-  const ciphertext = ciphertextWithTag.subarray(0, ciphertextWithTag.length - 16);
+  const iv = bundle.subarray(0, IV_LENGTH);
+  const authTag = bundle.subarray(bundle.length - TAG_LENGTH);
+  const ciphertext = bundle.subarray(IV_LENGTH, bundle.length - TAG_LENGTH);
 
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);

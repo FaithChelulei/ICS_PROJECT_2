@@ -4,6 +4,7 @@
 
 const PERMISSIONS = {
   Caregiver: [
+    'create_child_profile',
     'view_own_child_records',
     'submit_developmental_record',
     'manage_own_consent',

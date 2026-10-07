@@ -34,3 +34,31 @@ $body = @{ userId = $step1.userId; code = $code } | ConvertTo-Json
 $final = Invoke-RestMethod -Uri "$base/auth/verify-mfa" -Method Post -ContentType 'application/json' -Body $body
 Write-Host "`n--- MFA verified, session token issued: ---" -ForegroundColor Green
 $final | ConvertTo-Json
+
+Write-Host "`n--- 4. Caregiver creates a child profile (encrypted fields) ---" -ForegroundColor Cyan
+$headers = @{ Authorization = "Bearer $($result.token)" }
+$body = @{ fullName = 'Test Child'; dateOfBirth = '2019-05-10'; familyBackground = 'Lives with mother and grandmother' } | ConvertTo-Json
+$childRes = Invoke-RestMethod -Uri "$base/children" -Method Post -ContentType 'application/json' -Headers $headers -Body $body
+$childRes | ConvertTo-Json
+$childId = $childRes.childProfileId
+
+Write-Host "`n--- 5. Caregiver lists own children (should decrypt correctly) ---" -ForegroundColor Cyan
+Invoke-RestMethod -Uri "$base/children" -Method Get -Headers $headers | ConvertTo-Json
+
+Write-Host "`n--- 6. Caregiver submits a developmental record ---" -ForegroundColor Cyan
+$body = @{ milestone = 'Started walking'; healthIndicator = 'Normal'; assessmentScore = 8; progressNotes = 'Doing well' } | ConvertTo-Json
+Invoke-RestMethod -Uri "$base/children/$childId/records" -Method Post -ContentType 'application/json' -Headers $headers -Body $body | ConvertTo-Json
+
+Write-Host "`n--- 7. Caregiver views that child's records (decrypted) ---" -ForegroundColor Cyan
+Invoke-RestMethod -Uri "$base/children/$childId/records" -Method Get -Headers $headers | ConvertTo-Json
+
+Write-Host "`n--- 8. RBAC check: Security Auditor tries to view child records (should be 403) ---" -ForegroundColor Cyan
+$auditorHeaders = @{ Authorization = "Bearer $($final.token)" }
+try {
+  Invoke-RestMethod -Uri "$base/children" -Method Get -Headers $auditorHeaders
+  Write-Host "UNEXPECTED: this should have been rejected!" -ForegroundColor Red
+} catch {
+  Write-Host "Correctly rejected:" $_.ErrorDetails.Message -ForegroundColor Green
+}
+
+Write-Host "`n--- All tests complete ---" -ForegroundColor Cyan

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
+const childRecordsRoutes = require('./routes/childRecordsRoutes');
 
 const app = express();
 
@@ -10,8 +11,9 @@ app.use(express.json());
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/auth', authRoutes);
-// RBAC/consent/record routes, the risk-response routes, and the audit-log
-// routes land here on Thursday/Friday as those pieces are built.
+app.use('/children', childRecordsRoutes);
+// The risk-response routes and the audit-log *read* routes (for the
+// Security Auditor dashboard) land here next.
 
 app.use((err, req, res, next) => {
   // Body-parser errors (malformed JSON, etc.) carry their own 4xx status —

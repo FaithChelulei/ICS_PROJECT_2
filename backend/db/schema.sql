@@ -65,20 +65,18 @@ CREATE TABLE child_profiles (
 CREATE TABLE child_identifiers (
     id                  SERIAL PRIMARY KEY,
     child_profile_id    INTEGER UNIQUE NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-    full_name_enc       BYTEA NOT NULL,   -- AES-256-GCM ciphertext
+    full_name_enc       BYTEA NOT NULL,   -- AES-256-GCM: iv || ciphertext || authTag, self-contained
     date_of_birth_enc   BYTEA NOT NULL,
-    family_background_enc BYTEA,
-    enc_iv              BYTEA NOT NULL    -- per-row initialization vector
+    family_background_enc BYTEA
 );
 
 CREATE TABLE developmental_records (
     id                  SERIAL PRIMARY KEY,
     child_profile_id    INTEGER NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-    milestone_enc       BYTEA NOT NULL,
+    milestone_enc       BYTEA NOT NULL,   -- AES-256-GCM: iv || ciphertext || authTag, self-contained
     health_indicator_enc BYTEA NOT NULL,
     assessment_score_enc BYTEA NOT NULL,
     progress_notes_enc  BYTEA,
-    enc_iv              BYTEA NOT NULL,
     created_by          INTEGER NOT NULL REFERENCES users(id),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
