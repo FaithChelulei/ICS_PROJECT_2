@@ -62,7 +62,13 @@ try {
 }
 
 Write-Host "`n--- 9. Public registration request (no auth needed) ---" -ForegroundColor Cyan
-$body = @{ fullName = 'Jane Test Caregiver'; email = 'jane.test.caregiver@example.com'; requestedRole = 'Caregiver'; reason = 'Testing the registration flow' } | ConvertTo-Json
+# A fresh, unique email every run -- the system correctly refuses to let
+# the same person register twice, so reusing one fixed test email only
+# works the first time the script is ever run. Using your own Gmail with
+# plus-addressing (not a fake @example.com) so the real approval email
+# you're about to receive actually has somewhere to land.
+$testEmail = "faithchelulei35+caregiver$(Get-Date -Format 'yyyyMMddHHmmss')@gmail.com"
+$body = @{ fullName = 'Jane Test Caregiver'; email = $testEmail; requestedRole = 'Caregiver'; reason = 'Testing the registration flow' } | ConvertTo-Json
 $regRes = Invoke-RestMethod -Uri "$base/auth/register" -Method Post -ContentType 'application/json' -Body $body
 $regRes | ConvertTo-Json
 
@@ -78,15 +84,19 @@ $adminHeaders = @{ Authorization = "Bearer $($adminFinal.token)" }
 Write-Host "`n--- 11. Admin views the pending request queue ---" -ForegroundColor Cyan
 $pending = Invoke-RestMethod -Uri "$base/admin/registration-requests?status=pending" -Method Get -Headers $adminHeaders
 $pending | ConvertTo-Json
-$requestId = ($pending.requests | Where-Object { $_.email -eq 'jane.test.caregiver@example.com' }).id
+$requestId = ($pending.requests | Where-Object { $_.email -eq $testEmail }).id
+if (-not $requestId) {
+  Write-Host "Could not find the pending request for $testEmail -- stopping here." -ForegroundColor Red
+  exit 1
+}
 
-Write-Host "`n--- 12. Admin approves it (watch Window 1 for the temp password) ---" -ForegroundColor Cyan
+Write-Host "`n--- 12. Admin approves it (watch Window 1 or your email for the temp password) ---" -ForegroundColor Cyan
 Invoke-RestMethod -Uri "$base/admin/registration-requests/$requestId/approve" -Method Post -Headers $adminHeaders | ConvertTo-Json
-Write-Host "Look at Window 1 for: '[DEV - no SMTP configured] Account approved for jane.test.caregiver@example.com ... Temp password: ...'" -ForegroundColor Yellow
+Write-Host "Look at Window 1 (or your real inbox, if SMTP is configured) for the temp password for $testEmail" -ForegroundColor Yellow
 $tempPassword = Read-Host "Paste the temp password you see there"
 
 Write-Host "`n--- 13. New Caregiver logs in with that temp password ---" -ForegroundColor Cyan
-$body = @{ email = 'jane.test.caregiver@example.com'; password = $tempPassword } | ConvertTo-Json
+$body = @{ email = $testEmail; password = $tempPassword } | ConvertTo-Json
 $newUserRes = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
 if ($newUserRes.token) { Write-Host "SUCCESS -- new account works end to end." -ForegroundColor Green }
 
