@@ -5,6 +5,7 @@ const childRecordsRoutes = require('./routes/childRecordsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const riskResponseRoutes = require('./routes/riskResponseRoutes');
 const auditorRoutes = require('./routes/auditorRoutes');
+const userManagementRoutes = require('./routes/userManagementRoutes');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/auth', authRoutes);
 app.use('/children', childRecordsRoutes);
 app.use('/admin', adminRoutes);
+app.use('/admin/users', userManagementRoutes);
 app.use('/risk-response', riskResponseRoutes);
 app.use('/auditor', auditorRoutes);
 // Audit-log *read* routes (full history view for the Security Auditor

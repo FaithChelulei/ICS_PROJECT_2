@@ -45,7 +45,7 @@ async function recordAndScore({ userId, role, actionType, childProfileId = null,
 
   const accessRequestId = await insertAccessRequest({ userId, childProfileId, actionType, pcName, ipAddress, sessionId, now });
 
-  const features = await computeFeatures({ userId, sessionId, pcName, now });
+  const features = await computeFeatures({ userId, sessionId, pcName, now, role });
   const result = await scoreSession(role, features);
 
   if (!result) {

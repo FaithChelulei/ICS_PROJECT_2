@@ -96,9 +96,32 @@ If you believe this is a mistake, contact the system administrator.`,
   });
 }
 
+// Sent when a SysAdmin unlocks an account that was locked after the owner
+// clicked "This was NOT me" on a risk alert (see riskResponseController.js
+// deny() and userManagementController.js). Same one-plaintext-password-
+// moment rule as sendAccountApprovedEmail: never logged, never returned
+// in an API response, only ever sent here.
+async function sendAccountUnlockedEmail(toEmail, { tempPassword }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] Account unlocked for ${toEmail}. New temp password: ${tempPassword}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'Your account has been unlocked',
+    text: `Your account was locked after you reported unrecognized activity. A System Administrator has reviewed and unlocked it.
+
+New temporary password: ${tempPassword}
+
+Please log in and you will be asked to change this password. If you did not request this, contact the system administrator immediately.`,
+  });
+}
+
 module.exports = {
   sendMfaCodeEmail,
   sendRiskAlertEmail,
   sendAccountApprovedEmail,
   sendAccountRejectedEmail,
+  sendAccountUnlockedEmail,
 };
