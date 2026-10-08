@@ -16,15 +16,29 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const { sendMfaCodeEmail } = require('../utils/mailer');
+const { logAccessRequest } = require('../services/riskEngine');
+const { getPcName, getIpAddress } = require('../utils/requestMeta');
 
 const MFA_CODE_TTL_MINUTES = 10;
 
-async function issueSession(userId, role, res) {
+// Creates the session row and logs the login to access_requests -- but
+// does NOT run it through ML scoring. The model was trained on COMPLETED
+// sessions that already had real activity in them; scoring the bare
+// moment of login (0 files accessed, ~0 session duration so far) compares
+// against a baseline that can't possibly match yet, which flagged nearly
+// every login in testing. Login is still logged, because it feeds the
+// features computed for whatever the user does NEXT (events_prev_hour/day,
+// unique_pcs_used_that_day, is_own_pc) -- see riskEngine.js and
+// childRecordsController.js, where real scoring happens on actual data
+// access, matching what this system is actually trying to catch.
+async function issueSession({ userId, role, pcName, ipAddress }, res) {
   const { rows } = await db.query(
     'INSERT INTO sessions (user_id) VALUES ($1) RETURNING id',
     [userId]
   );
   const sessionId = rows[0].id;
+
+  await logAccessRequest({ userId, actionType: 'login', pcName, ipAddress, sessionId });
 
   const token = jwt.sign(
     { userId, role, sessionId },
@@ -62,11 +76,15 @@ async function login(req, res) {
   if (!passwordOk) return genericError();
 
   if (!user.mfa_required) {
-    // Caregiver: no second step
-    return issueSession(user.id, user.role, res);
+    // No role currently skips MFA (Caregiver included, as of the MFA-for-
+    // all-roles change) -- kept generic here in case that ever changes.
+    return issueSession(
+      { userId: user.id, role: user.role, pcName: getPcName(req), ipAddress: getIpAddress(req) },
+      res
+    );
   }
 
-  // SecurityAuditor / SysAdmin: generate, hash, store and email a 6-digit code
+  // MFA required (now true for every role): generate, hash, store and email a 6-digit code
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   const codeHash = await bcrypt.hash(code, 10);
   const expiresAt = new Date(Date.now() + MFA_CODE_TTL_MINUTES * 60 * 1000);
@@ -107,7 +125,15 @@ async function verifyMfa(req, res) {
      JOIN roles r ON r.id = u.role_id WHERE u.id = $1`,
     [userId]
   );
-  return issueSession(userRows[0].id, userRows[0].role, res);
+  return issueSession(
+    {
+      userId: userRows[0].id,
+      role: userRows[0].role,
+      pcName: getPcName(req),
+      ipAddress: getIpAddress(req),
+    },
+    res
+  );
 }
 
 async function logout(req, res) {

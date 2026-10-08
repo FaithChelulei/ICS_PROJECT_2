@@ -3,6 +3,8 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const childRecordsRoutes = require('./routes/childRecordsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const riskResponseRoutes = require('./routes/riskResponseRoutes');
+const auditorRoutes = require('./routes/auditorRoutes');
 
 const app = express();
 
@@ -14,8 +16,10 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/auth', authRoutes);
 app.use('/children', childRecordsRoutes);
 app.use('/admin', adminRoutes);
-// The risk-response routes and the audit-log *read* routes (for the
-// Security Auditor dashboard) land here next.
+app.use('/risk-response', riskResponseRoutes);
+app.use('/auditor', auditorRoutes);
+// Audit-log *read* routes (full history view for the Security Auditor
+// dashboard, beyond just flagged sessions) land here next -- Day 3.
 
 app.use((err, req, res, next) => {
   // Body-parser errors (malformed JSON, etc.) carry their own 4xx status —
