@@ -3,23 +3,17 @@
 // only ever gets created when a SysAdmin approves one. This is the
 // safeguarding control: unverified self-sign-up is a real risk on a
 // child-data system, so a human reviews every request first.
-const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
 const { sendAccountApprovedEmail, sendAccountRejectedEmail } = require('../utils/mailer');
+const { generateTempPassword } = require('../utils/tempPassword');
 
 // Only these two roles can be self-requested. A SysAdmin account is
 // created by another SysAdmin directly (out of scope for this public
 // form) — letting anyone request SysAdmin access would defeat the point
 // of reviewing requests at all.
 const REQUESTABLE_ROLES = ['Caregiver', 'SecurityAuditor'];
-
-function generateTempPassword() {
-  // 16 random bytes, base64url-encoded — short enough to type from an
-  // email, long enough to not be guessable before the forced change.
-  return crypto.randomBytes(16).toString('base64url');
-}
 
 // POST /auth/register — public, no auth required.
 async function submitRequest(req, res) {

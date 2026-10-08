@@ -124,6 +124,7 @@ CREATE TABLE access_requests (
     action_type         VARCHAR(64) NOT NULL,     -- 'view_record' | 'submit_record' | 'login' ...
     pc_name             VARCHAR(100),
     ip_address          VARCHAR(64),
+    session_id          UUID REFERENCES sessions(id), -- groups events into "this session" for ML features
     requested_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

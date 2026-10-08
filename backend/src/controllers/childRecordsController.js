@@ -11,6 +11,28 @@
 const db = require('../config/db');
 const { encryptField, decryptField } = require('../utils/encryption');
 const { logAction } = require('../utils/auditLog');
+const { recordAndScore } = require('../services/riskEngine');
+const { getPcName, getIpAddress } = require('../utils/requestMeta');
+
+const RISK_NOTICE = 'Unusual activity detected during this action. You have been logged out as a precaution — check your email to confirm or report it.';
+
+// Shared by every handler below: logs this action to access_requests and
+// scores it. If it crosses this role's review_threshold, the session has
+// already been revoked by the time this returns -- the handler still
+// returns its normal success response (the action itself already
+// happened), but adds a riskNotice so the caller knows to expect a 401 on
+// its next request.
+async function scoreAction(req, actionType, childProfileId = null) {
+  return recordAndScore({
+    userId: req.user.id,
+    role: req.user.role,
+    actionType,
+    childProfileId,
+    pcName: getPcName(req),
+    ipAddress: getIpAddress(req),
+    sessionId: req.user.sessionId,
+  });
+}
 
 // Throws-and-is-caught-by-caller style helper: confirms child_profile_id
 // belongs to this caregiver, or returns null if not found / not theirs.
@@ -60,7 +82,12 @@ async function createChildProfile(req, res) {
       detail: `Created child_profile_id=${childProfileId}`,
     });
 
-    res.status(201).json({ childProfileId, createdAt: rows[0].created_at });
+    const risk = await scoreAction(req, 'create_child_profile', childProfileId);
+    res.status(201).json({
+      childProfileId,
+      createdAt: rows[0].created_at,
+      ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}),
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
@@ -93,7 +120,9 @@ async function listMyChildren(req, res) {
   }));
 
   await logAction({ userId: req.user.id, action: 'view_own_children', detail: `${children.length} profile(s)` });
-  res.json({ children });
+
+  const risk = await scoreAction(req, 'view_own_child_records');
+  res.json({ children, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
 // POST /children/:childProfileId/records — submit a developmental record
@@ -138,7 +167,12 @@ async function submitRecord(req, res) {
     detail: `child_profile_id=${childProfileId}, record_id=${rows[0].id}`,
   });
 
-  res.status(201).json({ recordId: rows[0].id, createdAt: rows[0].created_at });
+  const risk = await scoreAction(req, 'submit_developmental_record', childProfileId);
+  res.status(201).json({
+    recordId: rows[0].id,
+    createdAt: rows[0].created_at,
+    ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}),
+  });
 }
 
 // GET /children/:childProfileId/records — view a child's developmental
@@ -175,7 +209,8 @@ async function listRecords(req, res) {
     detail: `child_profile_id=${childProfileId}, count=${records.length}`,
   });
 
-  res.json({ records });
+  const risk = await scoreAction(req, 'view_own_child_records', childProfileId);
+  res.json({ records, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
 module.exports = { createChildProfile, listMyChildren, submitRecord, listRecords };
