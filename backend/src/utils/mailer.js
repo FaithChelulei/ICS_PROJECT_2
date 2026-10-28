@@ -59,9 +59,9 @@ This session has also been queued for independent review by a Security Auditor.`
 // moment a plaintext password ever exists outside the user's own head, so
 // it goes straight to their inbox and nowhere else (never logged, never
 // returned in an API response body — see registrationController.js).
-async function sendAccountApprovedEmail(toEmail, { fullName, role, tempPassword }) {
+async function sendAccountApprovedEmail(toEmail, { fullName, role, username, tempPassword }) {
   if (!transporter) {
-    console.log(`[DEV — no SMTP configured] Account approved for ${toEmail} (${role}). Temp password: ${tempPassword}`);
+    console.log(`[DEV — no SMTP configured] Account approved for ${toEmail} (${role}, username: ${username}). Temp password: ${tempPassword}`);
     return;
   }
   await transporter.sendMail({
@@ -73,9 +73,10 @@ async function sendAccountApprovedEmail(toEmail, { fullName, role, tempPassword 
 Your request for ${role} access has been approved.
 
 Email: ${toEmail}
+Username: ${username}
 Temporary password: ${tempPassword}
 
-Please log in and you will be asked to change this password. If you did not request this account, contact the system administrator immediately.`,
+You can sign in with either your email or your username above. Please log in and you will be asked to change this password. If you did not request this account, contact the system administrator immediately.`,
   });
 }
 

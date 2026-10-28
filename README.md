@@ -54,3 +54,27 @@ raw logs.
 `ml\scripts\04`–`11` are diagnostic scripts used to test design
 decisions during development (feature selection, threshold behaviour).
 Not part of the main pipeline (01 → 02 → 03); kept for reference.
+
+## Running the full web system
+
+Three services, each in its own terminal, started in this order. Needs
+PostgreSQL 17 running with the `ics_project_2` database (`backend/db/schema.sql`
+plus the `migration_*.sql` files applied) and `backend/.env` filled in from
+`backend/.env.example`.
+
+| # | Service | Command (from the repo root) | Ready when you see |
+|---|---|---|---|
+| 1 | ML risk service (Flask, :5001) | `.venv\Scripts\python.exe ml\service\app.py` | `Running on http://127.0.0.1:5001` |
+| 2 | Backend API (Express, :4000) | `cd backend` then `npm run dev` | `Backend listening on http://localhost:4000` |
+| 3 | Frontend (React/Vite, :5173) | `cd frontend` then `npm run dev` | `Local: http://localhost:5173/` |
+
+First time only: `npm install` in both `backend` and `frontend`.
+
+Checks: `npm test` (encryption unit tests) and `npm run test:api` (47
+end-to-end API checks against the running backend + ML service, using
+dedicated test accounts; non-destructive) in `backend/`.
+
+Encryption keys: `npm run key:status`, `key:verify`, `key:new`,
+`key:reencrypt` in `backend/` (see `backend/.env.example`).
+
+Risk thresholds (research vs. live app): `docs/RISK_THRESHOLDS.md`.

@@ -31,7 +31,7 @@ const MFA_CODE_TTL_MINUTES = 10;
 // unique_pcs_used_that_day, is_own_pc) -- see riskEngine.js and
 // childRecordsController.js, where real scoring happens on actual data
 // access, matching what this system is actually trying to catch.
-async function issueSession({ userId, role, pcName, ipAddress }, res) {
+async function issueSession({ userId, role, email, fullName, mustChangePassword, pcName, ipAddress }, res) {
   const { rows } = await db.query(
     'INSERT INTO sessions (user_id) VALUES ($1) RETURNING id',
     [userId]
@@ -46,20 +46,31 @@ async function issueSession({ userId, role, pcName, ipAddress }, res) {
     { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
   );
 
-  return res.json({ token });
+  // role/email/fullName/mustChangePassword are returned alongside the
+  // token so the frontend can route straight to the right dashboard (or
+  // the forced change-password screen) and greet the person by name
+  // without a second round trip.
+  return res.json({ token, role, email, fullName, mustChangePassword });
 }
 
 async function login(req, res) {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'email and password are required' });
+  // Accepts either the account's email or its username in the same field
+  // (kept named `identifier` so the client doesn't have to pre-detect
+  // which one it is). The MFA code still only ever goes to the account's
+  // real, registered email -- a username is just an alternate way to say
+  // "which account", never an alternate delivery address.
+  const identifier = req.body.identifier ?? req.body.email;
+  const { password } = req.body;
+  if (!identifier || !password) {
+    return res.status(400).json({ error: 'identifier and password are required' });
   }
 
   const { rows } = await db.query(
-    `SELECT u.id, u.password_hash, u.mfa_required, u.is_locked, r.name AS role
+    `SELECT u.id, u.email, u.full_name, u.password_hash, u.mfa_required, u.is_locked,
+            u.must_change_password, r.name AS role
      FROM users u JOIN roles r ON r.id = u.role_id
-     WHERE u.email = $1`,
-    [email]
+     WHERE u.email = $1 OR u.username = $1`,
+    [identifier]
   );
   const user = rows[0];
 
@@ -79,7 +90,15 @@ async function login(req, res) {
     // No role currently skips MFA (Caregiver included, as of the MFA-for-
     // all-roles change) -- kept generic here in case that ever changes.
     return issueSession(
-      { userId: user.id, role: user.role, pcName: getPcName(req), ipAddress: getIpAddress(req) },
+      {
+        userId: user.id,
+        role: user.role,
+        email: user.email,
+        fullName: user.full_name,
+        mustChangePassword: user.must_change_password,
+        pcName: getPcName(req),
+        ipAddress: getIpAddress(req),
+      },
       res
     );
   }
@@ -93,9 +112,14 @@ async function login(req, res) {
     'INSERT INTO mfa_codes (user_id, code_hash, expires_at) VALUES ($1, $2, $3)',
     [user.id, codeHash, expiresAt]
   );
-  await sendMfaCodeEmail(email, code);
+  // Always the account's real registered email -- never whatever
+  // identifier (email or username) was typed to find this account.
+  await sendMfaCodeEmail(user.email, code);
 
-  return res.json({ mfaRequired: true, userId: user.id });
+  // email included here too so the frontend can show "code sent to
+  // ___" using the REAL destination, even when the person typed a
+  // username (not an email) as their identifier to get this far.
+  return res.json({ mfaRequired: true, userId: user.id, email: user.email });
 }
 
 async function verifyMfa(req, res) {
@@ -121,7 +145,7 @@ async function verifyMfa(req, res) {
   await db.query('UPDATE mfa_codes SET consumed = TRUE WHERE id = $1', [record.id]);
 
   const { rows: userRows } = await db.query(
-    `SELECT u.id, r.name AS role FROM users u
+    `SELECT u.id, u.email, u.full_name, u.must_change_password, r.name AS role FROM users u
      JOIN roles r ON r.id = u.role_id WHERE u.id = $1`,
     [userId]
   );
@@ -129,6 +153,9 @@ async function verifyMfa(req, res) {
     {
       userId: userRows[0].id,
       role: userRows[0].role,
+      email: userRows[0].email,
+      fullName: userRows[0].full_name,
+      mustChangePassword: userRows[0].must_change_password,
       pcName: getPcName(req),
       ipAddress: getIpAddress(req),
     },
@@ -144,4 +171,50 @@ async function logout(req, res) {
   return res.json({ message: 'Logged out' });
 }
 
-module.exports = { login, verifyMfa, logout };
+// GET /auth/me — lets the frontend re-hydrate who's logged in (role, email,
+// whether a forced password change is still pending) after a page refresh,
+// without having to decode the JWT itself.
+async function me(req, res) {
+  const { rows } = await db.query(
+    'SELECT full_name, must_change_password FROM users WHERE id = $1',
+    [req.user.id]
+  );
+  return res.json({
+    id: req.user.id,
+    role: req.user.role,
+    email: req.user.email,
+    fullName: rows[0] ? rows[0].full_name : undefined,
+    mustChangePassword: rows[0] ? rows[0].must_change_password : req.user.mustChangePassword,
+  });
+}
+
+// POST /auth/change-password — the only data-changing route reachable
+// while mustChangePassword is still true (see middleware/auth.js). Requires
+// the current (temp) password, not just a SysAdmin override, so a stolen
+// temp-password email alone isn't enough without also knowing it already.
+async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'currentPassword and newPassword are required' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'newPassword must be at least 8 characters' });
+  }
+
+  const { rows } = await db.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+  const user = rows[0];
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const ok = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!ok) return res.status(401).json({ error: 'Current password is incorrect' });
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await db.query(
+    'UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2',
+    [newHash, req.user.id]
+  );
+
+  return res.json({ message: 'Password changed successfully.' });
+}
+
+module.exports = { login, verifyMfa, logout, me, changePassword };

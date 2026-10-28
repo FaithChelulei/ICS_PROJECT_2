@@ -11,7 +11,7 @@
 const db = require('../config/db');
 const { encryptField, decryptField } = require('../utils/encryption');
 const { logAction } = require('../utils/auditLog');
-const { recordAndScore } = require('../services/riskEngine');
+const { recordAndScore, logAccessRequest } = require('../services/riskEngine');
 const { getPcName, getIpAddress } = require('../utils/requestMeta');
 
 const RISK_NOTICE = 'Unusual activity detected during this action. You have been logged out as a precaution — check your email to confirm or report it.';
@@ -26,6 +26,28 @@ async function scoreAction(req, actionType, childProfileId = null) {
   return recordAndScore({
     userId: req.user.id,
     role: req.user.role,
+    actionType,
+    childProfileId,
+    pcName: getPcName(req),
+    ipAddress: getIpAddress(req),
+    sessionId: req.user.sessionId,
+  });
+}
+
+// listMyChildren fires automatically on every dashboard load, the instant
+// a caregiver logs in -- before they've done anything. Scoring it hits the
+// exact same problem riskEngine.js already documents for login itself:
+// the live feature vector is near-empty (~0 session duration, ~0 events),
+// which doesn't resemble ANY completed training session, so it reads as
+// maximally anomalous almost every time regardless of role -- not a 20%
+// false-positive rate, closer to 100%. That's what was logging caregivers
+// out before they could do anything. Treat it the same way login is
+// treated: logged for the audit trail and for feature computation, not
+// scored. The genuinely scoreable moments -- viewing a SPECIFIC child's
+// records, submitting a record, registering a child -- are unchanged below.
+async function logOnlyAction(req, actionType, childProfileId = null) {
+  return logAccessRequest({
+    userId: req.user.id,
     actionType,
     childProfileId,
     pcName: getPcName(req),
@@ -51,6 +73,13 @@ async function createChildProfile(req, res) {
   if (!fullName || !dateOfBirth) {
     return res.status(400).json({ error: 'fullName and dateOfBirth are required' });
   }
+  // A child can't have been born after today -- checked server-side too,
+  // not just as a UI date-picker limit, since the API is reachable
+  // directly.
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime()) || dob > new Date()) {
+    return res.status(400).json({ error: 'Date of birth cannot be in the future' });
+  }
 
   const client = await db.pool.connect();
   try {
@@ -72,6 +101,15 @@ async function createChildProfile(req, res) {
         encryptField(dateOfBirth),
         familyBackground ? encryptField(familyBackground) : null,
       ]
+    );
+
+    // Registering a child is itself the consenting act for storing their
+    // identity -- record it as the first real row in consent_records
+    // (previously defined in the schema but never written to).
+    await client.query(
+      `INSERT INTO consent_records (child_profile_id, caregiver_id, consent_given, scope)
+       VALUES ($1, $2, TRUE, 'profile_identity')`,
+      [childProfileId, req.user.id]
     );
 
     await client.query('COMMIT');
@@ -121,8 +159,8 @@ async function listMyChildren(req, res) {
 
   await logAction({ userId: req.user.id, action: 'view_own_children', detail: `${children.length} profile(s)` });
 
-  const risk = await scoreAction(req, 'view_own_child_records');
-  res.json({ children, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
+  await logOnlyAction(req, 'view_own_child_records');
+  res.json({ children });
 }
 
 // POST /children/:childProfileId/records — submit a developmental record

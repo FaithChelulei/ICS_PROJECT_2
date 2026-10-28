@@ -6,6 +6,7 @@
 // on the account owner's own honesty.
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
+const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
 
 async function listFlagged(req, res) {
   // This queue is scoped to FLAGGED sessions only (is_flagged = true) --
@@ -34,6 +35,8 @@ async function listFlagged(req, res) {
     params
   );
 
+  // The auditor's home screen -- loads on sign-in and after every review.
+  await logOnlyAction(req, 'view_flagged_sessions');
   res.json({ flaggedSessions: rows });
 }
 
@@ -57,7 +60,10 @@ async function reviewFlagged(req, res) {
     detail: `risk_score_id=${riskScoreId}, new_status=${status}`,
   });
 
-  res.json({ riskScoreId, auditorStatus: status });
+  // Scored: an insider auditor quietly closing out many alerts is exactly
+  // the kind of behaviour this role's model should see.
+  const risk = await scoreAction(req, 'review_flagged_session');
+  res.json({ riskScoreId, auditorStatus: status, ...riskFields(risk) });
 }
 
 module.exports = { listFlagged, reviewFlagged };

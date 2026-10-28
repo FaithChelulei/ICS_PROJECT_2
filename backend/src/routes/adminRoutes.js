@@ -2,8 +2,9 @@
 // and the 'manage_registration_requests' permission — try hitting these
 // with a Caregiver or SecurityAuditor token and expect a 403.
 const express = require('express');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requirePasswordChanged } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
+const asyncHandler = require('../utils/asyncHandler');
 const {
   listRequests,
   approveRequest,
@@ -12,10 +13,10 @@ const {
 
 const router = express.Router();
 
-router.use(authenticate, requirePermission('manage_registration_requests'));
+router.use(authenticate, requirePasswordChanged, requirePermission('manage_registration_requests'));
 
-router.get('/registration-requests', listRequests);
-router.post('/registration-requests/:id/approve', approveRequest);
-router.post('/registration-requests/:id/reject', rejectRequest);
+router.get('/registration-requests', asyncHandler(listRequests));
+router.post('/registration-requests/:id/approve', asyncHandler(approveRequest));
+router.post('/registration-requests/:id/reject', asyncHandler(rejectRequest));
 
 module.exports = router;

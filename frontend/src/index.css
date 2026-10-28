@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  /* Faith asked for bigger, easier-to-read text everywhere -- this nudges
+     every rem-based Tailwind size (text, spacing) up a notch app-wide,
+     on top of the larger text classes used in the components below. */
+  font-size: 17px;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #0f172a;
+  background-color: #f6f7f9;
+}

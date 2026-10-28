@@ -20,3 +20,12 @@ PROJECT_INDEX.md
 backend/node_modules/
 backend/.env
 backend/npm-debug.log*
+
+# Frontend (also covered by frontend/.gitignore -- repeated here so the
+# root file alone is enough)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Local process logs from running the services
+*.log

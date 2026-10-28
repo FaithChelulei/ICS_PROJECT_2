@@ -8,6 +8,29 @@ const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
 const { sendAccountApprovedEmail, sendAccountRejectedEmail } = require('../utils/mailer');
 const { generateTempPassword } = require('../utils/tempPassword');
+const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
+
+// Derives a login username from a person's full name (e.g. "Faith Chelulei"
+// -> "faith.chelulei") and makes it unique against existing usernames by
+// appending a number if needed. This only has to run once, at account
+// creation, so a few extra queries here is fine.
+async function generateUsername(client, fullName) {
+  const base = fullName
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .trim()
+    .split(/\s+/)
+    .join('.') || 'user';
+
+  let candidate = base;
+  let suffix = 1;
+  for (;;) {
+    const { rows } = await client.query('SELECT 1 FROM users WHERE username = $1', [candidate]);
+    if (!rows[0]) return candidate;
+    suffix += 1;
+    candidate = `${base}${suffix}`;
+  }
+}
 
 // Only these two roles can be self-requested. A SysAdmin account is
 // created by another SysAdmin directly (out of scope for this public
@@ -67,6 +90,8 @@ async function listRequests(req, res) {
      ORDER BY rr.created_at ASC`,
     [status]
   );
+  // The SysAdmin's home screen -- loads on sign-in, so log-only.
+  await logOnlyAction(req, 'view_registration_requests');
   res.json({ requests: rows });
 }
 
@@ -100,13 +125,16 @@ async function approveRequest(req, res) {
   const mfaRequired = true;
 
   const client = await db.pool.connect();
+  let username;
   try {
     await client.query('BEGIN');
 
+    username = await generateUsername(client, request.full_name);
+
     await client.query(
-      `INSERT INTO users (email, password_hash, role_id, mfa_required, must_change_password)
-       VALUES ($1, $2, $3, $4, TRUE)`,
-      [request.email, passwordHash, request.requested_role_id, mfaRequired]
+      `INSERT INTO users (email, full_name, username, password_hash, role_id, mfa_required, must_change_password)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE)`,
+      [request.email, request.full_name, username, passwordHash, request.requested_role_id, mfaRequired]
     );
 
     await client.query(
@@ -128,6 +156,7 @@ async function approveRequest(req, res) {
   await sendAccountApprovedEmail(request.email, {
     fullName: request.full_name,
     role: request.requested_role,
+    username,
     tempPassword,
   });
 
@@ -137,7 +166,13 @@ async function approveRequest(req, res) {
     detail: `request_id=${requestId}, new user email=${request.email}, role=${request.requested_role}`,
   });
 
-  res.json({ message: `Approved. Temporary password emailed to ${request.email}.` });
+  // Creating an account is a privileged change -- scored.
+  const risk = await scoreAction(req, 'approve_registration');
+  res.json({
+    message: `Approved. Username "${username}" created; temporary password emailed to ${request.email}.`,
+    username,
+    ...riskFields(risk),
+  });
 }
 
 // POST /admin/registration-requests/:id/reject — SysAdmin only.
@@ -167,7 +202,8 @@ async function rejectRequest(req, res) {
     detail: `request_id=${requestId}, email=${rows[0].email}`,
   });
 
-  res.json({ message: 'Request rejected.' });
+  const risk = await scoreAction(req, 'reject_registration');
+  res.json({ message: 'Request rejected.', ...riskFields(risk) });
 }
 
 module.exports = { submitRequest, listRequests, approveRequest, rejectRequest };

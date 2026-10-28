@@ -13,6 +13,11 @@
 $base = 'http://localhost:4000'
 
 Write-Host "`n=== Step 0: cleaning test data for a truly cold run ===" -ForegroundColor Cyan
+# cleanup_test_data.js DELETES every child profile, record, session and
+# risk score in the database -- including anything you created for a demo.
+# For a non-destructive check, use: node test\rbac_and_edgecase_test.js
+$confirm = Read-Host "This wipes ALL child data, sessions and risk scores. Type WIPE to continue"
+if ($confirm -ne 'WIPE') { Write-Host 'Cancelled -- nothing was deleted.'; exit }
 node db\cleanup_test_data.js
 
 Write-Host "`n=== Step 1: Caregiver logs in (MFA required) ===" -ForegroundColor Cyan

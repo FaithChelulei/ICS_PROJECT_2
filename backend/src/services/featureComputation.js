@@ -46,7 +46,19 @@
 //     practice.
 const db = require('../config/db');
 
-const FILE_ACTION_TYPES = ['create_child_profile', 'view_own_child_records', 'submit_developmental_record'];
+// "File accessed" = an action that reads or changes protected data, per
+// role. Passive list loads (dashboards) are logged as events but are not
+// files. Note: the Caregiver dashboard's log-only list still uses the
+// 'view_own_child_records' label, so it does count here -- kept as-is
+// because the Caregiver threshold was tuned with that behaviour.
+const FILE_ACTION_TYPES = [
+  // Caregiver
+  'create_child_profile', 'view_own_child_records', 'submit_developmental_record',
+  // Security Auditor
+  'view_audit_log', 'review_flagged_session',
+  // SysAdmin
+  'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data',
+];
 
 // Roles whose CERT "session" is really a whole workday (see rationale
 // above). SysAdmin is deliberately excluded.
@@ -57,14 +69,28 @@ function isAfterHours(date) {
   return hour < 6 || hour >= 20 ? 1 : 0;
 }
 
-async function mostFrequentPc(userId) {
+// is_own_pc, live version. CERT's "own PC" is the machine a user normally
+// works on; the web-app equivalent is "a device this user has signed in
+// from before". Only rows from OTHER sessions count as history -- the
+// current session's own login row is always present by the time a scored
+// action runs, so counting it would make every new device look familiar.
+//   - request carries no device name (old clients, curl)  -> 1
+//   - user has no named-device history at all (first ever) -> 1
+//   - device seen in an earlier session                     -> 1
+//   - user has history, but never this device               -> 0
+async function isOwnDevice(userId, pcName, sessionId) {
+  if (!pcName) return 1;
   const { rows } = await db.query(
-    `SELECT pc_name, COUNT(*) AS cnt FROM access_requests
-     WHERE user_id = $1 AND pc_name IS NOT NULL
-     GROUP BY pc_name ORDER BY cnt DESC LIMIT 1`,
-    [userId]
+    `SELECT COUNT(*) FILTER (WHERE pc_name IS NOT NULL) AS any_named,
+            COUNT(*) FILTER (WHERE pc_name = $2)         AS this_device
+     FROM access_requests
+     WHERE user_id = $1 AND session_id IS DISTINCT FROM $3`,
+    [userId, pcName, sessionId]
   );
-  return rows[0] ? rows[0].pc_name : null;
+  const anyNamed = Number(rows[0].any_named);
+  const thisDevice = Number(rows[0].this_device);
+  if (anyNamed === 0) return 1;
+  return thisDevice > 0 ? 1 : 0;
 }
 
 // Caregiver / SecurityAuditor: "session" = this user's whole calendar day
@@ -119,7 +145,7 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
 
   const useDayBasedShape = DAY_BASED_SHAPE_ROLES.includes(role);
 
-  const [prevHour, prevDay, pcsToday, shape, topPc] = await Promise.all([
+  const [prevHour, prevDay, pcsToday, shape, isOwnPc] = await Promise.all([
     db.query(
       `SELECT COUNT(*) FROM access_requests WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3`,
       [userId, oneHourAgo, nowDate]
@@ -136,16 +162,37 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
     useDayBasedShape
       ? computeDayBasedShape(userId, dayStart, nowDate)
       : computeSessionBasedShape(sessionId, nowDate),
-    mostFrequentPc(userId),
+    // History-based, not "most frequent PC": the old most-frequent rule
+    // let a couple of stale test rows (2 tagged "FAITH-TEST-PC") pin
+    // is_own_pc at 0 forever. See isOwnDevice above.
+    isOwnDevice(userId, pcName, sessionId),
   ]);
 
-  const isOwnPc = topPc === null ? 1 : (pcName === topPc ? 1 : 0);
+  // Every tracked session genuinely runs on exactly one physical device,
+  // even when a request carries no NAME for it (non-browser clients like
+  // curl/PowerShell don't send X-Device-Name -- see getPcName; the React
+  // frontend does, via api/client.js). Reporting that as "0 distinct PCs
+  // today" is a live-vs-training mismatch, not a faithful "no device"
+  // signal: in the CERT training data a normal session is NEVER attributed
+  // to 0 PCs (every real session used at least the one it ran on -- scaler
+  // mean ~1.09, std ~0.29, so training data sits in an extremely tight
+  // band around 1). A live 0 is therefore a ~-3.7 std-dev outlier the
+  // Autoencoder never saw in training, and on its own was enough to pin
+  // the reconstruction error at the 1.0 clip ceiling regardless of every
+  // other feature -- confirmed directly against the trained model:
+  // identical feature vectors score ae_raw ~1.8-1.9 (clipped to 1.0) with
+  // this at 0, vs ~0.0001-0.0000019 (far below ae_train_max) with it at 1.
+  // Same "degrade to the realistic default, not to a value training never
+  // saw" reasoning already applied to is_own_pc just above. Approved by
+  // Faith after reviewing the diagnosis (2026-10-16).
+  const pcsCounted = Number(pcsToday.rows[0].count);
+  const uniquePcsUsedToday = pcsCounted === 0 ? 1 : pcsCounted;
 
   return {
     files_accessed_per_session: shape.filesAccessed,
     events_prev_day: Number(prevDay.rows[0].count),
     events_prev_hour: Number(prevHour.rows[0].count),
-    unique_pcs_used_that_day: Number(pcsToday.rows[0].count),
+    unique_pcs_used_that_day: uniquePcsUsedToday,
     session_duration_minutes: shape.durationMinutes,
     is_after_hours: isAfterHours(nowDate),
     is_own_pc: isOwnPc,

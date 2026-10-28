@@ -2,8 +2,10 @@
   "_design": "2-threshold response system (FINAL, v2). One statistical threshold per role (review_threshold), but crossing it triggers TWO things at once: (1) an immediate automatic containment action that does not require a human to be online, and (2) a parallel queue item for human review. See _rationale and _why_one_threshold.",
   "_rationale": "Checked precision at fixed risk-score checkpoints (0.05 to 0.90) per role using the actual trained models (ml/scripts/11_precision_at_thresholds.py, log: ml/scripts/ptx_log.txt). Precision is NOT monotonic with risk score: it rises to a peak near review_threshold below, then FALLS as the threshold increases further (e.g. Caregiver: 5.1% precision at 0.10, drops to 2.9% at 0.20, 1.4% at 0.30). Past roughly 0.30-0.50, sessions flagged collapse to single digits (3-22 sessions), so any 'precision' computed there is statistical noise, not a usable high-confidence signal. This rules out a hard, punitive automatic action (e.g. permanent account suspension) at any threshold -- the data can't support the confidence that requires.",
   "_why_one_threshold": "An earlier attempt (ml/scripts/10_roc_pr_tiers.py) tried to carve out a THIRD, higher threshold above review_threshold for a 'high confidence' auto-action. It failed to find one worth having: the computed 'high' threshold came out almost identical to review_threshold for every role (e.g. Caregiver 0.1103 vs 0.110). That is itself a finding, not a bug -- it means there is no natural second cut point in this model's risk scores. Rather than invent an artificial one, the automatic action below is triggered at the SAME review_threshold as the human-review flag. This works because the automatic action chosen (see response_policy) is reversible and low-cost when wrong, so it does not need account-suspension-level precision to be worth firing.",
+  "_deployment_thresholds": "review_threshold (and the precision/recall beside it) is the research value from the CERT test set, reported in the evaluation chapter. deployment_threshold is what the live web app enforces, calibrated against this app's own usage (normal sessions vs bursts, after-hours and new-device patterns) so routine work is not logged out. See docs/RISK_THRESHOLDS.md.",
   "Caregiver": {
     "review_threshold": 0.110,
+    "deployment_threshold": 0.350,
     "auc": 0.7687,
     "precision_at_threshold": 0.0512,
     "recall_at_threshold": 0.6611
@@ -17,6 +19,7 @@
   },
   "SysAdmin": {
     "review_threshold": 0.220,
+    "deployment_threshold": 0.600,
     "auc": 0.7187,
     "precision_at_threshold": 0.0751,
     "recall_at_threshold": 0.3824

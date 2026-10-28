@@ -7,13 +7,20 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test test/"
+    "test": "node --test test/encryption.test.js",
+    "test:api": "node test/rbac_and_edgecase_test.js",
+    "key:new": "node scripts/new-encryption-key.js",
+    "key:status": "node scripts/key-tool.js status",
+    "key:reencrypt": "node scripts/key-tool.js reencrypt",
+    "key:verify": "node scripts/key-tool.js verify"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^10.0.15",
     "pg": "^8.12.0"
