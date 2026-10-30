@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
-import { listRecords, submitRecord, listMyChildren } from '../../api/children';
+import { listRecords, submitRecord, listMyChildren, updateChildDetails } from '../../api/children';
 import { PageHeader, Field, inputClass, Button, Alert, Card, EmptyState, Spinner } from '../../components/ui.jsx';
 
 const NAV = [
@@ -18,6 +18,8 @@ export default function ChildRecordPage() {
   const [error, setError] = useState('');
   const [riskNotice, setRiskNotice] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [notice, setNotice] = useState('');
   // The backend refuses records for a child whose caregiver hasn't granted
   // developmental_records consent (403 CONSENT_REQUIRED) -- shown as a
   // prompt to grant it, not as an error.
@@ -66,17 +68,39 @@ export default function ChildRecordPage() {
         title={child ? child.fullName : `Child Profile #${childProfileId}`}
         subtitle={child ? `Developmental Records · DOB ${child.dateOfBirth}` : 'Developmental Records'}
         actions={
-          !consentMissing && (
-            <Button onClick={() => setShowForm((s) => !s)}>
-              {showForm ? 'Cancel' : '+ Add Record'}
-            </Button>
-          )
+          <div className="flex gap-2">
+            {child && (
+              <Button variant="secondary" onClick={() => setEditing((e) => !e)}>
+                {editing ? 'Cancel edit' : 'Edit details'}
+              </Button>
+            )}
+            {!consentMissing && (
+              <Button onClick={() => setShowForm((s) => !s)}>
+                {showForm ? 'Cancel' : '+ Add Record'}
+              </Button>
+            )}
+          </div>
         }
       />
 
       <div className="p-8 max-w-3xl">
         {riskNotice && <Alert variant="warning" className="mb-6">{riskNotice}</Alert>}
         {error && <Alert className="mb-6">{error}</Alert>}
+        {notice && <Alert variant="success" className="mb-6">{notice}</Alert>}
+
+        {editing && child && (
+          <div className="mb-6">
+            <DetailsForm
+              child={child}
+              onSaved={(result) => {
+                setEditing(false);
+                if (result.riskNotice) setRiskNotice(result.riskNotice);
+                else setNotice(result.updatedFields.length ? 'Details updated.' : 'Nothing was changed.');
+                load();
+              }}
+            />
+          </div>
+        )}
         {consentMissing && (
           <Alert variant="warning" className="mb-6">
             Developmental &amp; health records can&rsquo;t be viewed or added for this child
@@ -131,6 +155,77 @@ export default function ChildRecordPage() {
         )}
       </div>
     </Layout>
+  );
+}
+
+// Correcting a child's identity details (KDPA s.26(d)). Only fields that
+// actually changed are sent, so the audit log names exactly what was
+// corrected.
+const todayIso = new Date().toISOString().slice(0, 10);
+
+function DetailsForm({ child, onSaved }) {
+  const [form, setForm] = useState({
+    fullName: child.fullName,
+    dateOfBirth: child.dateOfBirth,
+    familyBackground: child.familyBackground || '',
+  });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  function update(field, value) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const original = { ...child, familyBackground: child.familyBackground || '' };
+    const changes = Object.fromEntries(
+      Object.entries(form).filter(([key, value]) => value.trim() !== String(original[key]).trim())
+    );
+    if (Object.keys(changes).length === 0) {
+      onSaved({ updatedFields: [] });
+      return;
+    }
+    setError('');
+    setBusy(true);
+    try {
+      onSaved(await updateChildDetails(child.childProfileId, changes));
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && <Alert>{error}</Alert>}
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Full Name">
+            <input required value={form.fullName} onChange={(e) => update('fullName', e.target.value)} className={inputClass} />
+          </Field>
+          <Field label="Date of Birth">
+            <input
+              type="date"
+              required
+              max={todayIso}
+              value={form.dateOfBirth}
+              onChange={(e) => update('dateOfBirth', e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+        <Field label="Family Background" hint="Optional. Leave empty to remove it.">
+          <textarea
+            value={form.familyBackground}
+            onChange={(e) => update('familyBackground', e.target.value)}
+            className={inputClass}
+            rows={2}
+          />
+        </Field>
+        <Button disabled={busy}>{busy ? 'Saving…' : 'Save corrections'}</Button>
+      </form>
+    </Card>
   );
 }
 

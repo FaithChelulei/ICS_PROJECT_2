@@ -5,6 +5,10 @@ export const listMyChildren = () => apiFetch('/children');
 export const createChildProfile = (payload) =>
   apiFetch('/children', { method: 'POST', body: payload });
 
+// Only the fields present in `changes` are corrected.
+export const updateChildDetails = (childProfileId, changes) =>
+  apiFetch(`/children/${childProfileId}`, { method: 'PATCH', body: changes });
+
 export const listRecords = (childProfileId) =>
   apiFetch(`/children/${childProfileId}/records`);
 

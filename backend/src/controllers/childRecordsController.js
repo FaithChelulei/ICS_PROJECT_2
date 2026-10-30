@@ -174,6 +174,63 @@ async function createChildProfile(req, res) {
   }
 }
 
+// PATCH /children/:childProfileId — correct a child's identity details
+// (KDPA s.26(d): the right to correction of false or misleading data).
+// Only the fields sent are changed. The audit log records WHICH fields were
+// corrected, never their old or new values -- writing a child's name into
+// the audit log in plain text would undo the encryption that protects it.
+const CORRECTABLE_FIELDS = {
+  fullName: 'full_name_enc',
+  dateOfBirth: 'date_of_birth_enc',
+  familyBackground: 'family_background_enc',
+};
+
+async function updateChildDetails(req, res) {
+  const childProfileId = Number(req.params.childProfileId);
+  const fields = Object.keys(CORRECTABLE_FIELDS).filter((f) => req.body[f] !== undefined);
+  if (fields.length === 0) {
+    return res.status(400).json({ error: `Send at least one of: ${Object.keys(CORRECTABLE_FIELDS).join(', ')}` });
+  }
+  const { fullName, dateOfBirth, familyBackground } = req.body;
+  if (fullName !== undefined && (typeof fullName !== 'string' || !fullName.trim())) {
+    return res.status(400).json({ error: 'fullName cannot be empty' });
+  }
+  if (dateOfBirth !== undefined) {
+    const dob = new Date(dateOfBirth);
+    if (typeof dateOfBirth !== 'string' || Number.isNaN(dob.getTime()) || dob > new Date()) {
+      return res.status(400).json({ error: 'Date of birth must be a valid date, not in the future' });
+    }
+  }
+  if (familyBackground !== undefined && familyBackground !== null && typeof familyBackground !== 'string') {
+    return res.status(400).json({ error: 'familyBackground must be text' });
+  }
+
+  const owned = await findOwnChildProfile(childProfileId, req.user.id);
+  if (!owned) {
+    return res.status(403).json({ error: 'Not authorized for this child profile' });
+  }
+
+  const values = fields.map((f) => {
+    if (f === 'fullName') return encryptField(fullName.trim());
+    if (f === 'familyBackground') return familyBackground && familyBackground.trim() ? encryptField(familyBackground.trim()) : null;
+    return encryptField(dateOfBirth);
+  });
+  const sets = fields.map((f, i) => `${CORRECTABLE_FIELDS[f]} = $${i + 1}`);
+  await db.query(
+    `UPDATE child_identifiers SET ${sets.join(', ')} WHERE child_profile_id = $${fields.length + 1}`,
+    [...values, childProfileId]
+  );
+
+  await logAction({
+    userId: req.user.id,
+    action: 'correct_child_details',
+    detail: `child_profile_id=${childProfileId}, fields=${fields.join(',')}`,
+  });
+
+  const risk = await scoreAction(req, 'correct_child_details', childProfileId);
+  res.json({ childProfileId, updatedFields: fields, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
+}
+
 // GET /children — list this caregiver's own children, decrypted for
 // display. Proves decryption works, and that it's scoped to req.user.id
 // (not "all children in the system").
@@ -296,4 +353,4 @@ async function listRecords(req, res) {
   res.json({ records, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
-module.exports = { createChildProfile, listMyChildren, submitRecord, listRecords };
+module.exports = { createChildProfile, updateChildDetails, listMyChildren, submitRecord, listRecords };

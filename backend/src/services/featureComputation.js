@@ -53,7 +53,7 @@ const db = require('../config/db');
 // counted every page visit as a record read).
 const FILE_ACTION_TYPES = [
   // Caregiver
-  'create_child_profile', 'view_own_child_records', 'submit_developmental_record',
+  'create_child_profile', 'view_own_child_records', 'submit_developmental_record', 'correct_child_details',
   // Security Auditor
   'view_audit_log', 'review_flagged_session', 'export_report',
   // SysAdmin

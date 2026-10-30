@@ -8,6 +8,7 @@ const PERMISSIONS = {
     'view_own_child_records',
     'submit_developmental_record',
     'manage_own_consent',
+    'correct_own_child_details',
   ],
   SecurityAuditor: [
     'view_flagged_sessions',

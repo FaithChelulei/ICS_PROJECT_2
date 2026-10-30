@@ -198,6 +198,25 @@ async function main() {
   record('Every consent refusal is written to the audit log', denials[0].n === 3, `${denials[0].n} entries, expected 3`);
   await setRecordsConsent(true); // the risk-engine checks below view this child's records
 
+  console.log('\n=== Correcting a child\'s details (KDPA s.26(d)) ===');
+  const patch = (body, token = cg.token) => api(`/children/${childId}`, { method: 'PATCH', token, device: deviceA, body });
+  record('Correction with no fields is rejected (400)', (await patch({})).status === 400);
+  record('Correction to an empty name is rejected (400)', (await patch({ fullName: '   ' })).status === 400);
+  record('Correction to a future date of birth is rejected (400)', (await patch({ dateOfBirth: tomorrow })).status === 400);
+  record('Security Auditor cannot correct a child (403)', (await patch({ fullName: 'x' }, au.token)).status === 403);
+  const corrected = await patch({ fullName: 'Test Child Corrected' });
+  record('Caregiver corrects their child\'s name (200)',
+    corrected.status === 200 && JSON.stringify(corrected.json.updatedFields) === '["fullName"]', `status=${corrected.status}`);
+  const afterFix = await api('/children', { token: cg.token, device: deviceA });
+  record('Corrected name is stored and decrypts',
+    afterFix.json && afterFix.json.children.some((c) => c.childProfileId === childId && c.fullName === 'Test Child Corrected'));
+  const { rows: fixLog } = await db.query(
+    "SELECT detail FROM audit_log WHERE user_id = $1 AND action = 'correct_child_details' ORDER BY id DESC LIMIT 1", [cgAcct.id]);
+  record('Audit log names the corrected field but never the child\'s name',
+    fixLog[0] && fixLog[0].detail === `child_profile_id=${childId}, fields=fullName` && !fixLog[0].detail.includes('Test Child'),
+    fixLog[0] && fixLog[0].detail);
+  await patch({ fullName: 'Test Child' }); // later checks look for the original name
+
   console.log('\n=== Downloadable reports (Security Auditor) ===');
   await expectStatus('Caregiver cannot download reports (403)', '/auditor/reports/audit-log?format=csv', { token: cg.token, device: deviceA }, 403);
   await expectStatus('Admin cannot download reports (403)', '/auditor/reports/audit-log?format=csv', { token: ad.token }, 403);
