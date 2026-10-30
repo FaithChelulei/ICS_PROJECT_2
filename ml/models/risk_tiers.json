@@ -12,6 +12,7 @@
   },
   "SecurityAuditor": {
     "review_threshold": 0.310,
+    "deployment_threshold": 0.650,
     "auc": 0.6649,
     "precision_at_threshold": 0.0166,
     "recall_at_threshold": 0.4286,

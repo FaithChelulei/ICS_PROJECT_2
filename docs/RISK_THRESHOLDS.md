@@ -5,7 +5,7 @@
 | Role | `review_threshold` (research) | `deployment_threshold` (live app) | Live scoring |
 |---|---|---|---|
 | Caregiver | 0.110 | 0.400 | on |
-| SecurityAuditor | 0.310 | *(not set)* | wired, held at log-only |
+| SecurityAuditor | 0.310 | 0.650 | on (plus 10 report downloads/hour cap) |
 | SysAdmin | 0.220 | 0.600 | on |
 
 The Flask service (`ml/service/app.py`) uses `deployment_threshold` when it is
@@ -104,13 +104,44 @@ is a usability calibration for this app's own traffic, where the patterns
 above score far higher than subtle CERT insiders do. A real deployment
 would re-train on the organisation's own activity logs so both converge.
 
-## SecurityAuditor: pending decision
+## SecurityAuditor: scored live at 0.65 (2026-10-30)
 
-Auditor actions (reading the audit log, reviewing flags) call the scorer,
-but `backend/src/services/actionScoring.js` keeps the role log-only because
-at 0.31 an auditor is logged out after 2–3 normal actions. From the table,
-**0.80** passes every normal auditor session and still flags bursts, mass
-scraping and night-time use. To enable it: add
-`"deployment_threshold": 0.800` to `SecurityAuditor` in `risk_tiers.json`,
-add `'SecurityAuditor'` to `ROLES_SCORED_LIVE` in `actionScoring.js`, and
-restart the ML service and backend.
+At the research threshold (0.31) an auditor was logged out after 2–3 normal
+actions, so the role was held at log-only. An earlier note proposed 0.80.
+Re-scoring realistic auditor sessions, now that auditors also download
+reports and record breach decisions, showed 0.80 would miss a 20-report
+scrape, so the role was calibrated again:
+
+| Auditor scenario (live features) | Score |
+|---|---|
+| First action of the day | 0.26 |
+| Normal triage, 3 reviews in 20 min | 0.38 |
+| 5 reviews + 1 report over 1 h | 0.45 |
+| Busy morning, 10 actions over 3 h | 0.51 |
+| Incident day, 12 actions in 1 h | 0.57 |
+| Heavy day, 15 actions over 4 h | 0.61 |
+| Very heavy day, 20 actions over 6 h | 0.68 |
+| **Scrape: 12 exports in 5 min** | 0.54 |
+| **Scrape: 15 exports in 10 min** | 0.61 |
+| **Scrape: 20 exports in 10 min** | 0.76 |
+| **Mass export, 40 in 15 min** | 1.00 |
+| **2 actions at 23:00** | 0.93 |
+| **New device after own device used today** | 0.53 |
+
+There is no clean cut: heavy legitimate days (0.57–0.68) overlap small
+scrapes (0.54–0.61). The chosen design uses **two controls**:
+
+1. **`deployment_threshold` 0.65** passes every normal, busy and incident
+   day (up to 15 actions over 4 h) and catches large scrapes, mass export
+   and any night-time use. Only an exceptionally heavy day (20+ actions)
+   gets a "was this you?" and a re-login.
+2. **A hard limit of 10 report downloads per hour per auditor**
+   (`REPORT_EXPORTS_PER_HOUR`, `backend/src/routes/auditorRoutes.js`) for
+   the small, slow scrapes the model can't separate from real work. Hitting
+   it returns 429 and writes `report_export_rate_limited` to the audit log.
+
+In the automated test suite (about 10 auditor actions in under 2 minutes)
+the test auditor peaks at 0.46. **Not caught:** an auditor working from a
+new device (0.45–0.53), the same limitation SysAdmin has. Auditors cannot
+see child identities or records at all (row-level security), which limits
+what a compromised auditor account could take.
