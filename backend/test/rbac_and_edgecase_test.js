@@ -53,6 +53,20 @@ async function ensureTestAccount(a) {
   return { ...a, email, id: ins[0].id };
 }
 
+// The risk features are day- and hour-based (files/events today, devices
+// used today), so a second run on the same day would start with the first
+// run's activity -- including its deliberate new-device login -- and the
+// "normal first action is NOT flagged" check would correctly fail. Ageing
+// the TEST accounts' earlier activity by two days makes every run start
+// like a fresh working day while keeping device A in their history (so
+// it's still "known"). Never touches real accounts or the audit log.
+async function ageTestActivity(ids) {
+  await db.query(
+    "UPDATE access_requests SET requested_at = requested_at - interval '2 days' WHERE user_id = ANY($1)",
+    [ids]
+  );
+}
+
 async function lockTestAccounts() {
   await db.query(
     "UPDATE users SET is_locked = TRUE, locked_reason = 'automated test account (locked between runs)' WHERE email LIKE $1",
@@ -93,6 +107,7 @@ async function main() {
   const cgAcct = await ensureTestAccount(ACCOUNTS.cg);
   const auAcct = await ensureTestAccount(ACCOUNTS.au);
   const adAcct = await ensureTestAccount(ACCOUNTS.ad);
+  await ageTestActivity([cgAcct.id, auAcct.id, adAcct.id]);
 
   console.log('\n=== Authentication ===');
   const wrong = await api('/auth/login', { method: 'POST', body: { identifier: cgAcct.email, password: 'wrong-password' } });

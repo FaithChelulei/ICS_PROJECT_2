@@ -4,7 +4,7 @@
 
 | Role | `review_threshold` (research) | `deployment_threshold` (live app) | Live scoring |
 |---|---|---|---|
-| Caregiver | 0.110 | 0.450 | on |
+| Caregiver | 0.110 | 0.400 | on |
 | SecurityAuditor | 0.310 | *(not set)* | wired, held at log-only |
 | SysAdmin | 0.220 | 0.600 | on |
 
@@ -39,7 +39,7 @@ trained models:
 | Any activity 20:00–06:00 | 0.93–1.00 | 0.98–1.00 | 0.79–0.99 |
 | Data action from an unrecognised device | 0.42–0.83 | 0.53–0.55 | 0.26–0.28 |
 
-### Caregiver raised from 0.35 to 0.45 (2026-10-30)
+### Caregiver raised from 0.35 to 0.40 (2026-10-30)
 
 At 0.35 caregivers were still being logged out during ordinary work. Two
 causes were found and fixed together:
@@ -63,11 +63,24 @@ causes were found and fixed together:
    | 10 | 0.40 | 0.39 |
    | 15 | 0.43 | 0.42 |
 
-   0.45 sits above a full legitimate working sitting (10–15 actions) while
-   still catching after-hours activity (0.93+), mass access (0.82), most
-   bursts (0.45–0.55) and most new-device actions (0.42–0.83). Trade-off
-   accepted: slow, small bursts and the mildest new-device actions are no
-   longer flagged.
+3. **Why 0.40, not higher.** 0.45 was tried first and gave caregivers more
+   room, but it stopped catching the most important new-device case: a
+   stolen password used on another browser *while the real caregiver has
+   already worked on their usual device that day* (2 devices in a day, the
+   new one unrecognised):
+
+   | New-device scenario | Score |
+   |---|---|
+   | First activity of the day, on a new browser | 0.80 |
+   | After the usual device was used today | 0.43 |
+   | Same, mid-morning (5 actions, 60 min in) | 0.45 |
+
+   0.40 catches all three, plus after-hours activity (0.93+), mass access
+   (0.82) and bursts (0.45–0.55), while a caregiver can still do about 8
+   data actions in 30 minutes, or 10 spread over a couple of hours, without
+   interruption. Trade-off accepted: a caregiver doing more than that in one
+   sitting gets a "was this you?" email and a re-login, which is
+   reversible and costs seconds.
 
 ## What the live system therefore catches
 
