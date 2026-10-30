@@ -9,6 +9,7 @@
     "dev": "node --watch src/server.js",
     "test": "node --test test/encryption.test.js test/reportFormats.test.js",
     "test:api": "node test/rbac_and_edgecase_test.js",
+    "test:perf": "node test/performance_test.js",
     "retention:status": "node scripts/retention.js status",
     "retention:apply": "node scripts/retention.js apply",
     "cert:new": "node scripts/new-dev-cert.js",

@@ -22,6 +22,8 @@ backend/.env
 backend/npm-debug.log*
 # Local TLS certificate + PRIVATE KEY (made by `npm run cert:new`)
 backend/certs/
+# Output of test runs (npm run test:perf etc.) -- regenerated each run
+backend/test/results/
 
 # Frontend (also covered by frontend/.gitignore -- repeated here so the
 # root file alone is enough)
