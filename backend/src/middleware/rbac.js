@@ -9,6 +9,7 @@ const PERMISSIONS = {
     'submit_developmental_record',
     'manage_own_consent',
     'correct_own_child_details',
+    'archive_own_child_profile',
   ],
   SecurityAuditor: [
     'view_flagged_sessions',

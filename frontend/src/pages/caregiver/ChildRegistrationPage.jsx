@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
 import { createChildProfile } from '../../api/children';
 import { PageHeader, Field, inputClass, Button, Alert, Card, Toast } from '../../components/ui.jsx';
+import PrivacyNotice, { PRIVACY_NOTICE_VERSION } from '../../components/PrivacyNotice.jsx';
 
 // Can't be born after today.
 const todayIso = new Date().toISOString().slice(0, 10);
@@ -27,6 +28,7 @@ export default function ChildRegistrationPage() {
   const [riskNotice, setRiskNotice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [noticeAccepted, setNoticeAccepted] = useState(false);
   const navigate = useNavigate();
 
   function update(field, value) {
@@ -38,7 +40,7 @@ export default function ChildRegistrationPage() {
     setError('');
     setBusy(true);
     try {
-      const data = await createChildProfile(form);
+      const data = await createChildProfile({ ...form, privacyNoticeVersion: PRIVACY_NOTICE_VERSION });
       if (data.riskNotice) {
         setRiskNotice(data.riskNotice);
       } else {
@@ -108,7 +110,8 @@ export default function ChildRegistrationPage() {
                     </span>
                   </span>
                 </label>
-                <Button disabled={busy}>{busy ? 'Saving…' : 'Create Profile'}</Button>
+                <PrivacyNotice variant="child" accepted={noticeAccepted} onChange={setNoticeAccepted} />
+                <Button disabled={busy || !noticeAccepted}>{busy ? 'Saving…' : 'Create Profile'}</Button>
               </form>
             </Card>
             <Card className="bg-mint border-[#EFE4D0]">

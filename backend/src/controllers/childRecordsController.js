@@ -14,6 +14,7 @@ const { logAction } = require('../utils/auditLog');
 const { recordAndScore, logAccessRequest } = require('../services/riskEngine');
 const { getPcName, getIpAddress } = require('../utils/requestMeta');
 const { hasConsent } = require('../services/consent');
+const { checkPrivacyNotice, PRIVACY_NOTICE_VERSION } = require('../services/privacyNotice');
 
 const RISK_NOTICE = 'Unusual activity detected during this action. You have been logged out as a precaution — check your email to confirm or report it.';
 
@@ -59,12 +60,27 @@ async function logOnlyAction(req, actionType, childProfileId = null) {
 
 // Throws-and-is-caught-by-caller style helper: confirms child_profile_id
 // belongs to this caregiver, or returns null if not found / not theirs.
+// Also returns the archive state, for refuseIfArchived below.
 async function findOwnChildProfile(childProfileId, caregiverId) {
   const { rows } = await db.query(
-    'SELECT id FROM child_profiles WHERE id = $1 AND caregiver_id = $2',
+    'SELECT id, archived_at, identity_anonymised_at FROM child_profiles WHERE id = $1 AND caregiver_id = $2',
     [childProfileId, caregiverId]
   );
   return rows[0] || null;
+}
+
+// An archived profile is restricted (KDPA s.40(3)): kept as evidence but no
+// longer processed -- no records viewed or added, no corrections, no
+// consent changes. The database's row-level security enforces the same
+// freeze; this gives the caller a clear reason instead of a bare failure.
+// Returns true if it already sent the 409.
+function refuseIfArchived(res, profile) {
+  if (!profile.archived_at) return false;
+  res.status(409).json({
+    error: 'This child profile is archived. Its data is kept but can’t be viewed or changed. Restore it first to continue.',
+    code: 'PROFILE_ARCHIVED',
+  });
+  return true;
 }
 
 // The consent step of the request pipeline: runs after the role and
@@ -101,6 +117,10 @@ async function createChildProfile(req, res) {
   if (developmentalRecordsConsent !== undefined && typeof developmentalRecordsConsent !== 'boolean') {
     return res.status(400).json({ error: 'developmentalRecordsConsent must be a boolean' });
   }
+  const noticeError = checkPrivacyNotice(req.body);
+  if (noticeError) {
+    return res.status(400).json({ error: noticeError, code: 'PRIVACY_NOTICE_REQUIRED' });
+  }
   // A child can't have been born after today -- checked server-side too,
   // not just as a UI date-picker limit, since the API is reachable
   // directly.
@@ -114,8 +134,8 @@ async function createChildProfile(req, res) {
     // security policies allow these inserts only for their own child.
     const { childProfileId, createdAt } = await db.transaction(async (client) => {
       const { rows } = await client.query(
-        'INSERT INTO child_profiles (caregiver_id) VALUES ($1) RETURNING id, created_at',
-        [req.user.id]
+        'INSERT INTO child_profiles (caregiver_id, privacy_notice_version) VALUES ($1, $2) RETURNING id, created_at',
+        [req.user.id, PRIVACY_NOTICE_VERSION]
       );
       const id = rows[0].id;
 
@@ -209,6 +229,7 @@ async function updateChildDetails(req, res) {
   if (!owned) {
     return res.status(403).json({ error: 'Not authorized for this child profile' });
   }
+  if (refuseIfArchived(res, owned)) return;
 
   const values = fields.map((f) => {
     if (f === 'fullName') return encryptField(fullName.trim());
@@ -231,12 +252,59 @@ async function updateChildDetails(req, res) {
   res.json({ childProfileId, updatedFields: fields, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
+// POST /children/:childProfileId/archive — restrict processing of a child
+// profile (KDPA s.40(3)) instead of erasing it: nothing is deleted, but the
+// profile is frozen. The optional reason is stored on the profile, not in
+// the audit log (free text may name the child). After the retention period
+// an archived profile's identity is anonymised -- see services/retention.js.
+async function archiveChild(req, res) {
+  const childProfileId = Number(req.params.childProfileId);
+  const reason = typeof req.body.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
+
+  const owned = await findOwnChildProfile(childProfileId, req.user.id);
+  if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  if (owned.archived_at) return res.status(409).json({ error: 'This profile is already archived' });
+
+  const { rows } = await db.query(
+    'UPDATE child_profiles SET archived_at = now(), archive_reason = $1 WHERE id = $2 RETURNING archived_at',
+    [reason || null, childProfileId]
+  );
+  await logAction({
+    userId: req.user.id,
+    action: 'archive_child_profile',
+    detail: `child_profile_id=${childProfileId}${reason ? ', reason given' : ''}`,
+  });
+
+  const risk = await scoreAction(req, 'archive_child_profile', childProfileId);
+  res.json({ childProfileId, archivedAt: rows[0].archived_at, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
+}
+
+// POST /children/:childProfileId/restore — lift the restriction (e.g. it
+// was archived by mistake). Not possible once the identity has been
+// anonymised: that is the point of retention.
+async function restoreChild(req, res) {
+  const childProfileId = Number(req.params.childProfileId);
+
+  const owned = await findOwnChildProfile(childProfileId, req.user.id);
+  if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  if (!owned.archived_at) return res.status(409).json({ error: 'This profile is not archived' });
+  if (owned.identity_anonymised_at) {
+    return res.status(409).json({ error: 'This profile’s identity was anonymised after the retention period and can’t be restored' });
+  }
+
+  await db.query('UPDATE child_profiles SET archived_at = NULL, archive_reason = NULL WHERE id = $1', [childProfileId]);
+  await logAction({ userId: req.user.id, action: 'restore_child_profile', detail: `child_profile_id=${childProfileId}` });
+
+  const risk = await scoreAction(req, 'restore_child_profile', childProfileId);
+  res.json({ childProfileId, archivedAt: null, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
+}
+
 // GET /children — list this caregiver's own children, decrypted for
 // display. Proves decryption works, and that it's scoped to req.user.id
 // (not "all children in the system").
 async function listMyChildren(req, res) {
   const { rows } = await db.query(
-    `SELECT cp.id AS child_profile_id, cp.created_at,
+    `SELECT cp.id AS child_profile_id, cp.created_at, cp.archived_at, cp.identity_anonymised_at,
             ci.full_name_enc, ci.date_of_birth_enc, ci.family_background_enc
      FROM child_profiles cp
      JOIN child_identifiers ci ON ci.child_profile_id = cp.id
@@ -251,6 +319,8 @@ async function listMyChildren(req, res) {
     fullName: decryptField(r.full_name_enc),
     dateOfBirth: decryptField(r.date_of_birth_enc),
     familyBackground: r.family_background_enc ? decryptField(r.family_background_enc) : null,
+    archivedAt: r.archived_at,
+    anonymisedAt: r.identity_anonymised_at,
   }));
 
   await logAction({ userId: req.user.id, action: 'view_own_children', detail: `${children.length} profile(s)` });
@@ -283,6 +353,7 @@ async function submitRecord(req, res) {
     // isn't theirs — don't leak which other childProfileIds exist.
     return res.status(403).json({ error: 'Not authorized for this child profile' });
   }
+  if (refuseIfArchived(res, owned)) return;
   if (await denyWithoutRecordsConsent(req, res, childProfileId, 'submit_developmental_record')) return;
 
   const { rows } = await db.query(
@@ -323,6 +394,7 @@ async function listRecords(req, res) {
   if (!owned) {
     return res.status(403).json({ error: 'Not authorized for this child profile' });
   }
+  if (refuseIfArchived(res, owned)) return;
   if (await denyWithoutRecordsConsent(req, res, childProfileId, 'view_developmental_records')) return;
 
   const { rows } = await db.query(
@@ -353,4 +425,12 @@ async function listRecords(req, res) {
   res.json({ records, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
-module.exports = { createChildProfile, updateChildDetails, listMyChildren, submitRecord, listRecords };
+module.exports = {
+  createChildProfile,
+  updateChildDetails,
+  archiveChild,
+  restoreChild,
+  listMyChildren,
+  submitRecord,
+  listRecords,
+};

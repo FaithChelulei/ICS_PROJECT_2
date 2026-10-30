@@ -19,3 +19,6 @@ export const unlockAccount = (id) =>
 export const getEncryptionStatus = () => apiFetch('/admin/encryption/status');
 
 export const reencryptData = () => apiFetch('/admin/encryption/reencrypt', { method: 'POST' });
+
+export const getRetentionStatus = () => apiFetch('/admin/retention/status');
+export const applyRetention = () => apiFetch('/admin/retention/apply', { method: 'POST' });

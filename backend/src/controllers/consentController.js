@@ -18,7 +18,7 @@ const { SCOPES } = require('../services/consent');
 
 async function findOwnChildProfile(childProfileId, caregiverId) {
   const { rows } = await db.query(
-    'SELECT id FROM child_profiles WHERE id = $1 AND caregiver_id = $2',
+    'SELECT id, archived_at FROM child_profiles WHERE id = $1 AND caregiver_id = $2',
     [childProfileId, caregiverId]
   );
   return rows[0] || null;
@@ -73,6 +73,11 @@ async function setConsent(req, res) {
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
   if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  // Archived = restricted (s.40(3)): the consent history stays readable,
+  // but it can't change until the profile is restored.
+  if (owned.archived_at) {
+    return res.status(409).json({ error: 'This child profile is archived. Restore it before changing consent.', code: 'PROFILE_ARCHIVED' });
+  }
 
   const { rows } = await db.query(
     `INSERT INTO consent_records (child_profile_id, caregiver_id, consent_given, scope)

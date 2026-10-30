@@ -41,6 +41,21 @@ function dateClauses(column, { from, to }, params, clauses) {
     clauses.push(`${column} < $${params.length}::date + 1`);
   }
 }
+// s.43 status of one flagged session: decided (and how fast), still open
+// against the 72-hour window, or not a breach candidate at all.
+function breachText(r) {
+  const hoursSince = (to) => ((new Date(to) - new Date(r.created_at)) / 3600000).toFixed(0);
+  if (r.breach_decision) {
+    const label = r.breach_decision === 'notified_commissioner' ? 'Commissioner notified' : 'No real risk of harm';
+    return `${label} (${hoursSince(r.breach_decided_at)} h)`;
+  }
+  if (r.auditor_status === 'escalated' || r.owner_response === 'not_me') {
+    const open = hoursSince(new Date());
+    return open > 72 ? `OVERDUE - undecided after ${open} h` : `Open - ${open} h of 72`;
+  }
+  return '';
+}
+
 const whereOf = (clauses) => (clauses.length ? `WHERE ${clauses.join(' AND ')}` : '');
 
 const REPORTS = {
@@ -104,6 +119,7 @@ const REPORTS = {
       { key: 'threshold', label: 'Threshold', width: 7 },
       { key: 'owner', label: 'Owner response', width: 9 },
       { key: 'auditor', label: 'Auditor status', width: 8 },
+      { key: 'breach', label: 'Breach decision (s.43)', width: 12 },
     ],
     async load(filters) {
       const params = [];
@@ -112,6 +128,7 @@ const REPORTS = {
       params.push(MAX_ROWS + 1);
       const { rows } = await db.query(
         `SELECT rs.created_at, rs.combined_score, rs.role_threshold, rs.owner_response, rs.auditor_status,
+                rs.breach_decision, rs.breach_decided_at,
                 ar.action_type, ar.pc_name, ar.ip_address, u.email, r.name AS role
          FROM risk_scores rs
          JOIN access_requests ar ON ar.id = rs.access_request_id
@@ -134,6 +151,7 @@ const REPORTS = {
         threshold: fmtScore(r.role_threshold),
         owner: OWNER[r.owner_response] || r.owner_response,
         auditor: titleCase(r.auditor_status),
+        breach: breachText(r),
       }));
     },
   },

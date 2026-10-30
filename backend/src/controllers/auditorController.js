@@ -24,6 +24,7 @@ async function listFlagged(req, res) {
   const { rows } = await db.query(
     `SELECT rs.id AS risk_score_id, rs.combined_score, rs.role_threshold, rs.is_flagged,
             rs.owner_response, rs.auditor_status, rs.created_at,
+            rs.breach_decision, rs.breach_decision_reason, rs.breach_decided_at,
             ar.action_type, ar.pc_name, ar.ip_address,
             u.id AS user_id, u.email, r.name AS role
      FROM risk_scores rs
@@ -66,4 +67,65 @@ async function reviewFlagged(req, res) {
   res.json({ riskScoreId, auditorStatus: status, ...riskFields(risk) });
 }
 
-module.exports = { listFlagged, reviewFlagged };
+// POST /auditor/flagged-sessions/:riskScoreId/breach-decision
+// KDPA s.43: a breach with a real risk of harm must be reported to the Data
+// Commissioner within 72 hours of becoming aware of it. For a session the
+// auditor escalated, or whose owner said "This was NOT me", the auditor
+// records the decision -- notified the Commissioner, or assessed as no real
+// risk of harm -- with the reasoning. Recorded once and never changed: it is
+// evidence of how the organisation handled a suspected breach.
+const BREACH_DECISIONS = ['notified_commissioner', 'no_real_risk'];
+const BREACH_WINDOW_HOURS = 72;
+
+async function recordBreachDecision(req, res) {
+  const riskScoreId = Number(req.params.riskScoreId);
+  const { decision } = req.body;
+  const reason = typeof req.body.reason === 'string' ? req.body.reason.trim() : '';
+  if (!BREACH_DECISIONS.includes(decision)) {
+    return res.status(400).json({ error: `decision must be one of ${BREACH_DECISIONS.join(', ')}` });
+  }
+  if (reason.length < 10) {
+    return res.status(400).json({ error: 'Give the reasoning for this decision (at least 10 characters)' });
+  }
+
+  const { rows: found } = await db.query(
+    'SELECT is_flagged, owner_response, auditor_status, breach_decision, created_at FROM risk_scores WHERE id = $1',
+    [riskScoreId]
+  );
+  const flag = found[0];
+  if (!flag || !flag.is_flagged) return res.status(404).json({ error: 'Flagged session not found' });
+  if (flag.auditor_status !== 'escalated' && flag.owner_response !== 'not_me') {
+    return res.status(409).json({ error: 'A breach decision applies only to escalated sessions or ones the owner reported as "not me"' });
+  }
+  if (flag.breach_decision) {
+    return res.status(409).json({ error: 'A breach decision has already been recorded for this session' });
+  }
+
+  const { rows } = await db.query(
+    `UPDATE risk_scores
+     SET breach_decision = $1, breach_decision_reason = $2, breach_decided_at = now(), breach_decided_by = $3
+     WHERE id = $4 AND breach_decision IS NULL
+     RETURNING breach_decided_at`,
+    [decision, reason, req.user.id, riskScoreId]
+  );
+  if (!rows[0]) return res.status(409).json({ error: 'A breach decision has already been recorded for this session' });
+
+  const hours = (new Date(rows[0].breach_decided_at) - new Date(flag.created_at)) / 3600000;
+  await logAction({
+    userId: req.user.id,
+    action: 'breach_decision_recorded',
+    detail: `risk_score_id=${riskScoreId}, decision=${decision}, hours_after_flag=${hours.toFixed(1)}, within_72h=${hours <= BREACH_WINDOW_HOURS}`,
+  });
+
+  const risk = await scoreAction(req, 'record_breach_decision');
+  res.json({
+    riskScoreId,
+    breachDecision: decision,
+    breachDecidedAt: rows[0].breach_decided_at,
+    hoursAfterFlag: Number(hours.toFixed(1)),
+    withinWindow: hours <= BREACH_WINDOW_HOURS,
+    ...riskFields(risk),
+  });
+}
+
+module.exports = { listFlagged, reviewFlagged, recordBreachDecision };

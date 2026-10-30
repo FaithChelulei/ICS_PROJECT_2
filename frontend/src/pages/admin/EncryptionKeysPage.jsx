@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout.jsx';
 import { getEncryptionStatus, reencryptData } from '../../api/admin';
 import { PageHeader, Card, Button, Alert, Badge, Spinner, StatCard } from '../../components/ui.jsx';
-
-const NAV = [
-  { to: '/', label: 'Admin Panel' },
-  { to: '/admin/encryption-keys', label: 'Encryption Keys' },
-];
+import { ADMIN_NAV as NAV } from './nav.js';
 
 export default function EncryptionKeysPage() {
   const [status, setStatus] = useState(null);

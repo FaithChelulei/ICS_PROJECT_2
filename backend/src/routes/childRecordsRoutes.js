@@ -8,6 +8,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const {
   createChildProfile,
   updateChildDetails,
+  archiveChild,
+  restoreChild,
   listMyChildren,
   submitRecord,
   listRecords,
@@ -21,6 +23,8 @@ router.use(authenticate, requirePasswordChanged);
 router.post('/', requirePermission('create_child_profile'), asyncHandler(createChildProfile));
 router.get('/', requirePermission('view_own_child_records'), asyncHandler(listMyChildren));
 router.patch('/:childProfileId', requirePermission('correct_own_child_details'), asyncHandler(updateChildDetails));
+router.post('/:childProfileId/archive', requirePermission('archive_own_child_profile'), asyncHandler(archiveChild));
+router.post('/:childProfileId/restore', requirePermission('archive_own_child_profile'), asyncHandler(restoreChild));
 router.post('/:childProfileId/records', requirePermission('submit_developmental_record'), asyncHandler(submitRecord));
 router.get('/:childProfileId/records', requirePermission('view_own_child_records'), asyncHandler(listRecords));
 router.get('/:childProfileId/consent', requirePermission('manage_own_consent'), asyncHandler(getConsent));

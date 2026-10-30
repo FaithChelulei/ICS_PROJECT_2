@@ -8,11 +8,7 @@ import {
   unlockAccount,
 } from '../../api/admin';
 import { PageHeader, Card, Button, Alert, EmptyState, Spinner, Badge, Avatar } from '../../components/ui.jsx';
-
-const NAV = [
-  { to: '/', label: 'Admin Panel' },
-  { to: '/admin/encryption-keys', label: 'Encryption Keys' },
-];
+import { ADMIN_NAV as NAV } from './nav.js';
 const TABS = [
   { id: 'requests', label: 'Registration Requests' },
   { id: 'locked', label: 'Locked Accounts' },

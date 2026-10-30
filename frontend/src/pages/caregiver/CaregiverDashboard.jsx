@@ -12,6 +12,7 @@ import {
   Spinner,
   StatCard,
   Avatar,
+  Badge,
   firstNameOf,
 } from '../../components/ui.jsx';
 
@@ -45,6 +46,11 @@ export default function CaregiverDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Archived profiles are restricted (KDPA s.40(3)): listed separately, and
+  // their page only offers Restore.
+  const active = children.filter((c) => !c.archivedAt);
+  const archived = children.filter((c) => c.archivedAt);
+
   const today = new Date().toLocaleDateString(undefined, {
     weekday: 'long',
     year: 'numeric',
@@ -74,7 +80,12 @@ export default function CaregiverDashboard() {
         {error && <Alert className="mb-6">{error}</Alert>}
 
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <StatCard label="Linked Children" value={children.length} hint="Active records" accent="mint" />
+          <StatCard
+            label="Linked Children"
+            value={active.length}
+            hint={archived.length ? `Active records · ${archived.length} archived` : 'Active records'}
+            accent="mint"
+          />
           <StatCard
             label="Security Status"
             value={riskNotice ? 'Attention' : 'Good'}
@@ -89,9 +100,9 @@ export default function CaregiverDashboard() {
         </h2>
         {loading ? (
           <Spinner />
-        ) : children.length === 0 ? (
+        ) : active.length === 0 ? (
           <EmptyState>
-            No children registered yet.{' '}
+            No {archived.length ? 'active ' : ''}children registered yet.{' '}
             <Link to="/caregiver/children/new" className="text-brand-600 font-semibold">
               Register one now
             </Link>
@@ -99,7 +110,7 @@ export default function CaregiverDashboard() {
           </EmptyState>
         ) : (
           <div className="grid grid-cols-2 gap-4">
-            {children.map((c) => (
+            {active.map((c) => (
               <Link key={c.childProfileId} to={`/caregiver/children/${c.childProfileId}`}>
                 <Card className="hover:border-brand-300 hover:shadow-md transition">
                   <div className="flex items-start gap-4">
@@ -118,6 +129,36 @@ export default function CaregiverDashboard() {
               </Link>
             ))}
           </div>
+        )}
+
+        {!loading && archived.length > 0 && (
+          <>
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mt-10 mb-3">
+              Archived
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              {archived.map((c) => (
+                <Link key={c.childProfileId} to={`/caregiver/children/${c.childProfileId}`}>
+                  <Card className="opacity-70 hover:opacity-100 transition">
+                    <div className="flex items-start gap-4">
+                      <Avatar initial={c.fullName[0]} size="lg" tone="slate" />
+                      <div>
+                        <div className="text-base font-semibold text-ink flex items-center gap-2">
+                          {c.fullName}
+                          <Badge color="gray">{c.anonymisedAt ? 'Anonymised' : 'Archived'}</Badge>
+                        </div>
+                        <div className="text-sm text-slate-400 mt-1">
+                          {c.anonymisedAt
+                            ? `Identity anonymised ${new Date(c.anonymisedAt).toLocaleDateString()}`
+                            : `Archived ${new Date(c.archivedAt).toLocaleDateString()}`}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </Layout>

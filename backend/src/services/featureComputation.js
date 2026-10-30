@@ -54,10 +54,11 @@ const db = require('../config/db');
 const FILE_ACTION_TYPES = [
   // Caregiver
   'create_child_profile', 'view_own_child_records', 'submit_developmental_record', 'correct_child_details',
+  'archive_child_profile', 'restore_child_profile',
   // Security Auditor
-  'view_audit_log', 'review_flagged_session', 'export_report',
+  'view_audit_log', 'review_flagged_session', 'export_report', 'record_breach_decision',
   // SysAdmin
-  'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data',
+  'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data', 'apply_retention',
 ];
 
 // Roles whose CERT "session" is really a whole workday (see rationale

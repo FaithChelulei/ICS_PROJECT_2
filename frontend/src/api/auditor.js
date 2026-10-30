@@ -8,6 +8,13 @@ export const reviewFlagged = (riskScoreId, status) =>
     body: { status },
   });
 
+// decision: 'notified_commissioner' | 'no_real_risk' (KDPA s.43)
+export const recordBreachDecision = (riskScoreId, decision, reason) =>
+  apiFetch(`/auditor/flagged-sessions/${riskScoreId}/breach-decision`, {
+    method: 'POST',
+    body: { decision, reason },
+  });
+
 export const listAuditLog = (params = {}) => {
   const qs = new URLSearchParams(params).toString();
   return apiFetch(`/auditor/audit-log${qs ? `?${qs}` : ''}`);

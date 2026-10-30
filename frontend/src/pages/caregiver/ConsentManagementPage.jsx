@@ -46,8 +46,11 @@ export default function ConsentManagementPage() {
   useEffect(() => {
     listMyChildren()
       .then((res) => {
-        setChildren(res.children);
-        if (res.children.length > 0) setSelectedId(res.children[0].childProfileId);
+        // Archived profiles are frozen (consent can't change), so only
+        // active children are offered here.
+        const active = res.children.filter((c) => !c.archivedAt);
+        setChildren(active);
+        if (active.length > 0) setSelectedId(active[0].childProfileId);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoadingChildren(false));

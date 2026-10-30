@@ -27,6 +27,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('../src/config/db');
 const { signRiskResponseToken } = require('../src/utils/riskResponseToken');
+const { PRIVACY_NOTICE_VERSION } = require('../src/services/privacyNotice');
 
 const BASE = `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
 const PASS = `T3st-${crypto.randomBytes(9).toString('base64url')}`;
@@ -35,6 +36,10 @@ const testEmail = (tag) => `${inbox[0]}+childguard-test-${tag}@${inbox[1]}`;
 
 const ACCOUNTS = {
   cg: { tag: 'caregiver', role: 'Caregiver', username: 'test.caregiver', name: 'Test Caregiver' },
+  // Separate caregiver for the archive/retention checks, so their extra
+  // data actions don't push the main test caregiver's risk score over the
+  // threshold mid-run (which would correctly revoke its session).
+  cg2: { tag: 'caregiver2', role: 'Caregiver', username: 'test.caregiver2', name: 'Test Caregiver Two' },
   au: { tag: 'auditor', role: 'SecurityAuditor', username: 'test.auditor', name: 'Test Auditor' },
   ad: { tag: 'admin', role: 'SysAdmin', username: 'test.admin', name: 'Test Admin' },
 };
@@ -120,7 +125,8 @@ async function main() {
   const cgAcct = await ensureTestAccount(ACCOUNTS.cg);
   const auAcct = await ensureTestAccount(ACCOUNTS.au);
   const adAcct = await ensureTestAccount(ACCOUNTS.ad);
-  await ageTestActivity([cgAcct.id, auAcct.id, adAcct.id]);
+  const cg2Acct = await ensureTestAccount(ACCOUNTS.cg2);
+  await ageTestActivity([cgAcct.id, auAcct.id, adAcct.id, cg2Acct.id]);
 
   console.log('\n=== Authentication ===');
   const wrong = await api('/auth/login', { method: 'POST', body: { identifier: cgAcct.email, password: 'wrong-password' } });
@@ -157,11 +163,26 @@ async function main() {
 
   console.log('\n=== Caregiver: child profile, validation, consent ===');
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const NOTICE = { privacyNoticeVersion: PRIVACY_NOTICE_VERSION };
+  const noNotice = await api('/children', {
+    method: 'POST', token: cg.token, device: deviceA, body: { fullName: 'No Notice Child', dateOfBirth: '2020-01-01' },
+  });
+  record('Child registration without accepting the privacy notice is refused (400, s.29)',
+    noNotice.status === 400 && noNotice.json && noNotice.json.code === 'PRIVACY_NOTICE_REQUIRED', `status=${noNotice.status}`);
+  const oldNotice = await api('/children', {
+    method: 'POST', token: cg.token, device: deviceA, body: { fullName: 'Old Notice Child', dateOfBirth: '2020-01-01', privacyNoticeVersion: '2000-01' },
+  });
+  record('An outdated privacy notice version is refused (400)', oldNotice.status === 400, `status=${oldNotice.status}`);
+  const regNoNotice = await api('/auth/register', {
+    method: 'POST', body: { fullName: 'No Notice Person', email: testEmail('nonotice'), requestedRole: 'Caregiver' },
+  });
+  record('Account request without accepting the privacy notice is refused (400, s.29)',
+    regNoNotice.status === 400 && regNoNotice.json && regNoNotice.json.code === 'PRIVACY_NOTICE_REQUIRED', `status=${regNoNotice.status}`);
   await expectStatus('Future date of birth is rejected (400)', '/children',
-    { method: 'POST', token: cg.token, device: deviceA, body: { fullName: 'Future Child', dateOfBirth: tomorrow } }, 400);
+    { method: 'POST', token: cg.token, device: deviceA, body: { fullName: 'Future Child', dateOfBirth: tomorrow, ...NOTICE } }, 400);
   const created = await api('/children', {
     method: 'POST', token: cg.token, device: deviceA,
-    body: { fullName: 'Test Child', dateOfBirth: '2020-06-15', familyBackground: 'Automated test record' },
+    body: { fullName: 'Test Child', dateOfBirth: '2020-06-15', familyBackground: 'Automated test record', ...NOTICE },
   });
   record('Caregiver creates child profile (201)', created.status === 201, `status=${created.status}`);
   record('Normal first action on a known device is NOT flagged', created.json && !created.json.riskNotice,
@@ -172,7 +193,7 @@ async function main() {
   record('Child decrypts correctly in the list', mine && mine.fullName === 'Test Child' && mine.dateOfBirth === '2020-06-15');
   await expectStatus('Consent history is readable (200)', `/children/${childId}/consent`, { token: cg.token, device: deviceA }, 200);
   await expectStatus('Non-boolean records consent at registration is rejected (400)', '/children',
-    { method: 'POST', token: cg.token, device: deviceA, body: { fullName: 'x', dateOfBirth: '2020-01-01', developmentalRecordsConsent: 'yes' } }, 400);
+    { method: 'POST', token: cg.token, device: deviceA, body: { fullName: 'x', dateOfBirth: '2020-01-01', developmentalRecordsConsent: 'yes', ...NOTICE } }, 400);
 
   console.log('\n=== Consent enforcement on every records request ===');
   const recordBody = { milestone: 'Walks unaided', healthIndicator: 'Healthy', assessmentScore: 8 };
@@ -284,6 +305,82 @@ async function main() {
       (await db.runAsSystem(() => db.query('SELECT COUNT(*)::int AS n FROM child_identifiers'))).rows[0].n > 0);
   }
 
+  console.log('\n=== Archive / restrict a child profile (KDPA s.40(3)) ===');
+  const deviceC = 'test-device-C';
+  const care2 = await login(ACCOUNTS.cg2.username, deviceC);
+  const as2 = (path, opts = {}) => api(path, { token: care2.token, device: deviceC, ...opts });
+  const kid = await as2('/children', {
+    method: 'POST', body: { fullName: 'Archive Test Child', dateOfBirth: '2021-02-02', developmentalRecordsConsent: true, ...NOTICE },
+  });
+  const kidId = kid.json && kid.json.childProfileId;
+  record('Second test caregiver registers a child (201)', kid.status === 201, `status=${kid.status}`);
+  await expectStatus('Another caregiver cannot archive this child (403)', `/children/${kidId}/archive`,
+    { method: 'POST', token: cg.token, device: deviceA, body: {} }, 403);
+  const archivedRes = await as2(`/children/${kidId}/archive`, { method: 'POST', body: { reason: 'Left the programme' } });
+  record('Owner archives the profile (200)', archivedRes.status === 200 && Boolean(archivedRes.json.archivedAt), `status=${archivedRes.status}`);
+  const frozen = async (label, path, opts) => {
+    const r = await as2(path, opts);
+    record(label, r.status === 409 && r.json && r.json.code === 'PROFILE_ARCHIVED', `status=${r.status}`);
+  };
+  await frozen('Archived: records cannot be viewed (409)', `/children/${kidId}/records`);
+  await frozen('Archived: records cannot be added (409)', `/children/${kidId}/records`, { method: 'POST', body: recordBody });
+  await frozen('Archived: details cannot be corrected (409)', `/children/${kidId}`, { method: 'PATCH', body: { fullName: 'x' } });
+  await frozen('Archived: consent cannot change (409)', `/children/${kidId}/consent`,
+    { method: 'POST', body: { scope: 'developmental_records', consentGiven: false } });
+  await expectStatus('Archiving twice is refused (409)', `/children/${kidId}/archive`, { method: 'POST', token: care2.token, device: deviceC, body: {} }, 409);
+  let dbFrozen = false;
+  try {
+    await db.runAs({ userId: cg2Acct.id, role: 'Caregiver' }, () => db.query(
+      "INSERT INTO developmental_records (child_profile_id, milestone_enc, health_indicator_enc, assessment_score_enc, created_by) VALUES ($1, 'x', 'x', 'x', $2)",
+      [kidId, cg2Acct.id]));
+  } catch (err) {
+    dbFrozen = /row-level security/.test(err.message);
+  }
+  record('Database itself refuses new records for an archived child (RLS)', dbFrozen);
+  const listed = await as2('/children');
+  record('Archived child is still listed, marked archived (nothing deleted)',
+    listed.json && listed.json.children.some((c) => c.childProfileId === kidId && c.archivedAt && c.fullName === 'Archive Test Child'));
+  const { rows: archLog } = await db.query(
+    "SELECT detail FROM audit_log WHERE user_id = $1 AND action = 'archive_child_profile' ORDER BY id DESC LIMIT 1", [cg2Acct.id]);
+  record('Audit log records the archive but not the free-text reason',
+    archLog[0] && archLog[0].detail === `child_profile_id=${kidId}, reason given`, archLog[0] && archLog[0].detail);
+  const restored = await as2(`/children/${kidId}/restore`, { method: 'POST' });
+  record('Owner restores the profile (200)', restored.status === 200, `status=${restored.status}`);
+  await expectStatus('Restored: records viewable again (200)', `/children/${kidId}/records`, { token: care2.token, device: deviceC }, 200);
+
+  console.log('\n=== Retention: anonymising archived profiles (KDPA s.39) ===');
+  await expectStatus('Caregiver cannot see retention status (403)', '/admin/retention/status', { token: cg.token, device: deviceA }, 403);
+  await expectStatus('Auditor cannot apply retention (403)', '/admin/retention/apply', { method: 'POST', token: au.token }, 403);
+  await as2(`/children/${kidId}/archive`, { method: 'POST', body: {} });
+  // Simulate the retention period having passed -- for THIS test child only.
+  await db.runAsSystem(() => db.query(
+    "UPDATE child_profiles SET archived_at = now() - interval '400 days' WHERE id = $1", [kidId]));
+  const retStatus = await api('/admin/retention/status', { token: ad.token });
+  record('SysAdmin sees retention status (200)', retStatus.status === 200 && retStatus.json.due >= 1, retStatus.json && `due=${retStatus.json.due}`);
+  // Never anonymise real data from a test run: only proceed if every
+  // profile due right now belongs to a test account.
+  const { rows: dueOwners } = await db.runAsSystem(() => db.query(
+    `SELECT COUNT(*) FILTER (WHERE caregiver_id <> ALL($1))::int AS other FROM child_profiles
+     WHERE archived_at IS NOT NULL AND identity_anonymised_at IS NULL
+       AND archived_at < now() - make_interval(days => $2)`,
+    [[cgAcct.id, cg2Acct.id], Number(process.env.RETENTION_DAYS) || 365]));
+  if (dueOwners[0].other > 0) {
+    record('Retention apply (SKIPPED: real profiles are due -- not anonymising them from a test run)', true);
+  } else {
+    const applied = await api('/admin/retention/apply', { method: 'POST', token: ad.token });
+    record('SysAdmin applies retention (200) and this child is anonymised',
+      applied.status === 200 && applied.json.childProfileIds.includes(kidId), applied.json && `anonymised=${applied.json.anonymised}`);
+    const afterRet = await as2('/children');
+    const anon = afterRet.json && afterRet.json.children.find((c) => c.childProfileId === kidId);
+    record('Identity replaced with a placeholder; profile kept',
+      anon && anon.fullName === 'Anonymised child' && anon.familyBackground === null && Boolean(anon.anonymisedAt), anon && anon.fullName);
+    const { rows: stillThere } = await db.runAsSystem(() => db.query(
+      'SELECT (SELECT COUNT(*) FROM consent_records WHERE child_profile_id = $1)::int AS consents', [kidId]));
+    record('Consent history kept for the audit trail', stillThere[0].consents > 0, `${stillThere[0].consents} consent rows`);
+    await expectStatus('Anonymised profile cannot be restored (409)', `/children/${kidId}/restore`,
+      { method: 'POST', token: care2.token, device: deviceC }, 409);
+  }
+
   console.log('\n=== ML risk engine: same caregiver signs in from a NEW device ===');
   const deviceB = `test-device-B-${crypto.randomBytes(3).toString('hex')}`;
   const cg2 = await login(cgAcct.email, deviceB);
@@ -329,6 +426,24 @@ async function main() {
     record('Deny after confirm is also a no-op (no lock)', d1.text.includes('already responded'));
     const bad = await api(`/risk-response/${riskScoreId}/confirm?token=forged`);
     record('Forged link token is refused', bad.status >= 400, `status=${bad.status}`);
+
+    console.log('\n=== Breach decision on a suspected breach (KDPA s.43) ===');
+    const decide = (body, token = au.token) => api(`/auditor/flagged-sessions/${riskScoreId}/breach-decision`, { method: 'POST', token, body });
+    const valid = { decision: 'no_real_risk', reason: 'Automated test: owner confirmed, known test device' };
+    record('Not a breach candidate while confirmed and owner said "this was me" (409)', (await decide(valid)).status === 409);
+    await api(`/auditor/flagged-sessions/${riskScoreId}/review`, { method: 'POST', token: au.token, body: { status: 'escalated' } });
+    record('Unknown decision is rejected (400)', (await decide({ ...valid, decision: 'ignored' })).status === 400);
+    record('A decision without reasoning is rejected (400)', (await decide({ ...valid, reason: 'ok' })).status === 400);
+    record('Caregiver cannot record a breach decision (403)', (await decide(valid, cg.token)).status === 403);
+    const decided = await decide(valid);
+    record('Auditor records the decision on an escalated session (200, within 72 h)',
+      decided.status === 200 && decided.json.withinWindow === true, decided.json && `${decided.json.hoursAfterFlag} h after flag`);
+    record('The decision cannot be changed afterwards (409)', (await decide({ ...valid, decision: 'notified_commissioner' })).status === 409);
+    const { rows: brLog } = await db.query(
+      "SELECT detail FROM audit_log WHERE user_id = $1 AND action = 'breach_decision_recorded' ORDER BY id DESC LIMIT 1", [auAcct.id]);
+    record('Breach decision is in the audit log with its timing',
+      brLog[0] && brLog[0].detail.startsWith(`risk_score_id=${riskScoreId}, decision=no_real_risk`) && brLog[0].detail.includes('within_72h=true'),
+      brLog[0] && brLog[0].detail);
   }
 
   console.log('\n=== SysAdmin: encryption keys + account actions ===');

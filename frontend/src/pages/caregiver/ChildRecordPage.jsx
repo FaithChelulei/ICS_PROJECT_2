@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
-import { listRecords, submitRecord, listMyChildren, updateChildDetails } from '../../api/children';
+import {
+  listRecords,
+  submitRecord,
+  listMyChildren,
+  updateChildDetails,
+  archiveChild,
+  restoreChild,
+} from '../../api/children';
 import { PageHeader, Field, inputClass, Button, Alert, Card, EmptyState, Spinner } from '../../components/ui.jsx';
 
 const NAV = [
@@ -32,8 +39,10 @@ export default function ChildRecordPage() {
     try {
       // Records are fetched separately so a consent refusal still lets the
       // child's name load for the header.
+      // An archived profile refuses records too (PROFILE_ARCHIVED); the
+      // archive notice below explains that, so it isn't an error either.
       const recordsPromise = listRecords(childProfileId).catch((err) => {
-        if (err.code === 'CONSENT_REQUIRED') return null;
+        if (err.code === 'CONSENT_REQUIRED' || err.code === 'PROFILE_ARCHIVED') return { blocked: err.code };
         throw err;
       });
       const [childrenData, recordsData] = await Promise.all([listMyChildren(), recordsPromise]);
@@ -41,13 +50,13 @@ export default function ChildRecordPage() {
         (c) => String(c.childProfileId) === String(childProfileId)
       );
       setChild(match || null);
-      if (recordsData) {
+      if (!recordsData.blocked) {
         setRecords(recordsData.records);
         if (recordsData.riskNotice) setRiskNotice(recordsData.riskNotice);
       } else {
         setRecords([]);
         setShowForm(false);
-        setConsentMissing(true);
+        setConsentMissing(recordsData.blocked === 'CONSENT_REQUIRED');
       }
       if (childrenData.riskNotice) setRiskNotice(childrenData.riskNotice);
     } catch (err) {
@@ -62,6 +71,20 @@ export default function ChildRecordPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [childProfileId]);
 
+  const archived = Boolean(child?.archivedAt);
+
+  async function handleRestore() {
+    setError('');
+    try {
+      const result = await restoreChild(childProfileId);
+      if (result.riskNotice) setRiskNotice(result.riskNotice);
+      else setNotice('Profile restored.');
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <Layout navItems={NAV} portalLabel="Caregiver Portal">
       <PageHeader
@@ -69,12 +92,12 @@ export default function ChildRecordPage() {
         subtitle={child ? `Developmental Records · DOB ${child.dateOfBirth}` : 'Developmental Records'}
         actions={
           <div className="flex gap-2">
-            {child && (
+            {child && !archived && (
               <Button variant="secondary" onClick={() => setEditing((e) => !e)}>
                 {editing ? 'Cancel edit' : 'Edit details'}
               </Button>
             )}
-            {!consentMissing && (
+            {child && !archived && !consentMissing && (
               <Button onClick={() => setShowForm((s) => !s)}>
                 {showForm ? 'Cancel' : '+ Add Record'}
               </Button>
@@ -87,6 +110,20 @@ export default function ChildRecordPage() {
         {riskNotice && <Alert variant="warning" className="mb-6">{riskNotice}</Alert>}
         {error && <Alert className="mb-6">{error}</Alert>}
         {notice && <Alert variant="success" className="mb-6">{notice}</Alert>}
+        {archived && (
+          <Alert variant="warning" className="mb-6 flex items-center justify-between gap-4">
+            <span>
+              {child.anonymisedAt
+                ? `This profile was archived and its identity anonymised on ${new Date(child.anonymisedAt).toLocaleDateString()} after the retention period. Its records are kept for the audit trail only.`
+                : `This profile was archived on ${new Date(child.archivedAt).toLocaleDateString()}. Its data is kept but frozen: records can’t be viewed or added, and details and consent can’t change.`}
+            </span>
+            {!child.anonymisedAt && (
+              <Button size="sm" variant="secondary" onClick={handleRestore}>
+                Restore
+              </Button>
+            )}
+          </Alert>
+        )}
 
         {editing && child && (
           <div className="mb-6">
@@ -126,7 +163,7 @@ export default function ChildRecordPage() {
 
         {loading ? (
           <Spinner />
-        ) : consentMissing ? null : records.length === 0 ? (
+        ) : consentMissing || archived ? null : records.length === 0 ? (
           <EmptyState>No developmental records yet.</EmptyState>
         ) : (
           <Card>
@@ -153,8 +190,74 @@ export default function ChildRecordPage() {
             </div>
           </Card>
         )}
+
+        {child && !archived && !loading && (
+          <ArchiveSection
+            childProfileId={childProfileId}
+            onArchived={(result) => {
+              setEditing(false);
+              setShowForm(false);
+              if (result.riskNotice) setRiskNotice(result.riskNotice);
+              else setNotice('Profile archived. Nothing was deleted; you can restore it from here or the Dashboard.');
+              load();
+            }}
+          />
+        )}
       </div>
     </Layout>
+  );
+}
+
+// Archiving = restricting processing (KDPA s.40(3)) instead of erasing:
+// nothing is deleted, the profile is frozen, and it can be restored until
+// the retention period anonymises its identity. Two-step so it can't
+// happen on a stray click.
+function ArchiveSection({ childProfileId, onArchived }) {
+  const [confirming, setConfirming] = useState(false);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function handleArchive() {
+    setError('');
+    setBusy(true);
+    try {
+      onArchived(await archiveChild(childProfileId, reason));
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mt-10">
+      <div className="text-base font-semibold text-ink mb-1">Archive this profile</div>
+      <p className="text-sm text-slate-500 mb-4 max-w-xl">
+        For a child who has left the programme. Nothing is deleted: the profile is frozen, its records
+        can no longer be viewed or added, and it can be restored. After the retention period, the
+        child’s name, date of birth and family background are anonymised.
+      </p>
+      {error && <Alert className="mb-4">{error}</Alert>}
+      {confirming ? (
+        <div className="space-y-3 max-w-xl">
+          <Field label="Reason" hint="Optional. Kept with the profile, not in the audit log.">
+            <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} maxLength={500} />
+          </Field>
+          <div className="flex gap-2">
+            <Button variant="danger" size="sm" disabled={busy} onClick={handleArchive}>
+              {busy ? 'Archiving…' : 'Yes, archive profile'}
+            </Button>
+            <Button variant="secondary" size="sm" disabled={busy} onClick={() => setConfirming(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" size="sm" onClick={() => setConfirming(true)}>
+          Archive profile…
+        </Button>
+      )}
+    </Card>
   );
 }
 

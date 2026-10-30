@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { registerRequest } from '../api/auth';
 import { Field, inputClass, Button, Alert, Card } from '../components/ui.jsx';
+import PrivacyNotice, { PRIVACY_NOTICE_VERSION } from '../components/PrivacyNotice.jsx';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ fullName: '', email: '', requestedRole: 'Caregiver', reason: '' });
   const [done, setDone] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [noticeAccepted, setNoticeAccepted] = useState(false);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -18,7 +20,7 @@ export default function RegisterPage() {
     setError('');
     setBusy(true);
     try {
-      const data = await registerRequest(form);
+      const data = await registerRequest({ ...form, privacyNoticeVersion: PRIVACY_NOTICE_VERSION });
       setDone(data.message);
     } catch (err) {
       setError(err.message);
@@ -76,7 +78,8 @@ export default function RegisterPage() {
                   rows={3}
                 />
               </Field>
-              <Button disabled={busy} className="w-full text-base py-3">
+              <PrivacyNotice variant="account" accepted={noticeAccepted} onChange={setNoticeAccepted} />
+              <Button disabled={busy || !noticeAccepted} className="w-full text-base py-3">
                 {busy ? 'Submitting…' : 'Submit Request'}
               </Button>
             </form>

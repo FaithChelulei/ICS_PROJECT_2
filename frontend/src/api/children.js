@@ -9,6 +9,13 @@ export const createChildProfile = (payload) =>
 export const updateChildDetails = (childProfileId, changes) =>
   apiFetch(`/children/${childProfileId}`, { method: 'PATCH', body: changes });
 
+// Restrict (KDPA s.40(3)) / lift the restriction.
+export const archiveChild = (childProfileId, reason) =>
+  apiFetch(`/children/${childProfileId}/archive`, { method: 'POST', body: { reason } });
+
+export const restoreChild = (childProfileId) =>
+  apiFetch(`/children/${childProfileId}/restore`, { method: 'POST' });
+
 export const listRecords = (childProfileId) =>
   apiFetch(`/children/${childProfileId}/records`);
 

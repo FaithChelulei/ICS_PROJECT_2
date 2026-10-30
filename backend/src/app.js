@@ -8,6 +8,7 @@ const riskResponseRoutes = require('./routes/riskResponseRoutes');
 const auditorRoutes = require('./routes/auditorRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
 const encryptionRoutes = require('./routes/encryptionRoutes');
+const retentionRoutes = require('./routes/retentionRoutes');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/children', childRecordsRoutes);
 app.use('/admin', adminRoutes);
 app.use('/admin/users', userManagementRoutes);
 app.use('/admin/encryption', encryptionRoutes);
+app.use('/admin/retention', retentionRoutes);
 app.use('/risk-response', riskResponseRoutes);
 app.use('/auditor', auditorRoutes);
 
