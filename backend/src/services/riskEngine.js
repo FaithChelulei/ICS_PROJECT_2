@@ -64,7 +64,7 @@ async function recordAndScore({ userId, role, actionType, childProfileId = null,
   const riskScoreId = riskRows[0].id;
 
   if (result.flagged) {
-    await handleFlagged({ riskScoreId, sessionId, userId, role, pcName, actionType, now });
+    await handleFlagged({ riskScoreId, accessRequestId, sessionId, userId, role, pcName, actionType, now });
   }
 
   return { accessRequestId, riskScoreId, scored: true, flagged: result.flagged, riskScore: result.risk_score };
@@ -74,7 +74,7 @@ async function recordAndScore({ userId, role, actionType, childProfileId = null,
 // parallel human-review half needs no code here -- auditor_status already
 // defaults to 'pending' on insert, which is what puts it in the auditor's
 // queue (see auditorController.js listFlagged).
-async function handleFlagged({ riskScoreId, sessionId, userId, role, pcName, actionType, now }) {
+async function handleFlagged({ riskScoreId, accessRequestId, sessionId, userId, role, pcName, actionType, now }) {
   await db.query(
     "UPDATE sessions SET revoked_at = now(), revoked_reason = 'risk_flagged' WHERE id = $1",
     [sessionId]
@@ -84,6 +84,11 @@ async function handleFlagged({ riskScoreId, sessionId, userId, role, pcName, act
     userId,
     action: 'risk_flagged_session_revoked',
     detail: `risk_score_id=${riskScoreId}, action_type=${actionType}, pc=${pcName || 'unknown'}`,
+    // Links this audit entry back to its risk_scores row (via
+    // access_requests) so the Audit Log's Risk/Outcome columns can show
+    // the real score instead of "unscored" for the one action type that
+    // is actually risk-tied.
+    accessRequestId,
   });
 
   const { rows } = await db.query('SELECT email FROM users WHERE id = $1', [userId]);
@@ -94,14 +99,21 @@ async function handleFlagged({ riskScoreId, sessionId, userId, role, pcName, act
   const denyToken = signRiskResponseToken(riskScoreId, 'deny');
   const base = process.env.APP_BASE_URL || 'http://localhost:4000';
 
-  await sendRiskAlertEmail(email, {
-    timestamp: now.toISOString(),
-    pcName: pcName || 'unknown device',
-    actionType,
-    role,
-    confirmUrl: `${base}/risk-response/${riskScoreId}/confirm?token=${confirmToken}`,
-    denyUrl: `${base}/risk-response/${riskScoreId}/deny?token=${denyToken}`,
-  });
+  // The session is already revoked and the auditor queue item already
+  // exists at this point -- an email outage must not turn the user's
+  // (already completed) action into a 500. Log it and move on.
+  try {
+    await sendRiskAlertEmail(email, {
+      timestamp: now.toISOString(),
+      pcName: pcName || 'unknown device',
+      actionType,
+      role,
+      confirmUrl: `${base}/risk-response/${riskScoreId}/confirm?token=${confirmToken}`,
+      denyUrl: `${base}/risk-response/${riskScoreId}/deny?token=${denyToken}`,
+    });
+  } catch (err) {
+    console.error(`[risk-engine] risk alert email to user ${userId} failed:`, err.message);
+  }
 }
 
 module.exports = { logAccessRequest, recordAndScore };

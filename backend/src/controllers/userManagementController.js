@@ -8,6 +8,7 @@ const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
 const { sendAccountUnlockedEmail } = require('../utils/mailer');
 const { generateTempPassword } = require('../utils/tempPassword');
+const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
 
 // GET /admin/users/locked — SysAdmin only. Lists every currently-locked
 // account so the SysAdmin doesn't need direct DB access to find out who
@@ -19,6 +20,7 @@ async function listLockedUsers(req, res) {
      WHERE u.is_locked = TRUE
      ORDER BY u.id ASC`
   );
+  await logOnlyAction(req, 'view_locked_accounts');
   res.json({ lockedUsers: rows });
 }
 
@@ -77,7 +79,12 @@ async function unlockAccount(req, res) {
     detail: `unlocked user_id=${userId}, email=${user.email}`,
   });
 
-  res.json({ message: `Account unlocked. New temporary password emailed to ${user.email}.` });
+  // Privileged action on someone else's account -- scored.
+  const risk = await scoreAction(req, 'unlock_account');
+  res.json({
+    message: `Account unlocked. New temporary password emailed to ${user.email}.`,
+    ...riskFields(risk),
+  });
 }
 
 module.exports = { listLockedUsers, unlockAccount };

@@ -60,7 +60,9 @@ def load_registry():
             "iso_hi": meta["iso_train_max"],
             "ae_lo": meta["ae_train_min"],
             "ae_hi": meta["ae_train_max"],
-            "threshold": tiers[role]["review_threshold"],
+            # deployment_threshold (live app) if set, else the research
+            # review_threshold. See risk_tiers.json "_deployment_thresholds".
+            "threshold": tiers[role].get("deployment_threshold", tiers[role]["review_threshold"]),
         }
 
     print(f"[ml-service] loaded models for roles: {', '.join(_registry.keys())}", flush=True)
