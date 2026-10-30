@@ -44,7 +44,24 @@ export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn;
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth = true } = {}) {
+// Identical GETs already in flight share one request. React StrictMode runs
+// every mount effect twice in dev, which doubled each dashboard's list call
+// -- and every backend request is logged as an event for the risk model, so
+// the duplicates alone pushed normal sessions over the logout threshold.
+const inFlightGets = new Map();
+
+export function apiFetch(path, options = {}) {
+  const { method = 'GET', auth = true } = options;
+  if (method !== 'GET') return doFetch(path, options);
+
+  const key = `${auth ? authToken : ''} ${path}`;
+  if (!inFlightGets.has(key)) {
+    inFlightGets.set(key, doFetch(path, options).finally(() => inFlightGets.delete(key)));
+  }
+  return inFlightGets.get(key);
+}
+
+async function doFetch(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth && authToken) headers.Authorization = `Bearer ${authToken}`;
   const deviceId = getDeviceId();

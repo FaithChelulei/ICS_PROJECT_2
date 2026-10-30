@@ -4,7 +4,7 @@
 
 | Role | `review_threshold` (research) | `deployment_threshold` (live app) | Live scoring |
 |---|---|---|---|
-| Caregiver | 0.110 | 0.350 | on |
+| Caregiver | 0.110 | 0.450 | on |
 | SecurityAuditor | 0.310 | *(not set)* | wired, held at log-only |
 | SysAdmin | 0.220 | 0.600 | on |
 
@@ -38,6 +38,36 @@ trained models:
 | Mass access (60–100 actions) | 0.82 | 1.00 | 1.00 |
 | Any activity 20:00–06:00 | 0.93–1.00 | 0.98–1.00 | 0.79–0.99 |
 | Data action from an unrecognised device | 0.42–0.83 | 0.53–0.55 | 0.26–0.28 |
+
+### Caregiver raised from 0.35 to 0.45 (2026-10-30)
+
+At 0.35 caregivers were still being logged out during ordinary work. Two
+causes were found and fixed together:
+
+1. **Inflated activity counts (bug).** The children list that loads on every
+   Dashboard / Consent / Child Record page was logged as
+   `view_own_child_records`, so plain navigation counted as record reads in
+   `files_accessed_per_session`; React StrictMode also fired each list load
+   twice. The list is now logged as `list_own_children` (an event, not a
+   file) and the frontend shares in-flight GET requests.
+2. **Threshold too tight (calibration).** Even with correct counts, clean
+   caregiver work crosses 0.35 after about five real data actions
+   (registering a child, viewing or submitting records):
+
+   | Real data actions | Within 30 min | Over 2 hours |
+   |---|---|---|
+   | 1 | 0.27 | 0.21 |
+   | 3 | 0.34 | 0.29 |
+   | 5 | 0.36 | 0.33 |
+   | 6 | 0.37 | 0.35 |
+   | 10 | 0.40 | 0.39 |
+   | 15 | 0.43 | 0.42 |
+
+   0.45 sits above a full legitimate working sitting (10–15 actions) while
+   still catching after-hours activity (0.93+), mass access (0.82), most
+   bursts (0.45–0.55) and most new-device actions (0.42–0.83). Trade-off
+   accepted: slow, small bursts and the mildest new-device actions are no
+   longer flagged.
 
 ## What the live system therefore catches
 

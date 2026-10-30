@@ -159,7 +159,11 @@ async function listMyChildren(req, res) {
 
   await logAction({ userId: req.user.id, action: 'view_own_children', detail: `${children.length} profile(s)` });
 
-  await logOnlyAction(req, 'view_own_child_records');
+  // Own label, NOT 'view_own_child_records': this list loads on every
+  // Dashboard / Consent / Child Record page visit, so counting it as a file
+  // access (FILE_ACTION_TYPES) made plain navigation look like a burst of
+  // record reads and got caregivers logged out after their first real action.
+  await logOnlyAction(req, 'list_own_children');
   res.json({ children });
 }
 

@@ -48,9 +48,9 @@ const db = require('../config/db');
 
 // "File accessed" = an action that reads or changes protected data, per
 // role. Passive list loads (dashboards) are logged as events but are not
-// files. Note: the Caregiver dashboard's log-only list still uses the
-// 'view_own_child_records' label, so it does count here -- kept as-is
-// because the Caregiver threshold was tuned with that behaviour.
+// files -- the Caregiver children list is logged as 'list_own_children' for
+// exactly that reason (it used to reuse 'view_own_child_records', which
+// counted every page visit as a record read).
 const FILE_ACTION_TYPES = [
   // Caregiver
   'create_child_profile', 'view_own_child_records', 'submit_developmental_record',
