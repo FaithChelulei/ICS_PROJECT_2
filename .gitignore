@@ -20,6 +20,8 @@ PROJECT_INDEX.md
 backend/node_modules/
 backend/.env
 backend/npm-debug.log*
+# Local TLS certificate + PRIVATE KEY (made by `npm run cert:new`)
+backend/certs/
 
 # Frontend (also covered by frontend/.gitignore -- repeated here so the
 # root file alone is enough)

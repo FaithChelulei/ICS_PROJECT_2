@@ -10,7 +10,7 @@
 #
 # Run from backend/: .\test\full_flow_test.ps1
 
-$base = 'http://localhost:4000'
+$base = 'https://localhost:4000'
 
 Write-Host "`n=== Step 0: cleaning test data for a truly cold run ===" -ForegroundColor Cyan
 # cleanup_test_data.js DELETES every child profile, record, session and

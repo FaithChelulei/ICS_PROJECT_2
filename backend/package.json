@@ -9,6 +9,8 @@
     "dev": "node --watch src/server.js",
     "test": "node --test test/encryption.test.js",
     "test:api": "node test/rbac_and_edgecase_test.js",
+    "cert:new": "node scripts/new-dev-cert.js",
+    "cert:trust": "certutil -user -addstore Root certs/localhost-cert.pem",
     "key:new": "node scripts/new-encryption-key.js",
     "key:status": "node scripts/key-tool.js status",
     "key:reencrypt": "node scripts/key-tool.js reencrypt",

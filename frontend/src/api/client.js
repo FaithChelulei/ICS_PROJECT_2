@@ -1,7 +1,7 @@
 // Thin fetch wrapper for the Express backend. Every real screen goes
 // through this -- no component calls fetch() directly -- so the token
 // handling and the "your session was revoked" behaviour live in one place.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 
 let authToken = null;
 let onUnauthorized = null;

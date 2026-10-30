@@ -65,10 +65,17 @@ plus the `migration_*.sql` files applied) and `backend/.env` filled in from
 | # | Service | Command (from the repo root) | Ready when you see |
 |---|---|---|---|
 | 1 | ML risk service (Flask, :5001) | `.venv\Scripts\python.exe ml\service\app.py` | `Running on http://127.0.0.1:5001` |
-| 2 | Backend API (Express, :4000) | `cd backend` then `npm run dev` | `Backend listening on http://localhost:4000` |
-| 3 | Frontend (React/Vite, :5173) | `cd frontend` then `npm run dev` | `Local: http://localhost:5173/` |
+| 2 | Backend API (Express, :4000) | `cd backend` then `npm run dev` | `Backend listening on https://localhost:4000` |
+| 3 | Frontend (React/Vite, :5173) | `cd frontend` then `npm run dev` | `Local: https://localhost:5173/` |
 
-First time only: `npm install` in both `backend` and `frontend`.
+First time only: `npm install` in both `backend` and `frontend`, then in
+`backend/` run `npm run cert:new` (creates a local TLS certificate in
+`backend/certs/`, gitignored) and `npm run cert:trust` (adds it to your
+Windows user's trusted certificates -- click **Yes** on the security
+prompt). Browser ↔ backend traffic is HTTPS with TLS 1.3 only; the backend →
+ML service hop stays plain HTTP because it never leaves the machine
+(loopback only). Firefox keeps its own certificate store, so use
+Chrome/Edge or accept the certificate in Firefox manually.
 
 Checks: `npm test` (encryption unit tests) and `npm run test:api` (53
 end-to-end API checks, including consent enforcement, against the running backend + ML service, using

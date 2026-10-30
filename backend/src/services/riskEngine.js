@@ -97,7 +97,7 @@ async function handleFlagged({ riskScoreId, accessRequestId, sessionId, userId, 
 
   const confirmToken = signRiskResponseToken(riskScoreId, 'confirm');
   const denyToken = signRiskResponseToken(riskScoreId, 'deny');
-  const base = process.env.APP_BASE_URL || 'http://localhost:4000';
+  const base = process.env.APP_BASE_URL || 'https://localhost:4000';
 
   // The session is already revoked and the auditor queue item already
   // exists at this point -- an email outage must not turn the user's

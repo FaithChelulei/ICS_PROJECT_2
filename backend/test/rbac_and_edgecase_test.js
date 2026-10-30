@@ -10,12 +10,25 @@
 // append-only by design, so nothing is cleaned up from it.
 // Email: at most one risk-alert email, to a +test address of the SMTP inbox.
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
+// The backend serves HTTPS with a local self-signed certificate. Node reads
+// NODE_EXTRA_CA_CERTS only at start-up, so re-launch this script once with
+// it pointing at that certificate (works whether or not cert:trust was run).
+if (process.env.TLS_CERT_FILE && !process.env.NODE_EXTRA_CA_CERTS) {
+  const certPath = require('path').resolve(__dirname, '..', process.env.TLS_CERT_FILE);
+  const { status } = require('child_process').spawnSync(process.execPath, [__filename], {
+    stdio: 'inherit',
+    env: { ...process.env, NODE_EXTRA_CA_CERTS: certPath },
+  });
+  process.exit(status === null ? 1 : status);
+}
+
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('../src/config/db');
 const { signRiskResponseToken } = require('../src/utils/riskResponseToken');
 
-const BASE = 'http://127.0.0.1:4000';
+const BASE = `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
 const PASS = `T3st-${crypto.randomBytes(9).toString('base64url')}`;
 const inbox = (process.env.SMTP_USER || 'test@example.com').split('@');
 const testEmail = (tag) => `${inbox[0]}+childguard-test-${tag}@${inbox[1]}`;

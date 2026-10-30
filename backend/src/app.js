@@ -14,13 +14,18 @@ const app = express();
 // Security headers (CSP, no-sniff, etc.) -- API-only, so helmet's
 // defaults are safe here; nothing in this app serves HTML it needs to
 // relax CSP for.
-app.use(helmet());
+//
+// HSTS is held back outside production: browsers apply it to the whole
+// host on EVERY port, so sending it from https://localhost:4000 would force
+// every other project on this machine's localhost onto HTTPS for a year.
+// TLS itself is still enforced -- see server.js.
+app.use(helmet({ strictTransportSecurity: process.env.NODE_ENV === 'production' ? undefined : false }));
 
 // CORS is locked to the one real frontend origin instead of allowing
 // every origin (the previous app.use(cors()) with no options). Falls back
 // to the Vite dev server's default so local dev keeps working if
 // FRONTEND_ORIGIN isn't set.
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'https://localhost:5173' }));
 
 app.use(express.json());
 

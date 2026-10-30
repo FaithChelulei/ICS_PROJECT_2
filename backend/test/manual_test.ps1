@@ -21,7 +21,7 @@
 # 401 until you log in again. That is Day 2 working as designed, not a
 # failure of the script.
 
-$base = 'http://localhost:4000'
+$base = 'https://localhost:4000'
 
 Write-Host "`n--- 1. Caregiver login (MFA required -- same as every role now) ---" -ForegroundColor Cyan
 $body = @{ email = 'faith.chelulei+caregiver@strathmore.edu'; password = 'DevTest123!' } | ConvertTo-Json
