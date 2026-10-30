@@ -14,7 +14,15 @@ const NAV = [
 ];
 
 export default function ChildRegistrationPage() {
-  const [form, setForm] = useState({ fullName: '', dateOfBirth: '', familyBackground: '' });
+  // developmentalRecordsConsent is opt-in (unchecked by default): without it
+  // the backend refuses to store or show developmental records for this
+  // child until consent is granted in Consent Management.
+  const [form, setForm] = useState({
+    fullName: '',
+    dateOfBirth: '',
+    familyBackground: '',
+    developmentalRecordsConsent: false,
+  });
   const [error, setError] = useState('');
   const [riskNotice, setRiskNotice] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -85,6 +93,21 @@ export default function ChildRegistrationPage() {
                     rows={3}
                   />
                 </Field>
+                <label className="flex items-start gap-3 rounded-xl border border-[#E4D9C6] bg-white px-4 py-3.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.developmentalRecordsConsent}
+                    onChange={(e) => update('developmentalRecordsConsent', e.target.checked)}
+                    className="mt-1 h-4 w-4 accent-brand-600"
+                  />
+                  <span className="text-[15px] text-slate-700">
+                    I consent to storing developmental &amp; health records for this child.
+                    <span className="block text-sm text-slate-400 mt-0.5">
+                      Optional. Records can&rsquo;t be added or viewed without it. You can change
+                      this any time in Consent Management.
+                    </span>
+                  </span>
+                </label>
                 <Button disabled={busy}>{busy ? 'Saving…' : 'Create Profile'}</Button>
               </form>
             </Card>

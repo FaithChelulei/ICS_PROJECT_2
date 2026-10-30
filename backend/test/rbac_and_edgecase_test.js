@@ -143,6 +143,32 @@ async function main() {
   const mine = list.json && list.json.children.find((c) => c.childProfileId === childId);
   record('Child decrypts correctly in the list', mine && mine.fullName === 'Test Child' && mine.dateOfBirth === '2020-06-15');
   await expectStatus('Consent history is readable (200)', `/children/${childId}/consent`, { token: cg.token, device: deviceA }, 200);
+  await expectStatus('Non-boolean records consent at registration is rejected (400)', '/children',
+    { method: 'POST', token: cg.token, device: deviceA, body: { fullName: 'x', dateOfBirth: '2020-01-01', developmentalRecordsConsent: 'yes' } }, 400);
+
+  console.log('\n=== Consent enforcement on every records request ===');
+  const recordBody = { milestone: 'Walks unaided', healthIndicator: 'Healthy', assessmentScore: 8 };
+  const setRecordsConsent = (consentGiven) => api(`/children/${childId}/consent`, {
+    method: 'POST', token: cg.token, device: deviceA, body: { scope: 'developmental_records', consentGiven },
+  });
+  const noConsent = await api(`/children/${childId}/records`, { token: cg.token, device: deviceA });
+  record('Records blocked by default -- consent is opt-in (403 CONSENT_REQUIRED)',
+    noConsent.status === 403 && noConsent.json && noConsent.json.code === 'CONSENT_REQUIRED', `status=${noConsent.status}`);
+  await setRecordsConsent(true);
+  await expectStatus('Records readable once consent is granted (200)', `/children/${childId}/records`, { token: cg.token, device: deviceA }, 200);
+  await setRecordsConsent(false);
+  const revokedView = await api(`/children/${childId}/records`, { token: cg.token, device: deviceA });
+  record('Viewing records blocked after consent is revoked (403 CONSENT_REQUIRED)',
+    revokedView.status === 403 && revokedView.json && revokedView.json.code === 'CONSENT_REQUIRED', `status=${revokedView.status}`);
+  const revokedSubmit = await api(`/children/${childId}/records`, { method: 'POST', token: cg.token, device: deviceA, body: recordBody });
+  record('Submitting a record blocked after consent is revoked (403 CONSENT_REQUIRED)',
+    revokedSubmit.status === 403 && revokedSubmit.json && revokedSubmit.json.code === 'CONSENT_REQUIRED', `status=${revokedSubmit.status}`);
+  const { rows: denials } = await db.query(
+    "SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = $1 AND action = 'access_denied_no_consent' AND detail LIKE $2",
+    [cgAcct.id, `child_profile_id=${childId},%`]
+  );
+  record('Every consent refusal is written to the audit log', denials[0].n === 3, `${denials[0].n} entries, expected 3`);
+  await setRecordsConsent(true); // the risk-engine checks below view this child's records
 
   console.log('\n=== ML risk engine: same caregiver signs in from a NEW device ===');
   const deviceB = `test-device-B-${crypto.randomBytes(3).toString('hex')}`;

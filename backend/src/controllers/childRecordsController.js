@@ -13,6 +13,7 @@ const { encryptField, decryptField } = require('../utils/encryption');
 const { logAction } = require('../utils/auditLog');
 const { recordAndScore, logAccessRequest } = require('../services/riskEngine');
 const { getPcName, getIpAddress } = require('../utils/requestMeta');
+const { hasConsent } = require('../services/consent');
 
 const RISK_NOTICE = 'Unusual activity detected during this action. You have been logged out as a precaution — check your email to confirm or report it.';
 
@@ -66,12 +67,39 @@ async function findOwnChildProfile(childProfileId, caregiverId) {
   return rows[0] || null;
 }
 
+// The consent step of the request pipeline: runs after the role and
+// ownership checks and BEFORE any record is read, written or scored. A
+// refusal is written to the audit log (a caregiver whose consent is off is
+// not an anomaly to score, but the blocked attempt is still evidence the
+// enforcement works). Returns true if it already sent the 403.
+async function denyWithoutRecordsConsent(req, res, childProfileId, attemptedAction) {
+  if (await hasConsent(childProfileId, 'developmental_records')) return false;
+
+  await logAction({
+    userId: req.user.id,
+    action: 'access_denied_no_consent',
+    detail: `child_profile_id=${childProfileId}, scope=developmental_records, attempted=${attemptedAction}`,
+  });
+  res.status(403).json({
+    error: 'Consent for developmental & health records has not been granted for this child. Grant it in Consent Management to view or add records.',
+    code: 'CONSENT_REQUIRED',
+    scope: 'developmental_records',
+  });
+  return true;
+}
+
 // POST /children — a Caregiver registers a child profile under their own
 // account. Identity fields are encrypted before they ever reach the DB.
+// developmentalRecordsConsent (optional boolean) lets the caregiver opt in
+// to records at registration instead of a separate trip to Consent
+// Management; leaving it out means not granted (opt-in).
 async function createChildProfile(req, res) {
-  const { fullName, dateOfBirth, familyBackground } = req.body;
+  const { fullName, dateOfBirth, familyBackground, developmentalRecordsConsent } = req.body;
   if (!fullName || !dateOfBirth) {
     return res.status(400).json({ error: 'fullName and dateOfBirth are required' });
+  }
+  if (developmentalRecordsConsent !== undefined && typeof developmentalRecordsConsent !== 'boolean') {
+    return res.status(400).json({ error: 'developmentalRecordsConsent must be a boolean' });
   }
   // A child can't have been born after today -- checked server-side too,
   // not just as a UI date-picker limit, since the API is reachable
@@ -111,6 +139,13 @@ async function createChildProfile(req, res) {
        VALUES ($1, $2, TRUE, 'profile_identity')`,
       [childProfileId, req.user.id]
     );
+    if (developmentalRecordsConsent) {
+      await client.query(
+        `INSERT INTO consent_records (child_profile_id, caregiver_id, consent_given, scope)
+         VALUES ($1, $2, TRUE, 'developmental_records')`,
+        [childProfileId, req.user.id]
+      );
+    }
 
     await client.query('COMMIT');
 
@@ -119,6 +154,13 @@ async function createChildProfile(req, res) {
       action: 'create_child_profile',
       detail: `Created child_profile_id=${childProfileId}`,
     });
+    if (developmentalRecordsConsent) {
+      await logAction({
+        userId: req.user.id,
+        action: 'consent_granted',
+        detail: `child_profile_id=${childProfileId}, scope=developmental_records`,
+      });
+    }
 
     const risk = await scoreAction(req, 'create_child_profile', childProfileId);
     res.status(201).json({
@@ -187,6 +229,7 @@ async function submitRecord(req, res) {
     // isn't theirs — don't leak which other childProfileIds exist.
     return res.status(403).json({ error: 'Not authorized for this child profile' });
   }
+  if (await denyWithoutRecordsConsent(req, res, childProfileId, 'submit_developmental_record')) return;
 
   const { rows } = await db.query(
     `INSERT INTO developmental_records
@@ -226,6 +269,7 @@ async function listRecords(req, res) {
   if (!owned) {
     return res.status(403).json({ error: 'Not authorized for this child profile' });
   }
+  if (await denyWithoutRecordsConsent(req, res, childProfileId, 'view_developmental_records')) return;
 
   const { rows } = await db.query(
     `SELECT id, milestone_enc, health_indicator_enc, assessment_score_enc,

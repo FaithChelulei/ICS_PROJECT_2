@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
 import { listRecords, submitRecord, listMyChildren } from '../../api/children';
 import { PageHeader, Field, inputClass, Button, Alert, Card, EmptyState, Spinner } from '../../components/ui.jsx';
@@ -18,22 +18,36 @@ export default function ChildRecordPage() {
   const [error, setError] = useState('');
   const [riskNotice, setRiskNotice] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  // The backend refuses records for a child whose caregiver hasn't granted
+  // developmental_records consent (403 CONSENT_REQUIRED) -- shown as a
+  // prompt to grant it, not as an error.
+  const [consentMissing, setConsentMissing] = useState(false);
 
   async function load() {
     setLoading(true);
     setError('');
+    setConsentMissing(false);
     try {
-      const [childrenData, recordsData] = await Promise.all([
-        listMyChildren(),
-        listRecords(childProfileId),
-      ]);
+      // Records are fetched separately so a consent refusal still lets the
+      // child's name load for the header.
+      const recordsPromise = listRecords(childProfileId).catch((err) => {
+        if (err.code === 'CONSENT_REQUIRED') return null;
+        throw err;
+      });
+      const [childrenData, recordsData] = await Promise.all([listMyChildren(), recordsPromise]);
       const match = childrenData.children.find(
         (c) => String(c.childProfileId) === String(childProfileId)
       );
       setChild(match || null);
-      setRecords(recordsData.records);
+      if (recordsData) {
+        setRecords(recordsData.records);
+        if (recordsData.riskNotice) setRiskNotice(recordsData.riskNotice);
+      } else {
+        setRecords([]);
+        setShowForm(false);
+        setConsentMissing(true);
+      }
       if (childrenData.riskNotice) setRiskNotice(childrenData.riskNotice);
-      if (recordsData.riskNotice) setRiskNotice(recordsData.riskNotice);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -52,15 +66,27 @@ export default function ChildRecordPage() {
         title={child ? child.fullName : `Child Profile #${childProfileId}`}
         subtitle={child ? `Developmental Records · DOB ${child.dateOfBirth}` : 'Developmental Records'}
         actions={
-          <Button onClick={() => setShowForm((s) => !s)}>
-            {showForm ? 'Cancel' : '+ Add Record'}
-          </Button>
+          !consentMissing && (
+            <Button onClick={() => setShowForm((s) => !s)}>
+              {showForm ? 'Cancel' : '+ Add Record'}
+            </Button>
+          )
         }
       />
 
       <div className="p-8 max-w-3xl">
         {riskNotice && <Alert variant="warning" className="mb-6">{riskNotice}</Alert>}
         {error && <Alert className="mb-6">{error}</Alert>}
+        {consentMissing && (
+          <Alert variant="warning" className="mb-6">
+            Developmental &amp; health records can&rsquo;t be viewed or added for this child
+            because consent hasn&rsquo;t been granted.{' '}
+            <Link to="/caregiver/consent" className="font-semibold underline">
+              Grant it in Consent Management
+            </Link>
+            .
+          </Alert>
+        )}
 
         {showForm && (
           <div className="mb-6">
@@ -76,7 +102,7 @@ export default function ChildRecordPage() {
 
         {loading ? (
           <Spinner />
-        ) : records.length === 0 ? (
+        ) : consentMissing ? null : records.length === 0 ? (
           <EmptyState>No developmental records yet.</EmptyState>
         ) : (
           <Card>

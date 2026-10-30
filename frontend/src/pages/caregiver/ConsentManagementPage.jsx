@@ -23,7 +23,7 @@ const NAV = [
 // anyone, so a toggle for it would be fiction.
 const SCOPE_COPY = {
   profile_identity: 'Your child’s name, date of birth, and other identifying details stored in their profile.',
-  developmental_records: 'Developmental and health records you or a clinician submit for this child.',
+  developmental_records: 'Developmental and health records you or a clinician submit for this child. While not granted, records can’t be added or viewed.',
 };
 
 function formatDate(iso) {

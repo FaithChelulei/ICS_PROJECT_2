@@ -70,8 +70,8 @@ plus the `migration_*.sql` files applied) and `backend/.env` filled in from
 
 First time only: `npm install` in both `backend` and `frontend`.
 
-Checks: `npm test` (encryption unit tests) and `npm run test:api` (47
-end-to-end API checks against the running backend + ML service, using
+Checks: `npm test` (encryption unit tests) and `npm run test:api` (53
+end-to-end API checks, including consent enforcement, against the running backend + ML service, using
 dedicated test accounts; non-destructive) in `backend/`.
 
 Encryption keys: `npm run key:status`, `key:verify`, `key:new`,
