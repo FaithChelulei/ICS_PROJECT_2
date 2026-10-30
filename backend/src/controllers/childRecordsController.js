@@ -109,45 +109,45 @@ async function createChildProfile(req, res) {
     return res.status(400).json({ error: 'Date of birth cannot be in the future' });
   }
 
-  const client = await db.pool.connect();
   try {
-    await client.query('BEGIN');
+    // db.transaction applies the caregiver's identity, so the row-level
+    // security policies allow these inserts only for their own child.
+    const { childProfileId, createdAt } = await db.transaction(async (client) => {
+      const { rows } = await client.query(
+        'INSERT INTO child_profiles (caregiver_id) VALUES ($1) RETURNING id, created_at',
+        [req.user.id]
+      );
+      const id = rows[0].id;
 
-    const { rows } = await client.query(
-      'INSERT INTO child_profiles (caregiver_id) VALUES ($1) RETURNING id, created_at',
-      [req.user.id]
-    );
-    const childProfileId = rows[0].id;
+      await client.query(
+        `INSERT INTO child_identifiers
+           (child_profile_id, full_name_enc, date_of_birth_enc, family_background_enc)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          id,
+          encryptField(fullName),
+          encryptField(dateOfBirth),
+          familyBackground ? encryptField(familyBackground) : null,
+        ]
+      );
 
-    await client.query(
-      `INSERT INTO child_identifiers
-         (child_profile_id, full_name_enc, date_of_birth_enc, family_background_enc)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        childProfileId,
-        encryptField(fullName),
-        encryptField(dateOfBirth),
-        familyBackground ? encryptField(familyBackground) : null,
-      ]
-    );
-
-    // Registering a child is itself the consenting act for storing their
-    // identity -- record it as the first real row in consent_records
-    // (previously defined in the schema but never written to).
-    await client.query(
-      `INSERT INTO consent_records (child_profile_id, caregiver_id, consent_given, scope)
-       VALUES ($1, $2, TRUE, 'profile_identity')`,
-      [childProfileId, req.user.id]
-    );
-    if (developmentalRecordsConsent) {
+      // Registering a child is itself the consenting act for storing their
+      // identity -- record it as the first real row in consent_records
+      // (previously defined in the schema but never written to).
       await client.query(
         `INSERT INTO consent_records (child_profile_id, caregiver_id, consent_given, scope)
-         VALUES ($1, $2, TRUE, 'developmental_records')`,
-        [childProfileId, req.user.id]
+         VALUES ($1, $2, TRUE, 'profile_identity')`,
+        [id, req.user.id]
       );
-    }
-
-    await client.query('COMMIT');
+      if (developmentalRecordsConsent) {
+        await client.query(
+          `INSERT INTO consent_records (child_profile_id, caregiver_id, consent_given, scope)
+           VALUES ($1, $2, TRUE, 'developmental_records')`,
+          [id, req.user.id]
+        );
+      }
+      return { childProfileId: id, createdAt: rows[0].created_at };
+    });
 
     await logAction({
       userId: req.user.id,
@@ -165,15 +165,12 @@ async function createChildProfile(req, res) {
     const risk = await scoreAction(req, 'create_child_profile', childProfileId);
     res.status(201).json({
       childProfileId,
-      createdAt: rows[0].created_at,
+      createdAt,
       ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}),
     });
   } catch (err) {
-    await client.query('ROLLBACK');
     console.error(err);
     res.status(500).json({ error: 'Failed to create child profile' });
-  } finally {
-    client.release();
   }
 }
 

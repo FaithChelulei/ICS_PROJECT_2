@@ -1,5 +1,10 @@
 // Encryption key status + re-encryption, shared by the SysAdmin API
 // (Admin > Encryption Keys) and the CLI (npm run key:status / key:reencrypt).
+//
+// These are the only operations that need EVERY child row, so each one runs
+// as the explicit 'System' identity (db.runAsSystem) -- row-level security
+// otherwise shows a SysAdmin no child data at all. Values are only ever
+// decrypted here to re-encrypt or verify them; nothing is returned.
 const crypto = require('crypto');
 const db = require('../config/db');
 const { encryptField, decryptField, keyIdOf, loadKeys, activeKeyId } = require('../utils/encryption');
@@ -17,7 +22,11 @@ function fingerprint(key) {
   return crypto.createHash('sha256').update(key).digest('hex').slice(0, 8);
 }
 
-async function getStatus() {
+function getStatus() {
+  return db.runAsSystem(getStatusAsSystem);
+}
+
+async function getStatusAsSystem() {
   const keys = loadKeys();
   const active = activeKeyId(keys);
   const counts = {};
@@ -60,15 +69,17 @@ async function getStatus() {
 // entirely if any single value fails to decrypt (so a half-rotated
 // database can't happen). Each value is decrypted and re-checked before
 // the row is written.
-async function reencryptAll() {
+function reencryptAll() {
+  return db.runAsSystem(reencryptAllAsSystem);
+}
+
+async function reencryptAllAsSystem() {
   const keys = loadKeys();
   const active = activeKeyId(keys);
-  const client = await db.pool.connect();
   let updatedValues = 0;
   let updatedRows = 0;
 
-  try {
-    await client.query('BEGIN');
+  await db.transaction(async (client) => {
     for (const [table, cols] of Object.entries(ENCRYPTED_COLUMNS)) {
       const { rows } = await client.query(`SELECT id, ${cols.join(', ')} FROM ${table} FOR UPDATE`);
       for (const row of rows) {
@@ -92,20 +103,18 @@ async function reencryptAll() {
         updatedRows += 1;
       }
     }
-    await client.query('COMMIT');
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
+  });
 
   return { activeKeyId: active, updatedRows, updatedValues };
 }
 
 // Decrypts every stored value (results discarded) -- proves the configured
 // keys can still read all child data, e.g. before retiring an old key.
-async function verifyAll() {
+function verifyAll() {
+  return db.runAsSystem(verifyAllAsSystem);
+}
+
+async function verifyAllAsSystem() {
   let ok = 0;
   const failures = [];
   for (const [table, cols] of Object.entries(ENCRYPTED_COLUMNS)) {

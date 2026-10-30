@@ -1,7 +1,11 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const db = require('../src/config/db');
 
-async function main() {
+// Runs as the explicit 'System' identity: with row-level security on, the
+// child-data deletes below would otherwise match no rows.
+const main = () => db.runAsSystem(clearAll);
+
+async function clearAll() {
   await db.query('DELETE FROM risk_scores');
   await db.query('DELETE FROM access_requests');
   await db.query('DELETE FROM sessions');

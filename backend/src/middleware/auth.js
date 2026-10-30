@@ -49,7 +49,10 @@ async function authenticateHandler(req, res, next) {
     email: session.email,
     mustChangePassword: session.must_change_password,
   };
-  next();
+  // Everything downstream of this point (route handlers, services) runs as
+  // this user, so the database's row-level security policies can see who
+  // is asking -- see config/db.js.
+  db.runAs({ userId: payload.userId, role: payload.role }, next);
 }
 
 // The DB query above has no try/catch of its own -- without this wrapper

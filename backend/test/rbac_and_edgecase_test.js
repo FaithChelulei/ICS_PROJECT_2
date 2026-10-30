@@ -223,6 +223,48 @@ async function main() {
   record('Every download is written to the audit log', exportsAfter[0].n - exportsBefore[0].n === 3,
     `${exportsAfter[0].n - exportsBefore[0].n} new entries, expected 3`);
 
+  console.log('\n=== Row-level security (enforced by PostgreSQL, not the app) ===');
+  const asUser = (id, role, sql, params) => db.runAs({ userId: id, role }, () => db.query(sql, params));
+  const count = async (id, role, sql, params) => (await asUser(id, role, sql, params)).rows[0].n;
+  const { rows: rlsOn } = await db.query(
+    "SELECT bool_and(relrowsecurity) AS on FROM pg_class WHERE relname IN ('child_profiles','child_identifiers','developmental_records','consent_records')");
+  record('RLS is enabled on all four child-data tables', rlsOn[0].on === true,
+    rlsOn[0].on ? '' : 'run backend/db/migration_rls.sql as postgres');
+  if (rlsOn[0].on) {
+    const { rows: others } = await db.runAsSystem(() => db.query(
+      'SELECT id FROM child_profiles WHERE caregiver_id <> $1 ORDER BY id LIMIT 1', [cgAcct.id]));
+    const otherChild = others[0] && others[0].id;
+    const { rows: own } = await db.runAsSystem(() => db.query(
+      'SELECT COUNT(*)::int AS n FROM child_profiles WHERE caregiver_id = $1', [cgAcct.id]));
+
+    record('Caregiver query with NO filter returns only their own children',
+      await count(cgAcct.id, 'Caregiver', 'SELECT COUNT(*)::int AS n FROM child_profiles') === own[0].n, `own=${own[0].n}`);
+    record('Caregiver cannot read another family\'s child identity',
+      await count(cgAcct.id, 'Caregiver', 'SELECT COUNT(*)::int AS n FROM child_identifiers WHERE child_profile_id = $1', [otherChild]) === 0,
+      `other child #${otherChild}`);
+    let blocked = false;
+    try {
+      await asUser(cgAcct.id, 'Caregiver',
+        "INSERT INTO developmental_records (child_profile_id, milestone_enc, health_indicator_enc, assessment_score_enc, created_by) VALUES ($1, 'x', 'x', 'x', $2)",
+        [otherChild, cgAcct.id]);
+    } catch (err) {
+      blocked = /row-level security/.test(err.message);
+    }
+    record('Caregiver cannot write a record against another family\'s child', blocked);
+    const deleted = await asUser(cgAcct.id, 'Caregiver', 'DELETE FROM child_profiles WHERE id = $1', [childId]);
+    record('Caregiver cannot delete even their own child profile (no delete policy)', deleted.rowCount === 0, `deleted ${deleted.rowCount}`);
+    record('No identity at all sees zero child rows (deny by default)',
+      (await db.query('SELECT COUNT(*)::int AS n FROM child_identifiers')).rows[0].n === 0);
+    record('Security Auditor sees no child identities',
+      await count(auAcct.id, 'SecurityAuditor', 'SELECT COUNT(*)::int AS n FROM child_identifiers') === 0);
+    record('Security Auditor can read consent history (Consent report)',
+      await count(auAcct.id, 'SecurityAuditor', 'SELECT COUNT(*)::int AS n FROM consent_records') > 0);
+    record('SysAdmin sees no child identities',
+      await count(adAcct.id, 'SysAdmin', 'SELECT COUNT(*)::int AS n FROM child_identifiers') === 0);
+    record('Explicit System identity (key rotation) sees every child',
+      (await db.runAsSystem(() => db.query('SELECT COUNT(*)::int AS n FROM child_identifiers'))).rows[0].n > 0);
+  }
+
   console.log('\n=== ML risk engine: same caregiver signs in from a NEW device ===');
   const deviceB = `test-device-B-${crypto.randomBytes(3).toString('hex')}`;
   const cg2 = await login(cgAcct.email, deviceB);
