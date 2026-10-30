@@ -9,6 +9,7 @@ import ChildRegistrationPage from './pages/caregiver/ChildRegistrationPage.jsx';
 import ChildRecordPage from './pages/caregiver/ChildRecordPage.jsx';
 import AuditorDashboard from './pages/auditor/AuditorDashboard.jsx';
 import AuditLogPage from './pages/auditor/AuditLogPage.jsx';
+import ReportsPage from './pages/auditor/ReportsPage.jsx';
 import AdminPanel from './pages/admin/AdminPanel.jsx';
 import EncryptionKeysPage from './pages/admin/EncryptionKeysPage.jsx';
 import ConsentManagementPage from './pages/caregiver/ConsentManagementPage.jsx';
@@ -74,6 +75,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={['SecurityAuditor']}>
             <AuditLogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditor/reports"
+        element={
+          <ProtectedRoute allowedRoles={['SecurityAuditor']}>
+            <ReportsPage />
           </ProtectedRoute>
         }
       />

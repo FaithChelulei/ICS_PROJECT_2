@@ -198,6 +198,31 @@ async function main() {
   record('Every consent refusal is written to the audit log', denials[0].n === 3, `${denials[0].n} entries, expected 3`);
   await setRecordsConsent(true); // the risk-engine checks below view this child's records
 
+  console.log('\n=== Downloadable reports (Security Auditor) ===');
+  await expectStatus('Caregiver cannot download reports (403)', '/auditor/reports/audit-log?format=csv', { token: cg.token, device: deviceA }, 403);
+  await expectStatus('Admin cannot download reports (403)', '/auditor/reports/audit-log?format=csv', { token: ad.token }, 403);
+  await expectStatus('Unknown report (404)', '/auditor/reports/everything', { token: au.token }, 404);
+  await expectStatus('Unknown format (400)', '/auditor/reports/audit-log?format=xlsx', { token: au.token }, 400);
+  await expectStatus('Malformed date (400)', '/auditor/reports/audit-log?from=30-10-2026', { token: au.token }, 400);
+  await expectStatus('"from" after "to" (400)', '/auditor/reports/audit-log?from=2026-10-30&to=2026-10-01', { token: au.token }, 400);
+  const { rows: exportsBefore } = await db.query(
+    "SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = $1 AND action = 'export_report'", [auAcct.id]);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const auditCsv = await api(`/auditor/reports/audit-log?format=csv&from=${todayIso}`, { token: au.token });
+  // (.text() strips the UTF-8 BOM while decoding; the BOM itself is covered by reportFormats.test.js)
+  record('Audit log CSV downloads (200, header row)', auditCsv.status === 200 && auditCsv.text.startsWith('Time,User,Role,Action'),
+    `status=${auditCsv.status}`);
+  const pdf = await api(`/auditor/reports/flagged-sessions?format=pdf`, { token: au.token });
+  record('Flagged sessions PDF downloads (200, real PDF)', pdf.status === 200 && pdf.text.startsWith('%PDF-'), `status=${pdf.status}`);
+  const consentCsv = await api(`/auditor/reports/consent-activity?format=csv&from=${todayIso}`, { token: au.token });
+  record('Consent report includes this run\'s refusals',
+    consentCsv.status === 200 && consentCsv.text.includes(`,${childId},Access refused,Developmental records,view_developmental_records`),
+    `status=${consentCsv.status}`);
+  const { rows: exportsAfter } = await db.query(
+    "SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = $1 AND action = 'export_report'", [auAcct.id]);
+  record('Every download is written to the audit log', exportsAfter[0].n - exportsBefore[0].n === 3,
+    `${exportsAfter[0].n - exportsBefore[0].n} new entries, expected 3`);
+
   console.log('\n=== ML risk engine: same caregiver signs in from a NEW device ===');
   const deviceB = `test-device-B-${crypto.randomBytes(3).toString('hex')}`;
   const cg2 = await login(cgAcct.email, deviceB);

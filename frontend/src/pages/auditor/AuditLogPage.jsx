@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout.jsx';
 import { listAuditLog } from '../../api/auditor';
 import { PageHeader, Card, Field, inputClass, Alert, EmptyState, Spinner, Badge, StatCard } from '../../components/ui.jsx';
-
-const NAV = [
-  { to: '/', label: 'Flagged Sessions' },
-  { to: '/auditor/audit-log', label: 'Audit Log' },
-];
+import { AUDITOR_NAV as NAV } from './nav.js';
 
 function outcomeBadge(entry) {
   if (entry.is_flagged === true) return <Badge color="red">Flagged</Badge>;

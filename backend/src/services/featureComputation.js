@@ -55,7 +55,7 @@ const FILE_ACTION_TYPES = [
   // Caregiver
   'create_child_profile', 'view_own_child_records', 'submit_developmental_record',
   // Security Auditor
-  'view_audit_log', 'review_flagged_session',
+  'view_audit_log', 'review_flagged_session', 'export_report',
   // SysAdmin
   'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data',
 ];

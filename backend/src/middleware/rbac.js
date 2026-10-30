@@ -13,6 +13,7 @@ const PERMISSIONS = {
     'view_flagged_sessions',
     'review_risk_scores',
     'view_audit_log',
+    'export_reports',
   ],
   SysAdmin: [
     'manage_users',

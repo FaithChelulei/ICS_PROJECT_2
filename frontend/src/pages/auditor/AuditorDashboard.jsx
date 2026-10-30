@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout.jsx';
 import { listFlagged, reviewFlagged } from '../../api/auditor';
 import { PageHeader, Card, Alert, EmptyState, Spinner, Badge } from '../../components/ui.jsx';
-
-const NAV = [
-  { to: '/', label: 'Flagged Sessions' },
-  { to: '/auditor/audit-log', label: 'Audit Log' },
-];
+import { AUDITOR_NAV as NAV } from './nav.js';
 const FILTERS = ['pending', 'reviewing', 'confirmed', 'escalated', 'all'];
 const STATUS_COLOR = { pending: 'amber', reviewing: 'brand', confirmed: 'green', escalated: 'red' };
 
