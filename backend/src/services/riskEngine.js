@@ -34,14 +34,14 @@ async function insertAccessRequest({ userId, childProfileId, actionType, pcName,
 // data-touching action, which is also a closer match to what this system
 // is actually trying to catch -- unauthorized ACCESS to child data, not
 // the act of logging in by itself.
-async function logAccessRequest({ userId, actionType, childProfileId = null, pcName, ipAddress, sessionId }) {
-  const now = new Date();
+// `now` defaults to the real time. Only the anomaly-injection test passes
+// one (to replay night-time activity); no request can set it.
+async function logAccessRequest({ userId, actionType, childProfileId = null, pcName, ipAddress, sessionId, now = new Date() }) {
   const accessRequestId = await insertAccessRequest({ userId, childProfileId, actionType, pcName, ipAddress, sessionId, now });
   return { accessRequestId, scored: false, flagged: false };
 }
 
-async function recordAndScore({ userId, role, actionType, childProfileId = null, pcName, ipAddress, sessionId }) {
-  const now = new Date();
+async function recordAndScore({ userId, role, actionType, childProfileId = null, pcName, ipAddress, sessionId, now = new Date() }) {
 
   const accessRequestId = await insertAccessRequest({ userId, childProfileId, actionType, pcName, ipAddress, sessionId, now });
 
