@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { logAction } = require('../utils/auditLog');
+const validateIdParam = require('../middleware/validateIdParam');
 const { authenticate, requirePasswordChanged } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const asyncHandler = require('../utils/asyncHandler');
@@ -11,6 +12,7 @@ const { downloadReport } = require('../controllers/reportsController');
 const router = express.Router();
 
 router.use(authenticate, requirePasswordChanged);
+router.param('riskScoreId', validateIdParam);
 
 // Hard cap on report downloads per auditor, alongside the risk model. The
 // model catches large or fast scraping and off-hours use, but a slow trickle

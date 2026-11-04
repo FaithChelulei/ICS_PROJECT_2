@@ -5,6 +5,7 @@ const express = require('express');
 const { authenticate, requirePasswordChanged } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const asyncHandler = require('../utils/asyncHandler');
+const validateIdParam = require('../middleware/validateIdParam');
 const {
   createChildProfile,
   updateChildDetails,
@@ -19,6 +20,7 @@ const { getConsent, setConsent } = require('../controllers/consentController');
 const router = express.Router();
 
 router.use(authenticate, requirePasswordChanged);
+router.param('childProfileId', validateIdParam);
 
 router.post('/', requirePermission('create_child_profile'), asyncHandler(createChildProfile));
 router.get('/', requirePermission('view_own_child_records'), asyncHandler(listMyChildren));

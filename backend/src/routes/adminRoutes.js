@@ -10,10 +10,12 @@ const {
   approveRequest,
   rejectRequest,
 } = require('../controllers/registrationController');
+const validateIdParam = require('../middleware/validateIdParam');
 
 const router = express.Router();
 
 router.use(authenticate, requirePasswordChanged, requirePermission('manage_registration_requests'));
+router.param('id', validateIdParam);
 
 router.get('/registration-requests', asyncHandler(listRequests));
 router.post('/registration-requests/:id/approve', asyncHandler(approveRequest));
