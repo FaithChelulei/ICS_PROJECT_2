@@ -67,8 +67,11 @@ export function Button({ variant = 'primary', size = 'md', className = '', ...pr
   );
 }
 export function Card({ className = '', children }) {
+  // Default padding only when the caller doesn't set its own (p-0, p-4...):
+  // with both present, Tailwind's CSS order made p-6 always win.
+  const padding = /(^|\s)p-\d/.test(className) ? '' : 'p-6';
   return (
-    <div className={`rounded-2xl border border-[#EFE4D0] bg-white p-6 shadow-card ${className}`}>
+    <div className={`rounded-2xl border border-[#EFE4D0] bg-white ${padding} shadow-card ${className}`}>
       {children}
     </div>
   );

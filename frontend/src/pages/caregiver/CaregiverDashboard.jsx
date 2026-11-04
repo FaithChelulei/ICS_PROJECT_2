@@ -109,19 +109,16 @@ export default function CaregiverDashboard() {
             .
           </EmptyState>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             {active.map((c) => (
               <Link key={c.childProfileId} to={`/caregiver/children/${c.childProfileId}`}>
-                <Card className="hover:border-brand-300 hover:shadow-md transition">
-                  <div className="flex items-start gap-4">
-                    <Avatar initial={c.fullName[0]} size="lg" />
-                    <div>
-                      <div className="text-base font-semibold text-ink">{c.fullName}</div>
-                      <div className="text-[15px] text-slate-500">
+                <Card className="p-4 hover:border-brand-300 hover:shadow-md transition">
+                  <div className="flex items-center gap-3">
+                    <Avatar initial={c.fullName[0]} />
+                    <div className="min-w-0">
+                      <div className="text-[15px] font-semibold text-ink truncate">{c.fullName}</div>
+                      <div className="text-sm text-slate-500 truncate">
                         {age(c.dateOfBirth) ? `Age ${age(c.dateOfBirth)} · ` : ''}DOB {c.dateOfBirth}
-                      </div>
-                      <div className="text-sm text-slate-400 mt-2">
-                        Registered {new Date(c.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -136,14 +133,14 @@ export default function CaregiverDashboard() {
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mt-10 mb-3">
               Archived
             </h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               {archived.map((c) => (
                 <Link key={c.childProfileId} to={`/caregiver/children/${c.childProfileId}`}>
-                  <Card className="opacity-70 hover:opacity-100 transition">
-                    <div className="flex items-start gap-4">
-                      <Avatar initial={c.fullName[0]} size="lg" tone="slate" />
-                      <div>
-                        <div className="text-base font-semibold text-ink flex items-center gap-2">
+                  <Card className="p-4 opacity-70 hover:opacity-100 transition">
+                    <div className="flex items-center gap-3">
+                      <Avatar initial={c.fullName[0]} tone="slate" />
+                      <div className="min-w-0">
+                        <div className="text-[15px] font-semibold text-ink flex items-center gap-2 truncate">
                           {c.fullName}
                           <Badge color="gray">{c.anonymisedAt ? 'Anonymised' : 'Archived'}</Badge>
                         </div>

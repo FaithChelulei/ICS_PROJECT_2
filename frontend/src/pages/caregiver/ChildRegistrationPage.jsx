@@ -61,53 +61,52 @@ export default function ChildRegistrationPage() {
         <Toast message="Child profile created successfully" onDone={() => setShowToast(false)} />
       )}
 
-      <div className="p-8 max-w-4xl">
+      <div className="px-8 py-6 max-w-4xl">
         {riskNotice ? (
           <Alert variant="warning">Profile created. {riskNotice}</Alert>
         ) : (
-          <div className="grid grid-cols-[1fr_300px] gap-6 items-start">
+          <div className="grid grid-cols-[1fr_260px] gap-6 items-start">
             <Card>
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {error && <Alert>{error}</Alert>}
-                <Field label="Full Name">
-                  <input
-                    required
-                    value={form.fullName}
-                    onChange={(e) => update('fullName', e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Date of Birth">
-                  <input
-                    type="date"
-                    required
-                    max={todayIso}
-                    value={form.dateOfBirth}
-                    onChange={(e) => update('dateOfBirth', e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Family Background" hint="Optional">
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Full Name">
+                    <input
+                      required
+                      value={form.fullName}
+                      onChange={(e) => update('fullName', e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Date of Birth">
+                    <input
+                      type="date"
+                      required
+                      max={todayIso}
+                      value={form.dateOfBirth}
+                      onChange={(e) => update('dateOfBirth', e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
+                <Field label="Family Background (optional)">
                   <textarea
                     value={form.familyBackground}
                     onChange={(e) => update('familyBackground', e.target.value)}
                     className={inputClass}
-                    rows={3}
+                    rows={2}
                   />
                 </Field>
-                <label className="flex items-start gap-3 rounded-xl border border-[#E4D9C6] bg-white px-4 py-3.5 cursor-pointer">
+                <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.developmentalRecordsConsent}
                     onChange={(e) => update('developmentalRecordsConsent', e.target.checked)}
-                    className="mt-1 h-4 w-4 accent-brand-600"
+                    className="h-4 w-4 accent-brand-600"
                   />
                   <span className="text-[15px] text-slate-700">
-                    I consent to storing developmental &amp; health records for this child.
-                    <span className="block text-sm text-slate-400 mt-0.5">
-                      Optional. Records can&rsquo;t be added or viewed without it. You can change
-                      this any time in Consent Management.
-                    </span>
+                    Also keep health and development records for this child{' '}
+                    <span className="text-sm text-slate-400">(you can change this later)</span>
                   </span>
                 </label>
                 <PrivacyNotice variant="child" accepted={noticeAccepted} onChange={setNoticeAccepted} />

@@ -30,36 +30,38 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center p-8">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-cream flex items-center justify-center p-6">
+      <div className="w-full max-w-lg">
         <Card className="rounded-3xl">
           <h1 className="font-display text-2xl font-bold text-ink mb-2">Request access</h1>
-          <p className="text-sm text-slate-500 mb-7">
+          <p className="text-sm text-slate-500 mb-5">
             A System Administrator reviews every request before an account is created.
           </p>
 
           {done ? (
             <Alert variant="success">{done}</Alert>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && <Alert>{error}</Alert>}
-              <Field label="Full Name">
-                <input
-                  required
-                  value={form.fullName}
-                  onChange={(e) => update('fullName', e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Email Address">
-                <input
-                  type="email"
-                  required
-                  value={form.email}
-                  onChange={(e) => update('email', e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Full Name">
+                  <input
+                    required
+                    value={form.fullName}
+                    onChange={(e) => update('fullName', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Email Address">
+                  <input
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={(e) => update('email', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
               <Field label="Role">
                 <select
                   value={form.requestedRole}
@@ -75,7 +77,7 @@ export default function RegisterPage() {
                   value={form.reason}
                   onChange={(e) => update('reason', e.target.value)}
                   className={inputClass}
-                  rows={3}
+                  rows={2}
                 />
               </Field>
               <PrivacyNotice variant="account" accepted={noticeAccepted} onChange={setNoticeAccepted} />
