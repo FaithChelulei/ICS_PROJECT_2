@@ -13,9 +13,13 @@
 // scenario's activity affects another's, and real accounts are untouched.
 // Flagged scenarios send the usual risk-alert email to those addresses.
 //
-// Night-time scenarios can't wait for 02:00: they call the same risk engine
-// the API uses (real database, model, revocation, email) with a simulated
-// 02:00 clock. Everything else goes through HTTPS like a real user.
+// Night-time scenarios: in the daytime they call the same risk engine the
+// API uses (real database, model, revocation, email) with a simulated 02:00
+// clock. When the test is genuinely run at night (20:00-06:00, e.g. by the
+// scheduled task in scripts/schedule-night-test.ps1) it switches to NIGHT
+// MODE: the three night scenarios run live over HTTPS with nothing
+// simulated, and the daytime scenarios are skipped -- at night even normal
+// work is after-hours, so they would no longer test what they're meant to.
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 if (process.env.TLS_CERT_FILE && !process.env.NODE_EXTRA_CA_CERTS) {
@@ -216,6 +220,47 @@ async function adminBurst() {
   });
 }
 
+// Same after-hours rule as the live feature (featureComputation.js).
+// ANOMALY_FORCE_NIGHT=1 runs the night-mode code path in the daytime, to
+// check it works before a scheduled night run -- the server still sees
+// daytime, so nothing is expected to be flagged in that dry run.
+const isNightNow = () => {
+  if (process.env.ANOMALY_FORCE_NIGHT === '1') return true;
+  const h = new Date().getHours();
+  return h < 6 || h >= 20;
+};
+
+// NIGHT MODE: real after-hours activity over HTTPS, nothing simulated.
+// Each role does its everyday action until stopped (up to 3 actions).
+async function nightTimeLive(n, role) {
+  const acct = await account(`night-live-${role.toLowerCase()}`, role);
+  const since = new Date();
+  const device = 'anomaly-own-device';
+  const token = await login(acct, device);
+  let child = null;
+  const action = {
+    Caregiver: async (i) => {
+      if (i === 1) {
+        const r = await api('/children', {
+          method: 'POST', token, device,
+          body: { fullName: 'Night Test Child', dateOfBirth: '2021-03-03', developmentalRecordsConsent: true, ...NOTICE },
+        });
+        child = r.json && r.json.childProfileId;
+        return r;
+      }
+      return api(`/children/${child}/records`, { token, device });
+    },
+    SecurityAuditor: () => api('/auditor/audit-log?limit=50', { token, device }),
+    SysAdmin: () => api('/admin/encryption/reencrypt', { method: 'POST', token, device }),
+  }[role];
+  const run = await untilStopped(action, 3);
+  report({
+    name: `${n}. ${role} works at ${new Date().toTimeString().slice(0, 5)} (REAL night, live)`, cert: 'Scenario 1 (starts working after hours)',
+    expected: 'flag', detected: Boolean(run.stopped), stoppedBy: run.stopped, actions: run.actions, seconds: run.seconds,
+    response: run.stopped ? await verifyResponse(acct, token, since) : null,
+  });
+}
+
 // Night-time activity, through the real risk engine with a 02:00 clock.
 async function nightTime(n, role, actionType) {
   const acct = await account(`night-${role.toLowerCase()}`, role);
@@ -291,19 +336,28 @@ async function main() {
     await new Promise((r) => setTimeout(r, 500));
   }
 
-  console.log('=== Attacks (each must be STOPPED) ===');
-  const flagId = await massAccess();
-  await newDevice();
-  await auditorScrape();
-  await adminBurst();
-  await nightTime(5, 'Caregiver', 'view_own_child_records');
-  await nightTime(6, 'SecurityAuditor', 'view_audit_log');
-  await nightTime(7, 'SysAdmin', 'reencrypt_data');
+  if (isNightNow()) {
+    console.log(`NIGHT MODE (${new Date().toString().slice(0, 24)}): real after-hours activity over HTTPS, nothing simulated.`);
+    console.log('Daytime scenarios are skipped -- at night every action is after-hours.\n');
+    console.log('=== Night-time attacks (each must be STOPPED) ===');
+    await nightTimeLive(5, 'Caregiver');
+    await nightTimeLive(6, 'SecurityAuditor');
+    await nightTimeLive(7, 'SysAdmin');
+  } else {
+    console.log('=== Attacks (each must be STOPPED) ===');
+    const flagId = await massAccess();
+    await newDevice();
+    await auditorScrape();
+    await adminBurst();
+    await nightTime(5, 'Caregiver', 'view_own_child_records');
+    await nightTime(6, 'SecurityAuditor', 'view_audit_log');
+    await nightTime(7, 'SysAdmin', 'reencrypt_data');
 
-  console.log('\n=== Normal work (must NOT be flagged) ===');
-  await normalCaregiver();
-  await normalAuditor(flagId);
-  await normalAdmin();
+    console.log('\n=== Normal work (must NOT be flagged) ===');
+    await normalCaregiver();
+    await normalAuditor(flagId);
+    await normalAdmin();
+  }
 
   const attacks = results.filter((r) => r.expected === 'flag');
   const normal = results.filter((r) => r.expected === 'none');
@@ -311,14 +365,15 @@ async function main() {
   const falseAlarms = normal.filter((r) => r.detected).length;
   console.log('\n=== SUMMARY ===');
   console.log(`Attacks stopped:      ${caught}/${attacks.length}`);
-  console.log(`False alarms:         ${falseAlarms}/${normal.length} normal sessions`);
+  if (normal.length) console.log(`False alarms:         ${falseAlarms}/${normal.length} normal sessions`);
   console.log(`Full response worked: ${attacks.filter((r) => r.response && Object.values(r.response).every((v) => v !== false)).length}/${attacks.filter((r) => r.stoppedBy === 'risk model').length} model-flagged attacks (revoked, refused, queued, logged)`);
   console.log(`${results.every((r) => r.pass) ? 'RESULT: PASS' : 'RESULT: FAIL'} -- ${results.filter((r) => r.pass).length}/${results.length} scenarios behaved as expected.`);
 
   const outDir = path.join(__dirname, 'results');
   fs.mkdirSync(outDir, { recursive: true });
-  const outFile = path.join(outDir, `anomaly_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`);
-  fs.writeFileSync(outFile, JSON.stringify({ ranAt: new Date().toISOString(), results }, null, 2));
+  const mode = isNightNow() ? 'night' : 'day';
+  const outFile = path.join(outDir, `anomaly_${mode}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`);
+  fs.writeFileSync(outFile, JSON.stringify({ ranAt: new Date().toISOString(), localTime: new Date().toString(), mode, results }, null, 2));
   console.log(`Saved: ${path.relative(path.join(__dirname, '..'), outFile)}`);
   return results.every((r) => r.pass) ? 0 : 1;
 }
