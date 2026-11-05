@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test test/encryption.test.js test/reportFormats.test.js",
+    "test": "node --test test/encryption.test.js test/reportFormats.test.js test/keyVault.test.js",
     "test:api": "node test/rbac_and_edgecase_test.js",
     "test:perf": "node test/performance_test.js",
     "test:anomaly": "node test/anomaly_injection_test.js",
@@ -19,9 +19,13 @@
     "key:new": "node scripts/new-encryption-key.js",
     "key:status": "node scripts/key-tool.js status",
     "key:reencrypt": "node scripts/key-tool.js reencrypt",
-    "key:verify": "node scripts/key-tool.js verify"
+    "key:verify": "node scripts/key-tool.js verify",
+    "key:wrap": "node scripts/key-vault.js wrap",
+    "key:check": "node scripts/key-vault.js check"
   },
   "dependencies": {
+    "@azure/identity": "^4.14.1",
+    "@azure/keyvault-keys": "^4.10.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

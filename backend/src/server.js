@@ -4,6 +4,7 @@ const http = require('http');
 const https = require('https');
 const path = require('path');
 const app = require('./app');
+const { unlockKeys } = require('./utils/keyVault');
 
 const PORT = process.env.PORT || 4000;
 
@@ -34,6 +35,18 @@ if (certFile && keyFile) {
   scheme = 'http';
 }
 
-server.listen(PORT, () => {
-  console.log(`Backend listening on ${scheme}://localhost:${PORT}`);
-});
+// Encryption keys stored wrapped by Azure Key Vault are unlocked BEFORE the
+// server accepts a single request (utils/keyVault.js). If the vault can't
+// be reached or refuses, the backend does not start: running without its
+// keys would only fail later, on someone's real request.
+unlockKeys()
+  .then((count) => {
+    if (count) console.log(`Unlocked ${count} encryption key(s) via Azure Key Vault (held in memory only).`);
+    server.listen(PORT, () => {
+      console.log(`Backend listening on ${scheme}://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error(`Encryption keys could not be unlocked -- not starting. ${err.message}`);
+    process.exit(1);
+  });

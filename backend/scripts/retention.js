@@ -8,6 +8,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 const db = require('../src/config/db');
 const { getRetentionStatus, applyRetention } = require('../src/services/retention');
 const { logAction } = require('../src/utils/auditLog');
+const { unlockKeys } = require('../src/utils/keyVault');
 
 function printStatus(s) {
   console.log(`Retention period: ${s.retentionDays} day(s) after archiving`);
@@ -15,6 +16,7 @@ function printStatus(s) {
 }
 
 (async () => {
+  await unlockKeys(); // anonymising writes encrypted placeholders
   if (process.argv[2] === 'apply') {
     const ids = await applyRetention();
     await logAction({
