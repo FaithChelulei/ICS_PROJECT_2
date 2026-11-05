@@ -11,7 +11,9 @@
 // plain keys then exist only in this process's memory. A copy of .env, a
 // backup, or the server's disk on its own is therefore useless: without
 // the vault -- and an identity the vault trusts -- the wrapped keys can't
-// be opened. Every unwrap is recorded in the vault's own logs.
+// be opened. Key Vault only keeps a record of each unwrap if diagnostic
+// logging is turned on: here its AuditEvent log goes to the Log Analytics
+// workspace childguard-logs (setting: vault-audit, kept 30 days).
 //
 // Turned on by KEY_VAULT_URL + KEY_VAULT_KEY_NAME. Without them, plain
 // ENCRYPTION_KEY_<n> values in .env still work (local development).

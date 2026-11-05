@@ -82,6 +82,11 @@ end-to-end API checks, including consent enforcement, against the running backen
 dedicated test accounts; non-destructive) in `backend/`.
 
 Encryption keys: `npm run key:status`, `key:verify`, `key:new`,
-`key:reencrypt` in `backend/` (see `backend/.env.example`).
+`key:reencrypt` in `backend/` (see `backend/.env.example`). Keys are stored
+wrapped by a master key in Azure Key Vault (`KEY_VAULT_URL`,
+`KEY_VAULT_KEY_NAME`); `npm run key:wrap` moves plain keys under it and
+`key:check` proves this machine can unlock them. Sign in with `az login`
+first, or the backend will refuse to start. Without those two settings,
+plain keys in `.env` still work for local development.
 
 Risk thresholds (research vs. live app): `docs/RISK_THRESHOLDS.md`.

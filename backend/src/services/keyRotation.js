@@ -8,6 +8,7 @@
 const crypto = require('crypto');
 const db = require('../config/db');
 const { encryptField, decryptField, keyIdOf, loadKeys, activeKeyId } = require('../utils/encryption');
+const { wrappedKeyEntries } = require('../utils/keyVault');
 
 // Every encrypted column in the schema. Add here if a new *_enc column is
 // ever introduced, or rotation will silently skip it.
@@ -61,7 +62,17 @@ async function getStatusAsSystem() {
   const totalValues = Object.values(counts).reduce((a, b) => a + b, 0);
   const needsReencryption = totalValues - (counts[active] || 0);
 
-  return { activeKeyId: active, keys: keyList, missingKeys: missing, totalValues, needsReencryption };
+  return {
+    activeKeyId: active,
+    keys: keyList,
+    missingKeys: missing,
+    totalValues,
+    needsReencryption,
+    // How the keys themselves are protected. Names only, never key material.
+    protection: wrappedKeyEntries().length > 0
+      ? { mode: 'azure-key-vault', masterKey: process.env.KEY_VAULT_KEY_NAME }
+      : { mode: 'local-file' },
+  };
 }
 
 // Re-encrypts every value not already on the active key, all-or-nothing:

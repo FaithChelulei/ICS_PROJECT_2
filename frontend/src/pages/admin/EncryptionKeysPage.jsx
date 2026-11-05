@@ -78,6 +78,19 @@ export default function EncryptionKeysPage() {
               />
             </div>
 
+            {status.protection?.mode === 'azure-key-vault' ? (
+              <Alert variant="success" className="mb-6">
+                Protected by Azure Key Vault. The keys are stored locked by the master key{' '}
+                <span className="font-mono">{status.protection.masterKey}</span>, which never leaves the
+                vault, and are unlocked only in the server&rsquo;s memory.
+              </Alert>
+            ) : (
+              <Alert variant="warning" className="mb-6">
+                Keys are stored in plain form in <span className="font-mono">backend/.env</span>. Run{' '}
+                <span className="font-mono">npm run key:wrap</span> to protect them with Azure Key Vault.
+              </Alert>
+            )}
+
             {status.missingKeys.length > 0 && (
               <Alert className="mb-6">
                 Some data was encrypted with a key that is no longer configured (
@@ -119,8 +132,9 @@ export default function EncryptionKeysPage() {
               <ol className="list-decimal pl-5 space-y-1.5 text-[15px] text-slate-600">
                 <li>
                   On the server, in the <span className="font-mono">backend</span> folder, run{' '}
-                  <span className="font-mono">npm run key:new</span>. It writes a new key into{' '}
-                  <span className="font-mono">.env</span> and makes it active (keys are never shown here).
+                  <span className="font-mono">npm run key:new</span>. It adds a new key to{' '}
+                  <span className="font-mono">.env</span> (locked by Key Vault when that is set up) and makes it
+                  active. Keys are never shown here.
                 </li>
                 <li>Restart the backend.</li>
                 <li>Click <strong>Re-encrypt to active key</strong> above.</li>
