@@ -1,118 +1,149 @@
-﻿# Full lifecycle demo: all 3 roles, one pass.
-# Caregiver gets flagged on a cold first action -> Security Auditor sees
-# it in their queue -> Caregiver clicks "This was NOT me" -> account locks
-# -> SysAdmin sees it in the locked-accounts list and unlocks it -> new
-# temp password works.
+# Full incident lifecycle with REAL emails, MFA codes and email links -- all
+# three roles, one story:
 #
-# Real emails WILL be sent to your inbox this run: 3 MFA codes (one per
-# role), 1 risk alert ("This was NOT me" link), 1 account-unlocked notice
-# with a new temp password. Have your inbox open.
+#   the caregiver works normally on their own computer
+#   -> someone with the caregiver's login signs in from an UNKNOWN device
+#   -> the risk model flags it: that session is ended on the spot
+#   -> the Security Auditor sees it in the review queue
+#   -> the owner clicks "This was NOT me" in the alert email
+#   -> the account is locked and the alert escalated
+#   -> the auditor records the breach decision (KDPA s.43)
+#   -> the SysAdmin unlocks the account; a temporary password is emailed
+#   -> the owner signs in with it and sets their password back
 #
-# Run from backend/: .\test\full_flow_test.ps1
+#   cd backend
+#   .\test\full_flow_test.ps1      (asks for the demo accounts' password, hidden)
+#
+# Nothing is deleted. The caregiver account is locked and unlocked during
+# the run, and its password is set back to the one you typed at the end.
+# Emails: 5 MFA codes, 1 risk alert, 1 account-unlocked notice.
+param([SecureString]$SecurePassword)
+
+# Never stored in this file: asked for at run time, typing hidden.
+if (-not $SecurePassword) { $SecurePassword = Read-Host 'Password for the demo accounts' -AsSecureString }
+$Password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
 
 $base = 'https://localhost:4000'
+$caregiver = 'faith.chelulei+caregiver@strathmore.edu'
+$auditor = 'faith.chelulei+auditor@strathmore.edu'
+$admin = 'faith.chelulei+admin@strathmore.edu'
+$noticeVersion = '2026-10'   # must match backend/src/services/privacyNotice.js
+$ownDevice = 'FAITH-TEST-PC'
+$unknownDevice = "UNKNOWN-LAPTOP-$(Get-Random -Maximum 99999)"
+$script:passed = 0
+$script:failed = 0
 
-Write-Host "`n=== Step 0: cleaning test data for a truly cold run ===" -ForegroundColor Cyan
-# cleanup_test_data.js DELETES every child profile, record, session and
-# risk score in the database -- including anything you created for a demo.
-# For a non-destructive check, use: node test\rbac_and_edgecase_test.js
-$confirm = Read-Host "This wipes ALL child data, sessions and risk scores. Type WIPE to continue"
-if ($confirm -ne 'WIPE') { Write-Host 'Cancelled -- nothing was deleted.'; exit }
-node db\cleanup_test_data.js
-
-Write-Host "`n=== Step 1: Caregiver logs in (MFA required) ===" -ForegroundColor Cyan
-$body = @{ email = 'faith.chelulei+caregiver@strathmore.edu'; password = 'DevTest123!' } | ConvertTo-Json
-$cg1 = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
-Write-Host "Check faith.chelulei+caregiver's inbox for the MFA code." -ForegroundColor Yellow
-$cgCode = Read-Host "6-digit code"
-$body = @{ userId = $cg1.userId; code = $cgCode } | ConvertTo-Json
-$cg = Invoke-RestMethod -Uri "$base/auth/verify-mfa" -Method Post -ContentType 'application/json' -Body $body -Headers @{ 'X-Device-Name' = 'FAITH-TEST-PC' }
-$cgHeaders = @{ Authorization = "Bearer $($cg.token)"; 'X-Device-Name' = 'FAITH-TEST-PC' }
-Write-Host "Logged in. This login was NOT scored (see Day 2 notes) -- nothing flagged yet." -ForegroundColor Green
-
-Write-Host "`n=== Step 2: Caregiver creates a child profile (first-ever scored action) ===" -ForegroundColor Cyan
-$body = @{ fullName = 'Test Child'; dateOfBirth = '2019-05-10'; familyBackground = 'Lives with mother and grandmother' } | ConvertTo-Json
-$childRes = Invoke-RestMethod -Uri "$base/children" -Method Post -ContentType 'application/json' -Headers $cgHeaders -Body $body
-$childRes | ConvertTo-Json
-if ($childRes.riskNotice) {
-  Write-Host "FLAGGED, as expected for a cold first action (borderline score vs Caregiver's 0.11 threshold)." -ForegroundColor Yellow
-  Write-Host "The session was revoked right then -- any further request with this token will 401 from here on." -ForegroundColor Yellow
-} else {
-  Write-Host "Not flagged this time (it's borderline, so it won't be 100% of runs). Re-run the script to see the flagged path." -ForegroundColor Yellow
+function Invoke-Api([string]$Path, [string]$Method = 'GET', $Body = $null, [string]$Token = '', [string]$Device = $ownDevice) {
+  $headers = @{ 'X-Device-Name' = $Device }
+  if ($Token) { $headers.Authorization = "Bearer $Token" }
+  $params = @{ Uri = "$base$Path"; Method = $Method; Headers = $headers; ContentType = 'application/json'; UseBasicParsing = $true }
+  if ($null -ne $Body) { $params.Body = ($Body | ConvertTo-Json -Depth 5) }
+  try {
+    $r = Invoke-WebRequest @params
+    $parsed = $null; try { $parsed = $r.Content | ConvertFrom-Json } catch {}
+    return [pscustomobject]@{ Status = [int]$r.StatusCode; Body = $parsed; Text = $r.Content }
+  } catch {
+    $status = 0; if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
+    $parsed = $null; try { $parsed = $_.ErrorDetails.Message | ConvertFrom-Json } catch {}
+    return [pscustomobject]@{ Status = $status; Body = $parsed; Text = $_.ErrorDetails.Message }
+  }
 }
 
-Write-Host "`n=== Step 3: Caregiver tries to list children with that same session (expect 401 if flagged) ===" -ForegroundColor Cyan
-try {
-  Invoke-RestMethod -Uri "$base/children" -Method Get -Headers $cgHeaders | ConvertTo-Json
-} catch {
-  Write-Host "401 as expected -- the session was revoked the moment it got flagged:" $_.ErrorDetails.Message -ForegroundColor Green
+function Check([string]$Label, [bool]$Ok, [string]$Detail = '') {
+  if ($Ok) { $script:passed++; Write-Host "  PASS - $Label" -ForegroundColor Green }
+  else { $script:failed++; Write-Host "  FAIL - $Label" -ForegroundColor Red }
+  if ($Detail) { Write-Host "         $Detail" -ForegroundColor DarkGray }
 }
 
-Write-Host "`n=== Step 4: Security Auditor logs in (MFA required) ===" -ForegroundColor Cyan
-$body = @{ email = 'faith.chelulei+auditor@strathmore.edu'; password = 'DevTest123!' } | ConvertTo-Json
-$au1 = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
-Write-Host "Check faith.chelulei+auditor's inbox for the MFA code." -ForegroundColor Yellow
-$auCode = Read-Host "6-digit code"
-$body = @{ userId = $au1.userId; code = $auCode } | ConvertTo-Json
-$au = Invoke-RestMethod -Uri "$base/auth/verify-mfa" -Method Post -ContentType 'application/json' -Body $body -Headers @{ 'X-Device-Name' = 'FAITH-TEST-PC' }
-$auHeaders = @{ Authorization = "Bearer $($au.token)"; 'X-Device-Name' = 'FAITH-TEST-PC' }
+function Step([string]$Title) { Write-Host "`n=== $Title ===" -ForegroundColor Cyan }
 
-Write-Host "`n=== Step 5: Security Auditor views the flagged-session queue ===" -ForegroundColor Cyan
-$flagged = Invoke-RestMethod -Uri "$base/auditor/flagged-sessions?status=all" -Method Get -Headers $auHeaders
-$flagged.flaggedSessions | Format-Table risk_score_id, email, role, combined_score, role_threshold, action_type, owner_response, auditor_status
-$latest = $flagged.flaggedSessions | Select-Object -First 1
-if (-not $latest) {
-  Write-Host "Nothing flagged this run -- step 2 didn't cross threshold this time. Re-run the whole script to try again." -ForegroundColor Yellow
-  exit 0
-}
-Write-Host "That's the Caregiver action from step 2, visible to the Auditor independently of whatever the owner does next." -ForegroundColor Green
-
-Write-Host "`n=== Step 6: open the risk-alert email and click 'This was NOT me' ===" -ForegroundColor Cyan
-Write-Host "Check faith.chelulei+caregiver's inbox for 'Unusual activity on your account'." -ForegroundColor Yellow
-Write-Host "Copy the 'This was NOT me' link and paste it below (the whole URL)." -ForegroundColor Yellow
-$denyUrl = Read-Host "Deny URL"
-Invoke-RestMethod -Uri $denyUrl -Method Get
-
-Write-Host "`n=== Step 7: Caregiver tries to log in again (expect 403, account locked) ===" -ForegroundColor Cyan
-$body = @{ email = 'faith.chelulei+caregiver@strathmore.edu'; password = 'DevTest123!' } | ConvertTo-Json
-try {
-  Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
-  Write-Host "UNEXPECTED: login should have been blocked!" -ForegroundColor Red
-} catch {
-  Write-Host "Correctly blocked:" $_.ErrorDetails.Message -ForegroundColor Green
+function Connect-WithMfa([string]$Email, [string]$Pw, [string]$Device = $ownDevice) {
+  $one = Invoke-Api '/auth/login' 'POST' @{ identifier = $Email; password = $Pw } -Device $Device
+  if ($one.Status -ne 200 -or -not $one.Body.mfaRequired) {
+    Check "Password accepted for $Email" $false "status $($one.Status): $($one.Body.error)"
+    return $null
+  }
+  Write-Host "  A 6-digit code was emailed to $($one.Body.email)." -ForegroundColor Yellow
+  $code = Read-Host '  Type the code'
+  $two = Invoke-Api '/auth/verify-mfa' 'POST' @{ userId = $one.Body.userId; code = $code.Trim() } -Device $Device
+  Check "Signed in as $Email (device: $Device)" ($two.Status -eq 200 -and $two.Body.token) "status $($two.Status)"
+  return $two.Body
 }
 
-Write-Host "`n=== Step 8: SysAdmin logs in (MFA required) ===" -ForegroundColor Cyan
-$body = @{ email = 'faith.chelulei+admin@strathmore.edu'; password = 'DevTest123!' } | ConvertTo-Json
-$ad1 = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
-Write-Host "Check faith.chelulei+admin's inbox for the MFA code." -ForegroundColor Yellow
-$adCode = Read-Host "6-digit code"
-$body = @{ userId = $ad1.userId; code = $adCode } | ConvertTo-Json
-$ad = Invoke-RestMethod -Uri "$base/auth/verify-mfa" -Method Post -ContentType 'application/json' -Body $body -Headers @{ 'X-Device-Name' = 'FAITH-TEST-PC' }
-$adHeaders = @{ Authorization = "Bearer $($ad.token)"; 'X-Device-Name' = 'FAITH-TEST-PC' }
-
-Write-Host "`n=== Step 9: SysAdmin lists locked accounts ===" -ForegroundColor Cyan
-$locked = Invoke-RestMethod -Uri "$base/admin/users/locked" -Method Get -Headers $adHeaders
-$locked.lockedUsers | Format-Table id, email, role, locked_reason
-$target = $locked.lockedUsers | Where-Object { $_.email -eq 'faith.chelulei+caregiver@strathmore.edu' }
-if (-not $target) {
-  Write-Host "Caregiver account isn't showing as locked -- step 6's deny link may not have gone through. Stopping here." -ForegroundColor Red
+function Stop-Here([string]$Why) {
+  Write-Host "`n$Why -- stopping." -ForegroundColor Red
+  Write-Host "=== $($script:passed) passed, $($script:failed) failed ===" -ForegroundColor Red
   exit 1
 }
 
-Write-Host "`n=== Step 10: SysAdmin unlocks the Caregiver account ===" -ForegroundColor Cyan
-Invoke-RestMethod -Uri "$base/admin/users/$($target.id)/unlock" -Method Post -Headers $adHeaders | ConvertTo-Json
-Write-Host "Check faith.chelulei+caregiver's inbox for 'Your account has been unlocked' -- it has a new temp password." -ForegroundColor Yellow
-$newPassword = Read-Host "New temp password"
+Write-Host 'This run locks and then unlocks the caregiver account, and sets its password back at the end.' -ForegroundColor Yellow
+if ((Read-Host 'Type YES to continue') -ne 'YES') { Write-Host 'Cancelled -- nothing changed.'; exit }
 
-Write-Host "`n=== Step 11: Caregiver logs in with the new password (MFA required) ===" -ForegroundColor Cyan
-$body = @{ email = 'faith.chelulei+caregiver@strathmore.edu'; password = $newPassword } | ConvertTo-Json
-$cg2_1 = Invoke-RestMethod -Uri "$base/auth/login" -Method Post -ContentType 'application/json' -Body $body
-Write-Host "Check faith.chelulei+caregiver's inbox again for a fresh MFA code." -ForegroundColor Yellow
-$cgCode2 = Read-Host "6-digit code"
-$body = @{ userId = $cg2_1.userId; code = $cgCode2 } | ConvertTo-Json
-$cg2 = Invoke-RestMethod -Uri "$base/auth/verify-mfa" -Method Post -ContentType 'application/json' -Body $body -Headers @{ 'X-Device-Name' = 'FAITH-TEST-PC' }
-if ($cg2.token) { Write-Host "SUCCESS -- full loop complete: flagged -> escalated -> locked -> unlocked -> working again." -ForegroundColor Green }
+Step '1. The caregiver works normally on their own computer'
+$own = Connect-WithMfa $caregiver $Password
+if (-not $own) { Stop-Here 'No caregiver session' }
+$child = Invoke-Api '/children' 'POST' @{ fullName = 'Lifecycle Child'; dateOfBirth = '2020-09-09'; developmentalRecordsConsent = $true; privacyNoticeVersion = $noticeVersion } -Token $own.token
+Check 'Registers a child -- normal work, not flagged' ($child.Status -eq 201 -and -not $child.Body.riskNotice)
+$childId = $child.Body.childProfileId
 
-Write-Host "`n=== All steps complete ===" -ForegroundColor Cyan
-Write-Host "Note: the Caregiver test account's password is now the new temp password above (not DevTest123! anymore) until you change it." -ForegroundColor Yellow
+Step '2. Someone with the caregiver''s login signs in from an UNKNOWN device'
+Write-Host "  (Simulated attacker device: $unknownDevice)" -ForegroundColor DarkGray
+$thief = Connect-WithMfa $caregiver $Password $unknownDevice
+if (-not $thief) { Stop-Here 'No attacker session' }
+$flag = $null
+for ($i = 1; $i -le 3 -and -not $flag; $i++) {
+  $r = Invoke-Api "/children/$childId/records" -Token $thief.token -Device $unknownDevice
+  if ($r.Body.riskNotice -or $r.Body.code -eq 'SESSION_REVOKED_RISK') { $flag = $i }
+}
+Check 'The risk model flags the unknown device' ([bool]$flag) "flagged on action #$flag"
+if (-not $flag) { Stop-Here 'Not flagged' }
+$again = Invoke-Api '/children' -Token $thief.token -Device $unknownDevice
+Check 'That session is ended on the spot -- its next request is refused' ($again.Status -eq 401 -and $again.Body.code -eq 'SESSION_REVOKED_RISK')
+
+Step '3. The Security Auditor sees it in the review queue'
+$au = Connect-WithMfa $auditor $Password
+if (-not $au) { Stop-Here 'No auditor session' }
+$queue = Invoke-Api '/auditor/flagged-sessions?status=pending' -Token $au.token
+$alert = @($queue.Body.flaggedSessions) | Where-Object { $_.email -eq $caregiver } | Select-Object -First 1
+Check 'The flagged session is waiting for review' ([bool]$alert) $(if ($alert) { "alert #$($alert.risk_score_id), score $($alert.combined_score) vs $($alert.role_threshold), device $($alert.pc_name)" })
+if (-not $alert) { Stop-Here 'Alert not in the queue' }
+
+Step '4. The owner answers the alert email: "This was NOT me"'
+Write-Host "  Open $caregiver's inbox, find 'Unusual activity on your account'," -ForegroundColor Yellow
+Write-Host '  right-click "This was NOT me" -> Copy link address, and paste it here.' -ForegroundColor Yellow
+$denyUrl = (Read-Host '  Link').Trim()
+try { $page = Invoke-WebRequest -Uri $denyUrl -UseBasicParsing; $denyOk = $page.StatusCode -eq 200 } catch { $denyOk = $false }
+Check 'The link is accepted' $denyOk
+$locked = Invoke-Api '/auth/login' 'POST' @{ identifier = $caregiver; password = $Password }
+Check 'The account is now LOCKED -- even the right password is refused' ($locked.Status -eq 403) $locked.Body.error
+
+Step '5. The auditor records the breach decision (KDPA s.43, 72-hour rule)'
+$escalated = Invoke-Api '/auditor/flagged-sessions?status=escalated' -Token $au.token
+$now = @($escalated.Body.flaggedSessions) | Where-Object { $_.risk_score_id -eq $alert.risk_score_id }
+Check 'The alert was escalated automatically by the owner''s answer' ([bool]$now)
+$decision = Invoke-Api "/auditor/flagged-sessions/$($alert.risk_score_id)/breach-decision" 'POST' @{ decision = 'no_real_risk'; reason = 'Lifecycle test: simulated attacker, contained within seconds, no data left the system' } -Token $au.token
+Check 'Breach decision recorded within the 72-hour window' ($decision.Status -eq 200 -and $decision.Body.withinWindow) "$($decision.Body.hoursAfterFlag) h after detection"
+
+Step '6. The SysAdmin unlocks the account'
+$ad = Connect-WithMfa $admin $Password
+if (-not $ad) { Stop-Here 'No admin session' }
+$lockedList = Invoke-Api '/admin/users/locked' -Token $ad.token
+$target = @($lockedList.Body.lockedUsers) | Where-Object { $_.email -eq $caregiver }
+Check 'The caregiver appears in the locked-accounts list' ([bool]$target) $target.locked_reason
+if (-not $target) { Stop-Here 'Caregiver not locked' }
+$unlock = Invoke-Api "/admin/users/$($target.id)/unlock" 'POST' -Token $ad.token
+Check 'Unlocked -- a temporary password is emailed to the owner' ($unlock.Status -eq 200)
+
+Step '7. The owner signs back in and sets their password'
+Write-Host "  Check $caregiver's inbox for 'Your account has been unlocked'." -ForegroundColor Yellow
+$temp = (Read-Host '  Paste the temporary password').Trim()
+$back = Connect-WithMfa $caregiver $temp
+if (-not $back) { Stop-Here 'Could not sign in with the temporary password' }
+Check 'Must change the temporary password first' ([bool]$back.mustChangePassword)
+$changed = Invoke-Api '/auth/change-password' 'POST' @{ currentPassword = $temp; newPassword = $Password } -Token $back.token
+Check 'Password set back -- account fully working again' ($changed.Status -eq 200)
+$works = Invoke-Api '/children' -Token $back.token
+Check 'Their children are visible again' ($works.Status -eq 200)
+
+Write-Host "`n=== Lifecycle complete: $($script:passed) passed, $($script:failed) failed ===" -ForegroundColor $(if ($script:failed) { 'Red' } else { 'Green' })
+Write-Host 'flagged -> session ended -> auditor queue -> owner says NOT me -> locked -> breach decision -> unlocked -> working again' -ForegroundColor DarkGray
