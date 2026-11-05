@@ -200,4 +200,4 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
   };
 }
 
-module.exports = { computeFeatures, FILE_ACTION_TYPES };
+module.exports = { computeFeatures, FILE_ACTION_TYPES, isAfterHours };

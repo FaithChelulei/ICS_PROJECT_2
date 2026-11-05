@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout.jsx';
 import { getRetentionStatus, applyRetention } from '../../api/admin';
 import { PageHeader, Card, Button, Alert, Spinner, StatCard } from '../../components/ui.jsx';
+import StepUpDialog from '../../components/StepUpDialog.jsx';
 import { ADMIN_NAV as NAV } from './nav.js';
 
 // KDPA s.39 (limitation to retention). Only ARCHIVED child profiles are in
@@ -14,6 +15,7 @@ export default function RetentionPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [confirming, setConfirming] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -31,17 +33,16 @@ export default function RetentionPage() {
     load();
   }, []);
 
-  async function handleApply() {
-    if (!window.confirm(`Anonymise the identity of ${status.due} archived profile(s)? This cannot be undone.`)) return;
+  // Errors reach StepUpDialog, which shows them and stays open.
+  async function handleApply(password) {
     setBusy(true);
     setError('');
     setMessage('');
     try {
-      const data = await applyRetention();
+      const data = await applyRetention(password);
       setStatus(data.status);
+      setConfirming(false);
       setMessage(`Anonymised ${data.anonymised} profile(s). Their records and the audit trail are kept, linked only to the profile number.`);
-    } catch (err) {
-      setError(err.message);
     } finally {
       setBusy(false);
     }
@@ -53,7 +54,7 @@ export default function RetentionPage() {
         title="Data Retention"
         subtitle="Anonymising archived child profiles once they are no longer needed (Kenya Data Protection Act s.39)"
         actions={
-          <Button variant="danger" onClick={handleApply} disabled={busy || loading || !status || status.due === 0}>
+          <Button variant="danger" onClick={() => setConfirming(true)} disabled={busy || loading || !status || status.due === 0}>
             {busy ? 'Anonymising…' : status && status.due ? `Anonymise ${status.due} profile(s)` : 'Nothing due'}
           </Button>
         }
@@ -103,6 +104,14 @@ export default function RetentionPage() {
           </>
         )}
       </div>
+      {confirming && (
+        <StepUpDialog
+          message={`This anonymises the identity of ${status.due} archived profile(s) and cannot be undone. Enter your password to continue.`}
+          confirmLabel="Confirm and anonymise"
+          onConfirm={handleApply}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
     </Layout>
   );
 }

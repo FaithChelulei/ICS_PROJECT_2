@@ -2,6 +2,7 @@
 // a lighter blue accent, generous spacing, bigger type) so every page
 // shares the same look instead of repeating Tailwind classes everywhere.
 import { useEffect } from 'react';
+import Icon from './Icon.jsx';
 
 // Best-effort "first name" for a greeting -- prefers the account's real
 // full_name (set at registration approval), falls back to the local part
@@ -89,9 +90,16 @@ export function PageHeader({ title, subtitle, actions }) {
   );
 }
 
-export function EmptyState({ children }) {
+// `title` and `icon` are optional, so existing one-line callers are unaffected.
+export function EmptyState({ title, icon, children }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[#E4D9C6] bg-white px-6 py-14 text-center text-[15px] text-slate-500">
+    <div className="rounded-2xl border border-dashed border-[#E4D9C6] bg-white px-6 py-10 text-center text-[15px] text-slate-500">
+      {icon && (
+        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-mint text-brand-700">
+          <Icon name={icon} size={20} />
+        </div>
+      )}
+      {title && <div className="mb-1 font-semibold text-ink">{title}</div>}
       {children}
     </div>
   );
@@ -135,13 +143,31 @@ export function Spinner({ label = 'Loading…' }) {
 // A small metric tile used across dashboards (stat cards row). `accent`
 // tints the card itself with one of the pastel tokens (mint/peach/sky) for
 // the feature-grid look in the reference design -- optional, defaults to
-// plain white so existing callers are unaffected.
-export function StatCard({ label, value, tone = 'text-ink', hint, accent }) {
+// plain white so existing callers are unaffected. `icon` + `iconTone` add a
+// small tinted icon in the corner.
+const ICON_TONES = {
+  green: 'bg-mint text-brand-700',
+  coral: 'bg-coral-50 text-coral-600',
+  sky: 'bg-sky text-slate-700',
+  amber: 'bg-amber-50 text-amber-700',
+  red: 'bg-red-50 text-red-700',
+};
+
+export function StatCard({ label, value, tone = 'text-ink', hint, accent, icon, iconTone = 'green' }) {
   const accents = { mint: 'bg-mint', peach: 'bg-peach', sky: 'bg-sky' };
   return (
     <Card className={`p-5 ${accent ? accents[accent] : ''}`}>
-      <div className="text-[13px] font-medium text-slate-500 mb-1">{label}</div>
-      <div className={`font-display text-3xl font-bold ${tone}`}>{value}</div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[13px] font-medium text-slate-500 mb-1">{label}</div>
+          <div className={`font-display text-3xl font-bold ${tone}`}>{value}</div>
+        </div>
+        {icon && (
+          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${ICON_TONES[iconTone]}`}>
+            <Icon name={icon} />
+          </div>
+        )}
+      </div>
       {hint && <div className="mt-1 text-sm text-slate-400">{hint}</div>}
     </Card>
   );

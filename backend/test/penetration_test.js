@@ -11,7 +11,7 @@
 //
 // Uses the same dedicated test accounts as test:api (locked again at the
 // end). The password-guessing check trips the login rate limit, which is
-// per computer -- so it runs against a temporary second backend on :4001
+// per computer -- so it runs against a temporary second backend on :4099
 // that is shut down afterwards, leaving the real backend's limit untouched.
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
@@ -36,7 +36,8 @@ const { signRiskResponseToken } = require('../src/utils/riskResponseToken');
 const { PRIVACY_NOTICE_VERSION } = require('../src/services/privacyNotice');
 
 const TLS_ON = Boolean(process.env.TLS_CERT_FILE);
-const BASE = `${TLS_ON ? 'https' : 'http'}://localhost:4000`;
+const BASE = process.env.TEST_BASE || `${TLS_ON ? 'https' : 'http'}://localhost:4000`;
+const TARGET_PORT = Number(new URL(BASE).port);
 const PASS = `T3st-${crypto.randomBytes(9).toString('base64url')}`;
 const inbox = (process.env.SMTP_USER || 'test@example.com').split('@');
 const testEmail = (tag) => `${inbox[0]}+childguard-test-${tag}@${inbox[1]}`;
@@ -107,6 +108,7 @@ async function main() {
   const cgToken = await login(cg);
   const cg2Token = await login(cg2);
   const auToken = await login(au);
+  const adToken = await login(ad);
 
   // Fixtures: one child of the OTHER caregiver (the victim), with records
   // consent, and one of our own WITHOUT records consent.
@@ -150,9 +152,9 @@ async function main() {
   // Brute force, against a temporary second backend so this computer isn't
   // locked out of the real one for 15 minutes.
   const spare = spawn(process.execPath, ['src/server.js'], {
-    cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: '4001' }, stdio: 'ignore',
+    cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: '4099' }, stdio: 'ignore',
   });
-  const spareBase = BASE.replace(':4000', ':4001');
+  const spareBase = BASE.replace(`:${TARGET_PORT}`, ':4099');
   try {
     await waitFor(spareBase);
     let blockedAt = null;
@@ -179,6 +181,10 @@ async function main() {
   check('Caregiver records a breach decision', isRefused(await asCg('/auditor/flagged-sessions/1/breach-decision', {
     method: 'POST', body: { decision: 'no_real_risk', reason: 'trying to close my own alert' } }), 403));
   check('Auditor reads child data', isRefused(await api('/children', { token: auToken }), 403));
+  check('Stolen admin session re-encrypts without the password (step-up)',
+    isRefused(await api('/admin/encryption/reencrypt', { method: 'POST', token: adToken }), 403, 429));
+  check('Stolen admin session anonymises data with a guessed password (step-up)',
+    isRefused(await api('/admin/retention/apply', { method: 'POST', token: adToken, body: { password: 'guess' } }), 403, 429));
 
   // ------------------------------------------------------------- 4
   section('4. Other families\' children (IDOR)');
@@ -208,7 +214,6 @@ async function main() {
     const r = await asCg(`/children/${encodeURIComponent(bad)}/records`);
     check(`Tampered child number "${bad}"`, isRefused(r), `status ${r.status}`);
   }
-  const adToken = await login(ad);
   for (const [label, p, token] of [
     ['flag number on the auditor\'s review', '/auditor/flagged-sessions/abc/review', auToken],
     ['user number on the admin\'s unlock', '/admin/users/1%20OR%201=1/unlock', adToken],
@@ -260,10 +265,10 @@ async function main() {
   // ------------------------------------------------------------- 7
   section('7. Transport and browser protections');
   if (TLS_ON) {
-    const plain = await fetch('http://localhost:4000/health').then((r) => r.status).catch(() => 'refused');
+    const plain = await fetch(`http://localhost:${TARGET_PORT}/health`).then((r) => r.status).catch(() => 'refused');
     check('Plain, unencrypted HTTP', plain !== 200, `answer: ${plain}`);
     const old = await new Promise((resolve) => {
-      const s = tls.connect({ host: 'localhost', port: 4000, minVersion: 'TLSv1.2', maxVersion: 'TLSv1.2', rejectUnauthorized: false });
+      const s = tls.connect({ host: 'localhost', port: TARGET_PORT, minVersion: 'TLSv1.2', maxVersion: 'TLSv1.2', rejectUnauthorized: false });
       s.once('secureConnect', () => { s.destroy(); resolve('connected'); });
       s.once('error', (e) => resolve(e.code || e.message));
     });

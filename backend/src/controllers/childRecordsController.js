@@ -305,7 +305,11 @@ async function restoreChild(req, res) {
 async function listMyChildren(req, res) {
   const { rows } = await db.query(
     `SELECT cp.id AS child_profile_id, cp.created_at, cp.archived_at, cp.identity_anonymised_at,
-            ci.full_name_enc, ci.date_of_birth_enc, ci.family_background_enc
+            ci.full_name_enc, ci.date_of_birth_enc, ci.family_background_enc,
+            (SELECT COUNT(*)::int FROM developmental_records dr WHERE dr.child_profile_id = cp.id) AS record_count,
+            (SELECT cr.consent_given FROM consent_records cr
+             WHERE cr.child_profile_id = cp.id AND cr.scope = 'developmental_records'
+             ORDER BY cr.recorded_at DESC, cr.id DESC LIMIT 1) AS records_consent
      FROM child_profiles cp
      JOIN child_identifiers ci ON ci.child_profile_id = cp.id
      WHERE cp.caregiver_id = $1
@@ -321,6 +325,8 @@ async function listMyChildren(req, res) {
     familyBackground: r.family_background_enc ? decryptField(r.family_background_enc) : null,
     archivedAt: r.archived_at,
     anonymisedAt: r.identity_anonymised_at,
+    recordCount: r.record_count,
+    recordsConsent: r.records_consent === true,
   }));
 
   await logAction({ userId: req.user.id, action: 'view_own_children', detail: `${children.length} profile(s)` });

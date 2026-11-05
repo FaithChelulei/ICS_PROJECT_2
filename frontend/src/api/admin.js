@@ -18,7 +18,12 @@ export const unlockAccount = (id) =>
 
 export const getEncryptionStatus = () => apiFetch('/admin/encryption/status');
 
-export const reencryptData = () => apiFetch('/admin/encryption/reencrypt', { method: 'POST' });
+// Both need the admin's password again (step-up check).
+export const reencryptData = (password) =>
+  apiFetch('/admin/encryption/reencrypt', { method: 'POST', body: { password } });
 
 export const getRetentionStatus = () => apiFetch('/admin/retention/status');
-export const applyRetention = () => apiFetch('/admin/retention/apply', { method: 'POST' });
+export const applyRetention = (password) =>
+  apiFetch('/admin/retention/apply', { method: 'POST', body: { password } });
+
+export const getAdminOverview = () => apiFetch('/admin/overview');

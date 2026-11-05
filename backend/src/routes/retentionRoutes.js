@@ -3,6 +3,7 @@
 const express = require('express');
 const { authenticate, requirePasswordChanged } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
+const { requireStepUp } = require('../middleware/stepUp');
 const asyncHandler = require('../utils/asyncHandler');
 const { status, apply } = require('../controllers/retentionController');
 
@@ -11,6 +12,6 @@ const router = express.Router();
 router.use(authenticate, requirePasswordChanged, requirePermission('configure_system_settings'));
 
 router.get('/status', asyncHandler(status));
-router.post('/apply', asyncHandler(apply));
+router.post('/apply', requireStepUp, asyncHandler(apply));
 
 module.exports = router;

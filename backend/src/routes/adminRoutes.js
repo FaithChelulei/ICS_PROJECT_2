@@ -10,6 +10,7 @@ const {
   approveRequest,
   rejectRequest,
 } = require('../controllers/registrationController');
+const { adminOverview } = require('../controllers/overviewController');
 const validateIdParam = require('../middleware/validateIdParam');
 
 const router = express.Router();
@@ -17,6 +18,7 @@ const router = express.Router();
 router.use(authenticate, requirePasswordChanged, requirePermission('manage_registration_requests'));
 router.param('id', validateIdParam);
 
+router.get('/overview', asyncHandler(adminOverview));
 router.get('/registration-requests', asyncHandler(listRequests));
 router.post('/registration-requests/:id/approve', asyncHandler(approveRequest));
 router.post('/registration-requests/:id/reject', asyncHandler(rejectRequest));

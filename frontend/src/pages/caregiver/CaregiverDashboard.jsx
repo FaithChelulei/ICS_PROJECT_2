@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
+import { CAREGIVER_NAV } from './nav.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { listMyChildren } from '../../api/children';
+import { me } from '../../api/auth';
 import {
   PageHeader,
   Card,
@@ -10,17 +12,13 @@ import {
   Alert,
   EmptyState,
   Spinner,
-  StatCard,
   Avatar,
   Badge,
   firstNameOf,
 } from '../../components/ui.jsx';
+import Icon from '../../components/Icon.jsx';
 
-const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/caregiver/children/new', label: 'Register a Child' },
-  { to: '/caregiver/consent', label: 'Consent Management' },
-];
+const NAV = CAREGIVER_NAV;
 
 function age(dateOfBirth) {
   const dob = new Date(dateOfBirth);
@@ -35,6 +33,7 @@ export default function CaregiverDashboard() {
   const [loading, setLoading] = useState(true);
   const [riskNotice, setRiskNotice] = useState(null);
   const [error, setError] = useState('');
+  const [lastSignIn, setLastSignIn] = useState(null);
 
   useEffect(() => {
     listMyChildren()
@@ -44,6 +43,7 @@ export default function CaregiverDashboard() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+    me().then((data) => setLastSignIn(data.lastSignInAt)).catch(() => {}); // nice to have
   }, []);
 
   // Archived profiles are restricted (KDPA s.40(3)): listed separately, and
@@ -79,30 +79,14 @@ export default function CaregiverDashboard() {
         )}
         {error && <Alert className="mb-6">{error}</Alert>}
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <StatCard
-            label="Linked Children"
-            value={active.length}
-            hint={archived.length ? `Active records · ${archived.length} archived` : 'Active records'}
-            accent="mint"
-          />
-          <StatCard
-            label="Security Status"
-            value={riskNotice ? 'Attention' : 'Good'}
-            tone={riskNotice ? 'text-amber-600' : 'text-emerald-600'}
-            hint={riskNotice ? 'Review the notice above' : 'No anomalies'}
-            accent="peach"
-          />
-        </div>
-
         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-          My Children
+          My Children ({active.length})
         </h2>
         {loading ? (
           <Spinner />
         ) : active.length === 0 ? (
-          <EmptyState>
-            No {archived.length ? 'active ' : ''}children registered yet.{' '}
+          <EmptyState icon="user" title={`No ${archived.length ? 'active ' : ''}children yet`}>
+            Their profiles will appear here once registered.{' '}
             <Link to="/caregiver/children/new" className="text-brand-600 font-semibold">
               Register one now
             </Link>
@@ -122,9 +106,30 @@ export default function CaregiverDashboard() {
                       </div>
                     </div>
                   </div>
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#F1E7D3] pt-2.5 text-sm text-slate-500">
+                    {c.recordsConsent ? (
+                      <>
+                        <span>{c.recordCount} record{c.recordCount === 1 ? '' : 's'}</span>
+                        <Badge color="green">Records on</Badge>
+                      </>
+                    ) : (
+                      <>
+                        <span>No records shown</span>
+                        <Badge color="amber">Consent needed</Badge>
+                      </>
+                    )}
+                  </div>
                 </Card>
               </Link>
             ))}
+          </div>
+        )}
+
+        {!loading && active.length > 0 && (
+          <div className="mt-4 flex items-center gap-2.5 rounded-xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-700">
+            <Icon name="shield" />
+            Only you can see your children&rsquo;s details.
+            {lastSignIn && ` Your last sign-in was ${new Date(lastSignIn).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}.`}
           </div>
         )}
 

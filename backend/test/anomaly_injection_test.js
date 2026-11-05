@@ -39,7 +39,7 @@ const db = require('../src/config/db');
 const { recordAndScore, logAccessRequest } = require('../src/services/riskEngine');
 const { PRIVACY_NOTICE_VERSION } = require('../src/services/privacyNotice');
 
-const BASE = `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
+const BASE = process.env.TEST_BASE || `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
 const PASS = `T3st-${crypto.randomBytes(9).toString('base64url')}`;
 const inbox = (process.env.SMTP_USER || 'test@example.com').split('@');
 const testEmail = (tag) => `${inbox[0]}+childguard-test-anomaly-${tag}@${inbox[1]}`;
@@ -212,7 +212,7 @@ async function adminBurst() {
   const since = new Date();
   const device = 'anomaly-device-4';
   const token = await login(acct, device);
-  const run = await untilStopped(() => api('/admin/encryption/reencrypt', { method: 'POST', token, device }), 40);
+  const run = await untilStopped(() => api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } }), 40);
   report({
     name: '4. SysAdmin fires a burst of privileged actions', cert: 'Scenario 3 (disgruntled sysadmin)', expected: 'flag',
     detected: Boolean(run.stopped), stoppedBy: run.stopped, actions: run.actions, seconds: run.seconds,
@@ -251,7 +251,7 @@ async function nightTimeLive(n, role) {
       return api(`/children/${child}/records`, { token, device });
     },
     SecurityAuditor: () => api('/auditor/audit-log?limit=50', { token, device }),
-    SysAdmin: () => api('/admin/encryption/reencrypt', { method: 'POST', token, device }),
+    SysAdmin: () => api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } }),
   }[role];
   const run = await untilStopped(action, 3);
   report({
@@ -324,7 +324,7 @@ async function normalAdmin() {
   const token = await login(acct, device);
   await api('/admin/registration-requests', { token, device });
   await api('/admin/encryption/status', { token, device });
-  const re = await api('/admin/encryption/reencrypt', { method: 'POST', token, device });
+  const re = await api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } });
   await api('/admin/retention/status', { token, device });
   const s = await maxScore(acct, since);
   report({ name: '10. Normal SysAdmin: check status, one re-encryption', expected: 'none', detected: s.flags > 0 || flaggedBy(re), score: s.max });

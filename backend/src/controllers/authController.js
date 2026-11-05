@@ -179,12 +179,18 @@ async function me(req, res) {
     'SELECT full_name, must_change_password FROM users WHERE id = $1',
     [req.user.id]
   );
+  // The sign-in before this session, so people can spot one that wasn't them.
+  const { rows: previous } = await db.query(
+    'SELECT issued_at FROM sessions WHERE user_id = $1 AND id <> $2 ORDER BY issued_at DESC LIMIT 1',
+    [req.user.id, req.user.sessionId]
+  );
   return res.json({
     id: req.user.id,
     role: req.user.role,
     email: req.user.email,
     fullName: rows[0] ? rows[0].full_name : undefined,
     mustChangePassword: rows[0] ? rows[0].must_change_password : req.user.mustChangePassword,
+    lastSignInAt: previous[0] ? previous[0].issued_at : null,
   });
 }
 

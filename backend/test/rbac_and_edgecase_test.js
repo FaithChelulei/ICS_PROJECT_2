@@ -29,7 +29,7 @@ const db = require('../src/config/db');
 const { signRiskResponseToken } = require('../src/utils/riskResponseToken');
 const { PRIVACY_NOTICE_VERSION } = require('../src/services/privacyNotice');
 
-const BASE = `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
+const BASE = process.env.TEST_BASE || `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
 const PASS = `T3st-${crypto.randomBytes(9).toString('base64url')}`;
 const inbox = (process.env.SMTP_USER || 'test@example.com').split('@');
 const testEmail = (tag) => `${inbox[0]}+childguard-test-${tag}@${inbox[1]}`;
@@ -367,7 +367,7 @@ async function main() {
   if (dueOwners[0].other > 0) {
     record('Retention apply (SKIPPED: real profiles are due -- not anonymising them from a test run)', true);
   } else {
-    const applied = await api('/admin/retention/apply', { method: 'POST', token: ad.token });
+    const applied = await api('/admin/retention/apply', { method: 'POST', token: ad.token, body: { password: PASS } });
     record('SysAdmin applies retention (200) and this child is anonymised',
       applied.status === 200 && applied.json.childProfileIds.includes(kidId), applied.json && `anonymised=${applied.json.anonymised}`);
     const afterRet = await as2('/children');
@@ -450,7 +450,17 @@ async function main() {
   const enc = await api('/admin/encryption/status', { token: ad.token });
   record('Encryption status loads (200)', enc.status === 200, enc.json ? `active key #${enc.json.activeKeyId}` : '');
   record('Encryption status never exposes key material', enc.json && !JSON.stringify(enc.json).match(/[A-Za-z0-9+/]{43}=/));
-  const re = await api('/admin/encryption/reencrypt', { method: 'POST', token: ad.token });
+  // 429 also counts as refused: repeat runs inside 15 minutes hit the
+  // step-up failure limit, which is that protection working.
+  const noPw = await api('/admin/encryption/reencrypt', { method: 'POST', token: ad.token });
+  record('Re-encrypt without the password is refused (step-up)', [403, 429].includes(noPw.status), `status=${noPw.status}`);
+  const wrongPw = await api('/admin/encryption/reencrypt', { method: 'POST', token: ad.token, body: { password: 'not-the-password' } });
+  record('Re-encrypt with a wrong password is refused, session stays signed in',
+    [403, 429].includes(wrongPw.status) && (await api('/auth/me', { token: ad.token })).status === 200, `status=${wrongPw.status}`);
+  const { rows: stepLog } = await db.query(
+    "SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = $1 AND action = 'step_up_failed'", [adAcct.id]);
+  record('Failed step-up attempts are in the audit log', stepLog[0].n > 0, `${stepLog[0].n} entries`);
+  const re = await api('/admin/encryption/reencrypt', { method: 'POST', token: ad.token, body: { password: PASS } });
   record('Re-encrypt runs (200) and leaves nothing behind', re.status === 200 && re.json.status.needsReencryption === 0,
     re.json ? `updated ${re.json.updatedValues} value(s)` : `status=${re.status}`);
   const relist = await api('/children', { token: cg.token, device: deviceA });
@@ -460,6 +470,25 @@ async function main() {
   await expectStatus('Unlocking a not-locked account (409)', `/admin/users/${cgAcct.id}/unlock`, { method: 'POST', token: ad.token }, 409);
   await expectStatus('Unlocking a nonexistent user (404)', '/admin/users/999999/unlock', { method: 'POST', token: ad.token }, 404);
   await expectStatus('Approving a nonexistent request (404)', '/admin/registration-requests/999999/approve', { method: 'POST', token: ad.token }, 404);
+
+  console.log('\n=== Home page summaries ===');
+  const adminHome = await api('/admin/overview', { token: ad.token });
+  record('SysAdmin overview loads with its figures', adminHome.status === 200 && Number.isInteger(adminHome.json.pendingRequests)
+    && Number.isInteger(adminHome.json.lockedAccounts) && Array.isArray(adminHome.json.activeUsers) && Number.isInteger(adminHome.json.retentionDue),
+    `status=${adminHome.status}`);
+  const auditHome = await api('/auditor/overview', { token: au.token });
+  record('Auditor overview loads with 14 days of flags', auditHome.status === 200 && auditHome.json.flagsPerDay.length === 14,
+    `status=${auditHome.status}, reasons=${auditHome.json && auditHome.json.reasons.length}`);
+  await expectStatus('Caregiver cannot read the admin overview (403)', '/admin/overview', { token: cg.token, device: deviceA }, 403);
+  await expectStatus('Caregiver cannot read the auditor overview (403)', '/auditor/overview', { token: cg.token, device: deviceA }, 403);
+  await expectStatus('Auditor cannot read the admin overview (403)', '/admin/overview', { token: au.token }, 403);
+  const homeText = JSON.stringify(adminHome.json) + JSON.stringify(auditHome.json);
+  record('Overviews contain no child names', !homeText.includes('Test Child') && !homeText.includes('Anonymised child'));
+  const cards = await api('/children', { token: cg.token, device: deviceA });
+  const card = cards.json && cards.json.children.find((c) => c.childProfileId === childId);
+  record('Child cards carry record count and consent status', card && Number.isInteger(card.recordCount) && card.recordsConsent === true);
+  const meNow = await api('/auth/me', { token: cg.token, device: deviceA });
+  record('/auth/me reports the previous sign-in', meNow.status === 200 && meNow.json.lastSignInAt !== undefined);
 
   console.log('\n=== SUMMARY ===');
   const failed = results.filter((r) => !r.ok);

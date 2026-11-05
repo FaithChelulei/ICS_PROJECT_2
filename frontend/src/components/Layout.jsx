@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Avatar } from './ui.jsx';
+import Icon from './Icon.jsx';
 
 // `theme="dark"` gives the Security Auditor portal the navy "security
 // operations" sidebar from the reference design; every other role keeps
@@ -54,7 +55,10 @@ export default function Layout({ navItems, portalLabel, theme = 'light', childre
                 }`
               }
             >
-              <span>{item.label}</span>
+              <span className="flex items-center gap-2.5">
+                {item.icon && <Icon name={item.icon} />}
+                {item.label}
+              </span>
               {item.soon && (
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 ${

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
+import { CAREGIVER_NAV } from './nav.js';
 import {
   listRecords,
   submitRecord,
@@ -11,11 +12,7 @@ import {
 } from '../../api/children';
 import { PageHeader, Field, inputClass, Button, Alert, Card, EmptyState, Spinner } from '../../components/ui.jsx';
 
-const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/caregiver/children/new', label: 'Register a Child' },
-  { to: '/caregiver/consent', label: 'Consent Management' },
-];
+const NAV = CAREGIVER_NAV;
 
 export default function ChildRecordPage() {
   const { childProfileId } = useParams();

@@ -7,6 +7,7 @@
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
+const { KNOWN_DEVICE_SQL, likelyReason } = require('../services/flagReason');
 
 async function listFlagged(req, res) {
   // This queue is scoped to FLAGGED sessions only (is_flagged = true) --
@@ -25,7 +26,8 @@ async function listFlagged(req, res) {
     `SELECT rs.id AS risk_score_id, rs.combined_score, rs.role_threshold, rs.is_flagged,
             rs.owner_response, rs.auditor_status, rs.created_at,
             rs.breach_decision, rs.breach_decision_reason, rs.breach_decided_at,
-            ar.action_type, ar.pc_name, ar.ip_address,
+            ar.action_type, ar.pc_name, ar.ip_address, ar.requested_at,
+            ${KNOWN_DEVICE_SQL} AS known_device,
             u.id AS user_id, u.email, r.name AS role
      FROM risk_scores rs
      JOIN access_requests ar ON ar.id = rs.access_request_id
@@ -38,7 +40,7 @@ async function listFlagged(req, res) {
 
   // The auditor's home screen -- loads on sign-in and after every review.
   await logOnlyAction(req, 'view_flagged_sessions');
-  res.json({ flaggedSessions: rows });
+  res.json({ flaggedSessions: rows.map((r) => ({ ...r, likely_reason: likelyReason(r) })) });
 }
 
 async function reviewFlagged(req, res) {

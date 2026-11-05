@@ -1,5 +1,7 @@
 import { apiFetch, apiDownload } from './client';
 
+export const getAuditorOverview = () => apiFetch('/auditor/overview');
+
 export const listFlagged = () => apiFetch('/auditor/flagged-sessions');
 
 export const reviewFlagged = (riskScoreId, status) =>

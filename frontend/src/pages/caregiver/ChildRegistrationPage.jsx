@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
+import { CAREGIVER_NAV } from './nav.js';
 import { createChildProfile } from '../../api/children';
 import { PageHeader, Field, inputClass, Button, Alert, Card, Toast } from '../../components/ui.jsx';
 import PrivacyNotice, { PRIVACY_NOTICE_VERSION } from '../../components/PrivacyNotice.jsx';
@@ -8,11 +9,7 @@ import PrivacyNotice, { PRIVACY_NOTICE_VERSION } from '../../components/PrivacyN
 // Can't be born after today.
 const todayIso = new Date().toISOString().slice(0, 10);
 
-const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/caregiver/children/new', label: 'Register a Child' },
-  { to: '/caregiver/consent', label: 'Consent Management' },
-];
+const NAV = CAREGIVER_NAV;
 
 export default function ChildRegistrationPage() {
   // developmentalRecordsConsent is opt-in (unchecked by default): without it

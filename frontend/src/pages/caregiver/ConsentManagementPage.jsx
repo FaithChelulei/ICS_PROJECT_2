@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout.jsx';
+import { CAREGIVER_NAV } from './nav.js';
 import { listMyChildren, getConsent, setConsent } from '../../api/children';
 import {
   PageHeader,
@@ -12,11 +13,7 @@ import {
   Avatar,
 } from '../../components/ui.jsx';
 
-const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/caregiver/children/new', label: 'Register a Child' },
-  { to: '/caregiver/consent', label: 'Consent Management' },
-];
+const NAV = CAREGIVER_NAV;
 
 // Friendly copy for the two scopes the backend actually tracks. No
 // "third-party sharing" entry here -- the app doesn't share data with

@@ -32,7 +32,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../src/config/db');
 const { PRIVACY_NOTICE_VERSION } = require('../src/services/privacyNotice');
 
-const BASE = `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
+const BASE = process.env.TEST_BASE || `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
 const ML = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001';
 const LIMIT_MS = 1000;
 const RUNS = 50;

@@ -77,7 +77,7 @@ ML service hop stays plain HTTP because it never leaves the machine
 (loopback only). Firefox keeps its own certificate store, so use
 Chrome/Edge or accept the certificate in Firefox manually.
 
-Checks: `npm test` (encryption unit tests) and `npm run test:api` (53
+Checks: `npm test` (encryption unit tests) and `npm run test:api` (121
 end-to-end API checks, including consent enforcement, against the running backend + ML service, using
 dedicated test accounts; non-destructive) in `backend/`.
 

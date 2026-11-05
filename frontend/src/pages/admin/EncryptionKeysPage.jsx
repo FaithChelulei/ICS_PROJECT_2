@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout.jsx';
 import { getEncryptionStatus, reencryptData } from '../../api/admin';
 import { PageHeader, Card, Button, Alert, Badge, Spinner, StatCard } from '../../components/ui.jsx';
+import StepUpDialog from '../../components/StepUpDialog.jsx';
 import { ADMIN_NAV as NAV } from './nav.js';
 
 export default function EncryptionKeysPage() {
@@ -10,6 +11,7 @@ export default function EncryptionKeysPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [confirming, setConfirming] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -27,21 +29,20 @@ export default function EncryptionKeysPage() {
     load();
   }, []);
 
-  async function handleReencrypt() {
-    if (!window.confirm('Re-encrypt every stored child record value with the active key?')) return;
+  // Errors reach StepUpDialog, which shows them and stays open.
+  async function handleReencrypt(password) {
     setBusy(true);
     setError('');
     setMessage('');
     try {
-      const data = await reencryptData();
+      const data = await reencryptData(password);
       setStatus(data.status);
+      setConfirming(false);
       setMessage(
         data.updatedValues === 0
           ? 'Everything was already on the active key.'
           : `Re-encrypted ${data.updatedValues} value(s) in ${data.updatedRows} record(s) with key #${data.activeKeyId}.`
       );
-    } catch (err) {
-      setError(err.message);
     } finally {
       setBusy(false);
     }
@@ -53,7 +54,7 @@ export default function EncryptionKeysPage() {
         title="Encryption Key Management"
         subtitle="Which keys protect child data, and moving data onto a new key"
         actions={
-          <Button onClick={handleReencrypt} disabled={busy || loading || !status || status.needsReencryption === 0}>
+          <Button onClick={() => setConfirming(true)} disabled={busy || loading || !status || status.needsReencryption === 0}>
             {busy ? 'Re-encrypting…' : 'Re-encrypt to active key'}
           </Button>
         }
@@ -144,6 +145,14 @@ export default function EncryptionKeysPage() {
           </>
         )}
       </div>
+      {confirming && (
+        <StepUpDialog
+          message="Re-encrypting changes all stored child data. Enter your password to continue."
+          confirmLabel="Confirm and re-encrypt"
+          onConfirm={handleReencrypt}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
     </Layout>
   );
 }
