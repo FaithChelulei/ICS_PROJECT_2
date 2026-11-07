@@ -70,6 +70,77 @@ function isAfterHours(date) {
   return hour < 6 || hour >= 20 ? 1 : 0;
 }
 
+// ---- Caregiver baselines (live traffic simulation, docs/LIVE_SIMULATION.md)
+// The simulation showed that most caregiver false sign-outs came from two
+// normal habits that look like CERT misuse: using the app after 20:00 and
+// using a second device such as a phone. No threshold separated these from
+// the night-time and stolen-password attacks, because the feature values
+// were identical. For Caregivers only, two features therefore use the
+// user's own history instead of a fixed rule. The models are unchanged; the
+// features keep their training meaning ("outside this person's usual
+// hours", "a PC this person does not normally use").
+const BASELINE_ROLES = ['Caregiver'];
+const USUAL_HOURS_LOOKBACK_DAYS = 30;
+const USUAL_HOURS_WINDOW_MIN = 60;  // +/- one hour of this time of day
+const USUAL_HOURS_MIN_DAYS = 3;     // seen on at least 3 earlier days
+const KNOWN_DEVICE_MIN_DAYS = 1;    // device used on an earlier day (same rule as is_own_pc)
+
+const localDayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+const minuteOfDay = (d) => d.getHours() * 60 + d.getMinutes();
+
+// is_after_hours for a Caregiver: outside 06:00-20:00 AND not one of this
+// user's usual times. "Usual" = activity within an hour of this time of
+// day on at least 3 distinct earlier days in the last 30. A caregiver who
+// regularly works at 20:30 is not flagged for it; the same caregiver at
+// 23:10 still is. Times are compared in local time, like isAfterHours.
+async function isOutsideUsualHours(userId, now, dayStart) {
+  if (isAfterHours(now) === 0) return 0;
+  const since = new Date(dayStart.getTime() - USUAL_HOURS_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+  const { rows } = await db.query(
+    `SELECT DISTINCT date_trunc('minute', requested_at) AS t FROM access_requests
+     WHERE user_id = $1 AND requested_at >= $2 AND requested_at < $3`,
+    [userId, since, dayStart]
+  );
+  const target = minuteOfDay(now);
+  const days = new Set();
+  for (const r of rows) {
+    const t = new Date(r.t);
+    const diff = Math.abs(minuteOfDay(t) - target);
+    if (Math.min(diff, 1440 - diff) <= USUAL_HOURS_WINDOW_MIN) days.add(localDayKey(t));
+  }
+  return days.size >= USUAL_HOURS_MIN_DAYS ? 0 : 1;
+}
+
+// unique_pcs_used_that_day for a Caregiver: the devices a caregiver has
+// already used on an earlier day (the same history is_own_pc trusts), or
+// confirmed with "This was me" on a flagged session, count together as one, so a laptop plus a
+// usual phone is 1, as for a CERT user at their own PC. Every other device
+// used today still adds 1, so a stolen password used from a new device
+// still gives 2.
+async function caregiverDevicesToday(userId, dayStart, dayEnd) {
+  const { rows } = await db.query(
+    `WITH today AS (
+       SELECT DISTINCT pc_name FROM access_requests
+       WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3 AND pc_name IS NOT NULL
+     )
+     SELECT t.pc_name,
+            (SELECT COUNT(DISTINCT date_trunc('day', ar.requested_at)) FROM access_requests ar
+             WHERE ar.user_id = $1 AND ar.pc_name = t.pc_name AND ar.requested_at < $2) AS earlier_days,
+            EXISTS (SELECT 1 FROM access_requests ar JOIN risk_scores rs ON rs.access_request_id = ar.id
+                    WHERE ar.user_id = $1 AND ar.pc_name = t.pc_name
+                      AND rs.owner_response = 'confirmed_benign') AS confirmed
+     FROM today t`,
+    [userId, dayStart, dayEnd]
+  );
+  let known = 0;
+  let other = 0;
+  for (const r of rows) {
+    if (Number(r.earlier_days) >= KNOWN_DEVICE_MIN_DAYS || r.confirmed) known += 1;
+    else other += 1;
+  }
+  return (known > 0 ? 1 : 0) + other;
+}
+
 // is_own_pc, live version. CERT's "own PC" is the machine a user normally
 // works on; the web-app equivalent is "a device this user has signed in
 // from before". Only rows from OTHER sessions count as history -- the
@@ -145,8 +216,9 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
   dayEnd.setHours(23, 59, 59, 999);
 
   const useDayBasedShape = DAY_BASED_SHAPE_ROLES.includes(role);
+  const useBaselines = BASELINE_ROLES.includes(role);
 
-  const [prevHour, prevDay, pcsToday, shape, isOwnPc] = await Promise.all([
+  const [prevHour, prevDay, pcsToday, shape, isOwnPc, afterHours] = await Promise.all([
     db.query(
       `SELECT COUNT(*) FROM access_requests WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3`,
       [userId, oneHourAgo, nowDate]
@@ -155,11 +227,13 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
       `SELECT COUNT(*) FROM access_requests WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3`,
       [userId, oneDayAgo, nowDate]
     ),
-    db.query(
-      `SELECT COUNT(DISTINCT pc_name) FROM access_requests
-       WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3 AND pc_name IS NOT NULL`,
-      [userId, dayStart, dayEnd]
-    ),
+    useBaselines
+      ? caregiverDevicesToday(userId, dayStart, dayEnd).then((count) => ({ rows: [{ count }] }))
+      : db.query(
+        `SELECT COUNT(DISTINCT pc_name) FROM access_requests
+         WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3 AND pc_name IS NOT NULL`,
+        [userId, dayStart, dayEnd]
+      ),
     useDayBasedShape
       ? computeDayBasedShape(userId, dayStart, nowDate)
       : computeSessionBasedShape(sessionId, nowDate),
@@ -167,6 +241,7 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
     // let a couple of stale test rows (2 tagged "FAITH-TEST-PC") pin
     // is_own_pc at 0 forever. See isOwnDevice above.
     isOwnDevice(userId, pcName, sessionId),
+    useBaselines ? isOutsideUsualHours(userId, nowDate, dayStart) : isAfterHours(nowDate),
   ]);
 
   // Every tracked session genuinely runs on exactly one physical device,
@@ -195,7 +270,7 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
     events_prev_hour: Number(prevHour.rows[0].count),
     unique_pcs_used_that_day: uniquePcsUsedToday,
     session_duration_minutes: shape.durationMinutes,
-    is_after_hours: isAfterHours(nowDate),
+    is_after_hours: afterHours,
     is_own_pc: isOwnPc,
   };
 }
