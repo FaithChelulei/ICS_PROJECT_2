@@ -13,6 +13,7 @@ const PATHS = {
   check: <path d="M5 12l5 5 9-10" />,
   heart: <path d="M12 20S4 15 4 9a4.5 4.5 0 0 1 8-2.7A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z" />,
   report: <><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" /></>,
+  sliders: <><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></>,
 };
 
 export default function Icon({ name, size = 18, className = '' }) {

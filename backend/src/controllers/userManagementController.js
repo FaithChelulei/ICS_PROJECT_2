@@ -6,14 +6,34 @@
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
-const { sendAccountUnlockedEmail } = require('../utils/mailer');
+const { sendAccountUnlockedEmail, sendRoleChangedEmail } = require('../utils/mailer');
 const { generateTempPassword } = require('../utils/tempPassword');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
+const { cleanReason } = require('../utils/changeReason');
 
 // The automated test suites lock their own accounts between runs. Those
 // need nobody's attention, so they stay out of the admin's locked list and
 // counts.
 const TEST_ACCOUNT_LOCK_REASON = 'automated test account';
+
+// GET /admin/users — SysAdmin only. Everyone who can sign in, with the number
+// of children linked to them. Row-level security hides child data from a
+// SysAdmin, so the count runs as System and returns numbers only, no names.
+async function listUsers(req, res) {
+  const { rows } = await db.query(
+    `SELECT u.id, u.email, u.full_name, r.name AS role, u.is_locked
+     FROM users u JOIN roles r ON r.id = u.role_id
+     WHERE COALESCE(u.locked_reason, '') NOT LIKE $1
+     ORDER BY r.name, u.full_name`,
+    [`${TEST_ACCOUNT_LOCK_REASON}%`]
+  );
+  const { rows: counts } = await db.runAsSystem(() => db.query(
+    'SELECT caregiver_id, COUNT(*)::int AS children FROM child_profiles GROUP BY caregiver_id'
+  ));
+  const children = new Map(counts.map((c) => [c.caregiver_id, c.children]));
+  await logOnlyAction(req, 'view_user_list');
+  res.json({ users: rows.map((u) => ({ ...u, children: children.get(u.id) || 0 })) });
+}
 
 // GET /admin/users/locked — SysAdmin only. Lists every currently-locked
 // account so the SysAdmin doesn't need direct DB access to find out who
@@ -93,4 +113,64 @@ async function unlockAccount(req, res) {
   });
 }
 
-module.exports = { listLockedUsers, unlockAccount, TEST_ACCOUNT_LOCK_REASON };
+// POST /admin/users/:id/role — SysAdmin only, password required again
+// (FR-25). Open sessions end at once because each one carries the old role.
+// Nobody can change their own role, which also means the system always keeps
+// the admin who made the change. A caregiver with linked children is refused:
+// those children would be left with nobody able to see or manage them.
+async function changeRole(req, res) {
+  const userId = Number(req.params.id);
+  const { role } = req.body || {};
+  const reason = cleanReason(req.body && req.body.reason);
+
+  if (typeof role !== 'string') return res.status(400).json({ error: 'Choose a role.' });
+  if (!reason) return res.status(400).json({ error: 'Give a reason of 10 to 500 characters.' });
+  if (userId === req.user.id) {
+    return res.status(403).json({ error: 'You cannot change your own role. Ask another System Administrator.', code: 'OWN_ROLE_CHANGE' });
+  }
+
+  const { rows: roleRows } = await db.query('SELECT id FROM roles WHERE name = $1', [role]);
+  if (!roleRows[0]) return res.status(400).json({ error: 'Unknown role.' });
+
+  const { rows } = await db.query(
+    'SELECT u.id, u.email, r.name AS role FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1',
+    [userId]
+  );
+  const user = rows[0];
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.role === role) return res.status(409).json({ error: `This user is already a ${role}.` });
+
+  const { rows: linked } = await db.runAsSystem(() => db.query(
+    'SELECT COUNT(*)::int AS n FROM child_profiles WHERE caregiver_id = $1', [userId]
+  ));
+  if (linked[0].n > 0) {
+    return res.status(409).json({
+      error: `This caregiver has ${linked[0].n} child profile(s) linked, so their role cannot be changed.`,
+      code: 'CAREGIVER_HAS_CHILDREN',
+    });
+  }
+
+  await db.transaction(async (client) => {
+    await client.query('UPDATE users SET role_id = $1 WHERE id = $2', [roleRows[0].id, userId]);
+    await client.query(
+      "UPDATE sessions SET revoked_at = now(), revoked_reason = 'role_changed' WHERE user_id = $1 AND revoked_at IS NULL",
+      [userId]
+    );
+  });
+
+  await logAction({
+    userId: req.user.id,
+    action: 'user_role_changed',
+    detail: `user_id=${userId}, email=${user.email}, from=${user.role}, to=${role}, reason=${reason}`,
+  });
+  try {
+    await sendRoleChangedEmail(user.email, { role });
+  } catch (err) {
+    console.error(`[user-management] role change email to user ${userId} failed:`, err.message);
+  }
+
+  const risk = await scoreAction(req, 'change_user_role');
+  res.json({ message: `${user.email} is now a ${role} and has been signed out.`, ...riskFields(risk) });
+}
+
+module.exports = { listUsers, listLockedUsers, unlockAccount, changeRole, TEST_ACCOUNT_LOCK_REASON };

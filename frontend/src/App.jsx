@@ -13,6 +13,9 @@ import ReportsPage from './pages/auditor/ReportsPage.jsx';
 import AdminPanel from './pages/admin/AdminPanel.jsx';
 import EncryptionKeysPage from './pages/admin/EncryptionKeysPage.jsx';
 import RetentionPage from './pages/admin/RetentionPage.jsx';
+import UsersPage from './pages/admin/UsersPage.jsx';
+import SettingsPage from './pages/admin/SettingsPage.jsx';
+import RiskThresholdsPage from './pages/auditor/RiskThresholdsPage.jsx';
 import ConsentManagementPage from './pages/caregiver/ConsentManagementPage.jsx';
 
 // "/" renders a different dashboard per role rather than redirecting to
@@ -84,6 +87,30 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={['SecurityAuditor']}>
             <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auditor/risk-thresholds"
+        element={
+          <ProtectedRoute allowedRoles={['SecurityAuditor']}>
+            <RiskThresholdsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute allowedRoles={['SysAdmin']}>
+            <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <ProtectedRoute allowedRoles={['SysAdmin']}>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />

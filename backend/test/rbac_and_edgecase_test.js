@@ -42,6 +42,8 @@ const ACCOUNTS = {
   cg2: { tag: 'caregiver2', role: 'Caregiver', username: 'test.caregiver2', name: 'Test Caregiver Two' },
   au: { tag: 'auditor', role: 'SecurityAuditor', username: 'test.auditor', name: 'Test Auditor' },
   ad: { tag: 'admin', role: 'SysAdmin', username: 'test.admin', name: 'Test Admin' },
+  // Has no children and exists only to have its role changed and put back.
+  rc: { tag: 'rolechange', role: 'Caregiver', username: 'test.rolechange', name: 'Test Role Change' },
 };
 
 const results = [];
@@ -100,7 +102,7 @@ async function api(path, { method = 'GET', token, device, body } = {}) {
   const text = await res.text();
   let json = null;
   try { json = JSON.parse(text); } catch { /* html or empty */ }
-  return { status: res.status, json, text };
+  return { status: res.status, json, text, limit: res.headers.get('ratelimit-policy') };
 }
 
 async function login(identifier, device) {
@@ -489,6 +491,134 @@ async function main() {
   record('Child cards carry record count and consent status', card && Number.isInteger(card.recordCount) && card.recordsConsent === true);
   const meNow = await api('/auth/me', { token: cg.token, device: deviceA });
   record('/auth/me reports the previous sign-in', meNow.status === 200 && meNow.json.lastSignInAt !== undefined);
+
+  console.log('\n=== Risk thresholds (FR-21) ===');
+  const WHY = 'Automated test of this control';
+  const setLimit = (role, threshold, password = PASS, token = au.token, reason = WHY) => api(`/auditor/risk-thresholds/${role}`, {
+    method: 'POST', token, body: { threshold, reason, password },
+  });
+  const clearLimits = () => db.query("DELETE FROM risk_threshold_settings WHERE reason = $1", [WHY]);
+  const clearSettings = () => db.query("DELETE FROM system_settings WHERE reason = $1", [WHY]);
+  await clearLimits();
+  await clearSettings();
+  try {
+    const limits = await api('/auditor/risk-thresholds', { token: au.token });
+    const cgLimit = limits.json && limits.json.thresholds.find((t) => t.role === 'Caregiver');
+    const ownLimit = limits.json && limits.json.thresholds.find((t) => t.role === 'SecurityAuditor');
+    record('Auditor sees the limits for all three roles', limits.status === 200 && limits.json.thresholds.length === 3);
+    record('Auditor\'s own role is marked not editable', ownLimit && ownLimit.editable === false && cgLimit.editable === true);
+    await expectStatus('Caregiver cannot read risk limits (403)', '/auditor/risk-thresholds', { token: cg.token, device: deviceA }, 403);
+    await expectStatus('Admin cannot read risk limits (403)', '/auditor/risk-thresholds', { token: ad.token }, 403);
+    record('Admin cannot change a risk limit (403)', (await setLimit('Caregiver', 0.42, PASS, ad.token)).status === 403);
+    const noPass = await api('/auditor/risk-thresholds/Caregiver', { method: 'POST', token: au.token, body: { threshold: 0.42, reason: WHY } });
+    record('Changing a limit without the password is refused (403)', noPass.status === 403 && noPass.json.code === 'STEP_UP_REQUIRED');
+    record('Changing a limit with a wrong password is refused (403)', (await setLimit('Caregiver', 0.42, 'not-the-password')).status === 403);
+    const ownChange = await setLimit('SecurityAuditor', 0.7);
+    record('Auditor cannot change their own role\'s limit (403)', ownChange.status === 403 && ownChange.json.code === 'OWN_ROLE_THRESHOLD');
+    record('A limit above the allowed range is refused (400)', (await setLimit('Caregiver', 0.99)).status === 400);
+    record('A limit below the allowed range is refused (400)', (await setLimit('Caregiver', 0.01)).status === 400);
+    record('A limit that is not a number is refused (400)', (await setLimit('Caregiver', '0.42')).status === 400);
+    record('A change with no real reason is refused (400)', (await setLimit('Caregiver', 0.42, PASS, au.token, 'short')).status === 400);
+    record('An unknown role is refused (404)', (await setLimit('Nobody', 0.42)).status === 404);
+    record('Same limit as now is refused (409)', (await setLimit('Caregiver', cgLimit.threshold)).status === 409);
+
+    let dbRefused = false;
+    try {
+      await db.query('INSERT INTO risk_threshold_settings (role_name, threshold, reason, updated_by) VALUES ($1, 0.99, $2, $3)', ['Caregiver', WHY, auAcct.id]);
+    } catch (err) {
+      dbRefused = err.constraint === 'risk_threshold_within_limits';
+    }
+    record('The database itself refuses a limit outside the range', dbRefused);
+
+    const since = new Date();
+    const changed = await setLimit('Caregiver', 0.42);
+    record('Auditor changes the Caregiver limit (200)', changed.status === 200, `status=${changed.status}`);
+    const scored = await api(`/children/${childId}/records`, { token: cg.token, device: deviceA });
+    const { rows: applied } = await db.query(
+      `SELECT rs.role_threshold FROM risk_scores rs JOIN access_requests ar ON ar.id = rs.access_request_id
+       WHERE ar.user_id = $1 ORDER BY rs.id DESC LIMIT 1`, [cgAcct.id]);
+    record('The very next action is scored against the new limit', scored.status === 200 && Number(applied[0].role_threshold) === 0.42,
+      `threshold=${applied[0] && applied[0].role_threshold}`);
+    const { rows: limitLog } = await db.query(
+      "SELECT detail FROM audit_log WHERE action = 'risk_threshold_changed' AND user_id = $1 AND created_at >= $2", [auAcct.id, since]);
+    record('The change is in the audit log with its reason', limitLog.length === 1 && limitLog[0].detail.includes('to=0.42') && limitLog[0].detail.includes(WHY));
+    const { rows: tried } = await db.query(
+      "SELECT COUNT(*)::int AS n FROM audit_log WHERE action = 'step_up_failed' AND user_id = $1 AND detail LIKE '%risk-thresholds%'", [auAcct.id]);
+    record('The wrong password attempt is in the audit log', tried[0].n >= 1);
+  } finally {
+    await clearLimits();
+  }
+
+  console.log('\n=== Users, roles and settings (FR-25) ===');
+  const setRole = (id, role, password = PASS, token = ad.token, reason = WHY) => api(`/admin/users/${id}/role`, {
+    method: 'POST', token, body: { role, reason, password },
+  });
+  const rcUser = await ensureTestAccount(ACCOUNTS.rc);
+  const rcAcct = rcUser.id;
+  await db.query("UPDATE users SET role_id = (SELECT id FROM roles WHERE name = 'Caregiver') WHERE id = $1", [rcAcct]);
+  await ageTestActivity([rcAcct]);
+  const rc = await login(rcUser.email);
+  const people = await api('/admin/users', { token: ad.token });
+  const listedUser = people.json && people.json.users.find((u) => u.id === cgAcct.id);
+  record('Admin sees the user list with child counts', people.status === 200 && listedUser && listedUser.children >= 1);
+  record('The user list contains no child names', !JSON.stringify(people.json).includes('Test Child'));
+  // rc is a caregiver signed in just now; cg's session was ended on purpose earlier.
+  await expectStatus('Caregiver cannot list users (403)', '/admin/users', { token: rc.token }, 403);
+  await expectStatus('Auditor cannot list users (403)', '/admin/users', { token: au.token }, 403);
+  record('Auditor cannot change a role (403)', (await setRole(rcAcct, 'SysAdmin', PASS, au.token)).status === 403);
+  record('Caregiver cannot make themselves an admin (403)', (await api(`/admin/users/${rcAcct}/role`, {
+    method: 'POST', token: rc.token, body: { role: 'SysAdmin', reason: WHY, password: PASS },
+  })).status === 403);
+  const roleNoPass = await api(`/admin/users/${rcAcct}/role`, { method: 'POST', token: ad.token, body: { role: 'SysAdmin', reason: WHY } });
+  record('Changing a role without the password is refused (403)', roleNoPass.status === 403 && roleNoPass.json.code === 'STEP_UP_REQUIRED');
+  const selfRole = await setRole(adAcct.id, 'Caregiver');
+  record('Admin cannot change their own role (403)', selfRole.status === 403 && selfRole.json.code === 'OWN_ROLE_CHANGE');
+  record('An unknown role is refused (400)', (await setRole(rcAcct, 'SuperUser')).status === 400);
+  record('A role change with no real reason is refused (400)', (await setRole(rcAcct, 'SysAdmin', PASS, ad.token, 'short')).status === 400);
+  record('Changing a nonexistent user is refused (404)', (await setRole(999999, 'SysAdmin')).status === 404);
+  record('Setting the role a user already has is refused (409)', (await setRole(rcAcct, 'Caregiver')).status === 409);
+  const hasChildren = await setRole(cgAcct.id, 'SecurityAuditor');
+  record('A caregiver with children linked cannot be moved (409)', hasChildren.status === 409 && hasChildren.json.code === 'CAREGIVER_HAS_CHILDREN');
+  const moved = await setRole(rcAcct, 'SecurityAuditor');
+  record('Admin changes a user\'s role (200)', moved.status === 200, `status=${moved.status}`);
+  const oldSession = await api('/auth/me', { token: rc.token });
+  record('The user\'s open session ends at once (401)', oldSession.status === 401, `status=${oldSession.status}`);
+  const rcAgain = await login(rcUser.email);
+  record('The next sign-in carries the new role', rcAgain.role === 'SecurityAuditor', `role=${rcAgain.role}`);
+  record('The new role gives the new access (200)', (await api('/auditor/audit-log?limit=1', { token: rcAgain.token })).status === 200);
+  const { rows: roleLog } = await db.query(
+    "SELECT detail FROM audit_log WHERE action = 'user_role_changed' AND user_id = $1 ORDER BY id DESC LIMIT 1", [adAcct.id]);
+  record('The role change is in the audit log with its reason', roleLog[0] && roleLog[0].detail.includes('to=SecurityAuditor') && roleLog[0].detail.includes(WHY));
+  record('Admin puts the role back (200)', (await setRole(rcAcct, 'Caregiver')).status === 200);
+  const rcBack = await login(rcUser.email);
+  record('After it is put back, sign-in is a caregiver again', rcBack.role === 'Caregiver', `role=${rcBack.role}`);
+
+  const setSetting = (key, value, password = PASS, token = ad.token) => api(`/admin/settings/${key}`, {
+    method: 'POST', token, body: { value, reason: WHY, password },
+  });
+  try {
+    const settings = await api('/admin/settings', { token: ad.token });
+    record('Admin sees the two settings', settings.status === 200 && settings.json.settings.length === 2);
+    const settingsText = JSON.stringify(settings.json);
+    record('Settings show no keys or passwords', !/ENCRYPTION|JWT|SMTP|DATABASE|password/i.test(settingsText));
+    await expectStatus('Caregiver cannot read settings (403)', '/admin/settings', { token: rcBack.token }, 403);
+    await expectStatus('Auditor cannot read settings (403)', '/admin/settings', { token: au.token }, 403);
+    record('Changing a setting with a wrong password is refused (403)', (await setSetting('retention_days', 400, 'not-the-password')).status === 403);
+    record('A retention period below the minimum is refused (400)', (await setSetting('retention_days', 1)).status === 400);
+    record('A value that is not a whole number is refused (400)', (await setSetting('retention_days', 40.5)).status === 400);
+    record('An unknown setting is refused (404)', (await setSetting('jwt_secret', 1)).status === 404);
+    record('Admin changes the retention period (200)', (await setSetting('retention_days', 400)).status === 200);
+    const retentionNow = await api('/admin/retention/status', { token: ad.token });
+    record('Data Retention uses the new period at once', retentionNow.json && retentionNow.json.retentionDays === 400, `days=${retentionNow.json && retentionNow.json.retentionDays}`);
+    record('Admin changes the report download limit (200)', (await setSetting('report_exports_per_hour', 40)).status === 200);
+    const report = await api('/auditor/reports/flagged-sessions?format=csv', { token: au.token });
+    record('The download limit uses the new value at once', report.status === 200 && /q=40/.test(report.limit || ''), `limit=${report.limit}`);
+    const { rows: settingLog } = await db.query(
+      "SELECT COUNT(*)::int AS n FROM audit_log WHERE action = 'system_setting_changed' AND user_id = $1 AND created_at > now() - interval '5 minutes'", [adAcct.id]);
+    record('Setting changes are in the audit log', settingLog[0].n >= 2);
+  } finally {
+    await clearSettings();
+  }
 
   console.log('\n=== SUMMARY ===');
   const failed = results.filter((r) => !r.ok);

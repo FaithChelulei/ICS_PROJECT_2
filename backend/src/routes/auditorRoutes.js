@@ -4,11 +4,14 @@ const { logAction } = require('../utils/auditLog');
 const validateIdParam = require('../middleware/validateIdParam');
 const { authenticate, requirePasswordChanged } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
+const { requireStepUp } = require('../middleware/stepUp');
 const asyncHandler = require('../utils/asyncHandler');
 const { listFlagged, reviewFlagged, recordBreachDecision } = require('../controllers/auditorController');
 const { listAuditLog } = require('../controllers/auditLogController');
 const { downloadReport } = require('../controllers/reportsController');
 const { auditorOverview } = require('../controllers/overviewController');
+const riskThresholds = require('../controllers/riskThresholdController');
+const { getSetting } = require('../services/systemSettings');
 
 const router = express.Router();
 
@@ -22,7 +25,7 @@ router.param('riskScoreId', validateIdParam);
 // input don't count. Held in memory: it resets when the backend restarts.
 const reportExportLimit = rateLimit({
   windowMs: 60 * 60 * 1000,
-  limit: Number(process.env.REPORT_EXPORTS_PER_HOUR) || 10,
+  limit: () => getSetting('report_exports_per_hour'),
   keyGenerator: (req) => `user:${req.user.id}`,
   skipFailedRequests: true,
   standardHeaders: 'draft-8',
@@ -46,5 +49,7 @@ router.post('/flagged-sessions/:riskScoreId/review', requirePermission('review_r
 router.post('/flagged-sessions/:riskScoreId/breach-decision', requirePermission('review_risk_scores'), asyncHandler(recordBreachDecision));
 router.get('/audit-log', requirePermission('view_audit_log'), asyncHandler(listAuditLog));
 router.get('/reports/:report', requirePermission('export_reports'), reportExportLimit, asyncHandler(downloadReport));
+router.get('/risk-thresholds', requirePermission('manage_risk_thresholds'), asyncHandler(riskThresholds.list));
+router.post('/risk-thresholds/:role', requirePermission('manage_risk_thresholds'), requireStepUp, asyncHandler(riskThresholds.update));
 
 module.exports = router;

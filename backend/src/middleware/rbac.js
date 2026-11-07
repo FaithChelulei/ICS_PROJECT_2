@@ -16,6 +16,7 @@ const PERMISSIONS = {
     'review_risk_scores',
     'view_audit_log',
     'export_reports',
+    'manage_risk_thresholds',
   ],
   SysAdmin: [
     'manage_users',
