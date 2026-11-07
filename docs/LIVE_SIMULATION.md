@@ -94,12 +94,53 @@ which scored only 0.42 / 0.41).
 4. **The quiet insider is only just caught** (0.41–0.42 against 0.40), two
    days into the week. Volume alone gives a weak signal.
 
+## Change 1: per-user baselines for caregivers
+
+Following finding 1, two caregiver features in
+`backend/src/services/featureComputation.js` now use the user's own history.
+The models and the 0.40 threshold are unchanged, and the other roles keep
+the fixed rules.
+
+| Feature | Before | After (Caregiver only) |
+|---|---|---|
+| `is_after_hours` | 1 for any time outside 06:00–20:00 | 1 only if outside 06:00–20:00 **and** the user was not active within an hour of this time of day on at least 3 earlier days in the last 30 |
+| `unique_pcs_used_that_day` | every device used today counts | devices already used on an earlier day, or confirmed with "This was me" on a flagged session, count together as one; any other device still adds one |
+
+`is_own_pc` is unchanged: a device never seen before is still flagged, and
+the caregiver can confirm it with "This was me".
+
+**Before and after** (evaluation week, threshold 0.40, seeds 42 / 7):
+
+| | Before | After |
+|---|---|---|
+| Normal actions flagged | 47 / 45 (8.0% / 8.6%) | 10 / 15 (1.7% / 2.9%) |
+| False sign-outs | 19 / 18 | 4 / 7 |
+| False sign-outs per user per week | 0.63 / 0.60 | **0.13 / 0.23** |
+| Caregivers affected | 8 / 10 of 30 | 4 / 6 of 30 |
+| Flagged actions by cause | after hours 33 / 34, device 13 / 7, heavy use 1 / 4 | after hours 6 / 8, device 3 / 1, heavy use 1 / 6 |
+| 90th percentile of normal scores (week 1) | 0.81 / 0.84 | 0.40 / 0.40 |
+| Insiders caught | 4 of 4 | 4 of 4, at the same actions (bulk 8 / 12, night 1, stolen password 1, quiet 18 / 22) |
+
+The remaining after-hours flags are evening sessions later than the user's
+usual time (for example 21:45 for a caregiver who usually works around
+20:00, or a normal caregiver whose session runs past 20:00). The remaining
+device flags are a phone used for the first time. The night-time (23:10)
+and stolen-password insiders are caught exactly as before, because neither
+matches the owner's history.
+
+Two things did not change. The 1% alert budget is still out of reach for
+caregivers (no calibrated threshold / 0.98), because in week 1 the
+baselines are still being built: the first evening sessions and the first
+use of a second device are scored without history. The quiet insider is
+still caught only just (0.42 / 0.41). The API (121/121), anomaly (10/10)
+and penetration (59/59) tests and the unit tests (18/18) pass with the
+change.
+
 ## Recommendations
 
-- **Caregivers:** keep 0.40 for now, but change the features rather than
-  the threshold: treat a user's own usual hours as normal (per-user
-  baseline instead of a fixed 20:00–06:00 rule), and remember devices a
-  caregiver has confirmed with "This was me". Then rerun this simulation.
+- **Caregivers:** keep 0.40. Per-user usual hours and known devices are now
+  used (Change 1). New caregivers have no history for the first few days,
+  so expect more flags in their first week.
 - **System Administrator:** consider lowering the threshold from 0.60 to
   about 0.50.
 - **Security Auditor:** 0.55 would catch scraping earlier at no cost in
