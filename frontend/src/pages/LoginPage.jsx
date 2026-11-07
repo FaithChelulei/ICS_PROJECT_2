@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { login as apiLogin, verifyMfa as apiVerifyMfa } from '../api/auth';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -90,16 +90,23 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   // Set by AuthContext when a session was revoked by the risk engine;
-  // read once and cleared so it only shows on the screen it explains.
+  // read once and cleared so it only shows on the screen it explains. The
+  // clearing is in an effect, not here: StrictMode runs this initializer
+  // twice, and removing it on the first run left the second with nothing.
   const [notice] = useState(() => {
     try {
-      const msg = sessionStorage.getItem('childguard_logout_reason');
-      if (msg) sessionStorage.removeItem('childguard_logout_reason');
-      return msg || '';
+      return sessionStorage.getItem('childguard_logout_reason') || '';
     } catch {
       return '';
     }
   });
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('childguard_logout_reason');
+    } catch {
+      /* storage blocked -- nothing to clear */
+    }
+  }, []);
 
   const { completeLogin } = useAuth();
   const navigate = useNavigate();

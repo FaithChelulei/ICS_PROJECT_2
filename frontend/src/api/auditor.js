@@ -2,7 +2,9 @@ import { apiFetch, apiDownload } from './client';
 
 export const getAuditorOverview = () => apiFetch('/auditor/overview');
 
-export const listFlagged = () => apiFetch('/auditor/flagged-sessions');
+// Every status: the page filters them itself, and the server's default is
+// pending only, which would leave the other tabs and breach decisions empty.
+export const listFlagged = () => apiFetch('/auditor/flagged-sessions?status=all');
 
 export const reviewFlagged = (riskScoreId, status) =>
   apiFetch(`/auditor/flagged-sessions/${riskScoreId}/review`, {
