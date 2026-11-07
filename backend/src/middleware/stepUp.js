@@ -17,7 +17,11 @@ const asyncHandler = require('../utils/asyncHandler');
 const stepUpFailureLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
+  // Only a wrong password counts. Without this, any refusal after the
+  // password check (a reason too short, a value out of range) would count
+  // too, and five ordinary mistakes would lock the user out.
   skipSuccessfulRequests: true,
+  requestWasSuccessful: (req, res) => !res.locals.stepUpFailed,
   keyGenerator: (req) => `step-up:${req.user.id}`,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
@@ -35,6 +39,7 @@ async function checkPassword(req, res, next) {
   const { rows } = await db.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
   const ok = rows[0] && (await bcrypt.compare(password, rows[0].password_hash));
   if (!ok) {
+    res.locals.stepUpFailed = true;
     await logAction({ userId: req.user.id, action: 'step_up_failed', detail: `${req.method} ${req.originalUrl}` });
     return res.status(403).json({ error: 'That password is not correct.', code: 'STEP_UP_FAILED' });
   }
