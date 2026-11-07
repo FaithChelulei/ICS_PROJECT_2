@@ -1,4 +1,6 @@
-import { apiFetch } from './client';
+import { apiFetch, apiDownload } from './client';
+
+export const getAuditorOverview = () => apiFetch('/auditor/overview');
 
 export const listFlagged = () => apiFetch('/auditor/flagged-sessions');
 
@@ -8,7 +10,20 @@ export const reviewFlagged = (riskScoreId, status) =>
     body: { status },
   });
 
+// decision: 'notified_commissioner' | 'no_real_risk' (KDPA s.43)
+export const recordBreachDecision = (riskScoreId, decision, reason) =>
+  apiFetch(`/auditor/flagged-sessions/${riskScoreId}/breach-decision`, {
+    method: 'POST',
+    body: { decision, reason },
+  });
+
 export const listAuditLog = (params = {}) => {
   const qs = new URLSearchParams(params).toString();
   return apiFetch(`/auditor/audit-log${qs ? `?${qs}` : ''}`);
+};
+
+// report: 'audit-log' | 'flagged-sessions' | 'consent-activity'
+export const downloadReport = (report, format, filters = {}) => {
+  const params = Object.fromEntries(Object.entries({ ...filters, format }).filter(([, v]) => v));
+  return apiDownload(`/auditor/reports/${report}?${new URLSearchParams(params)}`);
 };

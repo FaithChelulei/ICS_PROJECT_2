@@ -9,17 +9,16 @@
 // consent_records is append-only (one row per grant/revoke event, never
 // updated), so "current status" for a scope is its most recent row, and
 // the full row history IS the consent change log for free.
+//
+// Recording consent lives here; ENFORCING it on every data request lives in
+// services/consent.js (shared with childRecordsController.js).
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
-
-const SCOPES = {
-  profile_identity: { label: 'Profile & Identity', required: true },
-  developmental_records: { label: 'Developmental & Health Records', required: false },
-};
+const { SCOPES } = require('../services/consent');
 
 async function findOwnChildProfile(childProfileId, caregiverId) {
   const { rows } = await db.query(
-    'SELECT id FROM child_profiles WHERE id = $1 AND caregiver_id = $2',
+    'SELECT id, archived_at FROM child_profiles WHERE id = $1 AND caregiver_id = $2',
     [childProfileId, caregiverId]
   );
   return rows[0] || null;
@@ -36,7 +35,7 @@ async function getConsent(req, res) {
     `SELECT id, scope, consent_given, recorded_at
      FROM consent_records
      WHERE child_profile_id = $1
-     ORDER BY recorded_at DESC`,
+     ORDER BY recorded_at DESC, id DESC`,
     [childProfileId]
   );
 
@@ -74,6 +73,11 @@ async function setConsent(req, res) {
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
   if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  // Archived = restricted (s.40(3)): the consent history stays readable,
+  // but it can't change until the profile is restored.
+  if (owned.archived_at) {
+    return res.status(409).json({ error: 'This child profile is archived. Restore it before changing consent.', code: 'PROFILE_ARCHIVED' });
+  }
 
   const { rows } = await db.query(
     `INSERT INTO consent_records (child_profile_id, caregiver_id, consent_given, scope)

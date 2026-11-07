@@ -7,10 +7,12 @@ const { authenticate, requirePasswordChanged } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const asyncHandler = require('../utils/asyncHandler');
 const { listLockedUsers, unlockAccount } = require('../controllers/userManagementController');
+const validateIdParam = require('../middleware/validateIdParam');
 
 const router = express.Router();
 
 router.use(authenticate, requirePasswordChanged, requirePermission('manage_users'));
+router.param('id', validateIdParam);
 
 router.get('/locked', asyncHandler(listLockedUsers));
 router.post('/:id/unlock', asyncHandler(unlockAccount));

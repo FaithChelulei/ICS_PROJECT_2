@@ -7,6 +7,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const db = require('../src/config/db');
 const { getStatus, reencryptAll, verifyAll } = require('../src/services/keyRotation');
+const { unlockKeys } = require('../src/utils/keyVault');
 
 function printStatus(s) {
   console.log(`Active key: #${s.activeKeyId}`);
@@ -20,6 +21,7 @@ function printStatus(s) {
 }
 
 (async () => {
+  await unlockKeys(); // wrapped keys (Azure Key Vault), if configured
   const cmd = process.argv[2];
   if (cmd === 'reencrypt') {
     const r = await reencryptAll();

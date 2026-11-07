@@ -10,6 +10,11 @@ const { sendAccountUnlockedEmail } = require('../utils/mailer');
 const { generateTempPassword } = require('../utils/tempPassword');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
 
+// The automated test suites lock their own accounts between runs. Those
+// need nobody's attention, so they stay out of the admin's locked list and
+// counts.
+const TEST_ACCOUNT_LOCK_REASON = 'automated test account';
+
 // GET /admin/users/locked — SysAdmin only. Lists every currently-locked
 // account so the SysAdmin doesn't need direct DB access to find out who
 // needs attention, and can see why each one was locked.
@@ -17,8 +22,9 @@ async function listLockedUsers(req, res) {
   const { rows } = await db.query(
     `SELECT u.id, u.email, r.name AS role, u.locked_reason, u.created_at
      FROM users u JOIN roles r ON r.id = u.role_id
-     WHERE u.is_locked = TRUE
-     ORDER BY u.id ASC`
+     WHERE u.is_locked = TRUE AND COALESCE(u.locked_reason, '') NOT LIKE $1
+     ORDER BY u.id ASC`,
+    [`${TEST_ACCOUNT_LOCK_REASON}%`]
   );
   await logOnlyAction(req, 'view_locked_accounts');
   res.json({ lockedUsers: rows });
@@ -87,4 +93,4 @@ async function unlockAccount(req, res) {
   });
 }
 
-module.exports = { listLockedUsers, unlockAccount };
+module.exports = { listLockedUsers, unlockAccount, TEST_ACCOUNT_LOCK_REASON };

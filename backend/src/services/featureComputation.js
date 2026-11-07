@@ -48,16 +48,17 @@ const db = require('../config/db');
 
 // "File accessed" = an action that reads or changes protected data, per
 // role. Passive list loads (dashboards) are logged as events but are not
-// files. Note: the Caregiver dashboard's log-only list still uses the
-// 'view_own_child_records' label, so it does count here -- kept as-is
-// because the Caregiver threshold was tuned with that behaviour.
+// files -- the Caregiver children list is logged as 'list_own_children' for
+// exactly that reason (it used to reuse 'view_own_child_records', which
+// counted every page visit as a record read).
 const FILE_ACTION_TYPES = [
   // Caregiver
-  'create_child_profile', 'view_own_child_records', 'submit_developmental_record',
+  'create_child_profile', 'view_own_child_records', 'submit_developmental_record', 'correct_child_details',
+  'archive_child_profile', 'restore_child_profile',
   // Security Auditor
-  'view_audit_log', 'review_flagged_session',
+  'view_audit_log', 'review_flagged_session', 'export_report', 'record_breach_decision',
   // SysAdmin
-  'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data',
+  'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data', 'apply_retention',
 ];
 
 // Roles whose CERT "session" is really a whole workday (see rationale
@@ -199,4 +200,4 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
   };
 }
 
-module.exports = { computeFeatures, FILE_ACTION_TYPES };
+module.exports = { computeFeatures, FILE_ACTION_TYPES, isAfterHours };

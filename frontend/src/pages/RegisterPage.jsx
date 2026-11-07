@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { registerRequest } from '../api/auth';
 import { Field, inputClass, Button, Alert, Card } from '../components/ui.jsx';
+import PrivacyNotice, { PRIVACY_NOTICE_VERSION } from '../components/PrivacyNotice.jsx';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ fullName: '', email: '', requestedRole: 'Caregiver', reason: '' });
   const [done, setDone] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [noticeAccepted, setNoticeAccepted] = useState(false);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -18,7 +20,7 @@ export default function RegisterPage() {
     setError('');
     setBusy(true);
     try {
-      const data = await registerRequest(form);
+      const data = await registerRequest({ ...form, privacyNoticeVersion: PRIVACY_NOTICE_VERSION });
       setDone(data.message);
     } catch (err) {
       setError(err.message);
@@ -28,36 +30,38 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center p-8">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-cream flex items-center justify-center p-6">
+      <div className="w-full max-w-lg">
         <Card className="rounded-3xl">
           <h1 className="font-display text-2xl font-bold text-ink mb-2">Request access</h1>
-          <p className="text-sm text-slate-500 mb-7">
+          <p className="text-sm text-slate-500 mb-5">
             A System Administrator reviews every request before an account is created.
           </p>
 
           {done ? (
             <Alert variant="success">{done}</Alert>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && <Alert>{error}</Alert>}
-              <Field label="Full Name">
-                <input
-                  required
-                  value={form.fullName}
-                  onChange={(e) => update('fullName', e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Email Address">
-                <input
-                  type="email"
-                  required
-                  value={form.email}
-                  onChange={(e) => update('email', e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Full Name">
+                  <input
+                    required
+                    value={form.fullName}
+                    onChange={(e) => update('fullName', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Email Address">
+                  <input
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={(e) => update('email', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
               <Field label="Role">
                 <select
                   value={form.requestedRole}
@@ -73,10 +77,11 @@ export default function RegisterPage() {
                   value={form.reason}
                   onChange={(e) => update('reason', e.target.value)}
                   className={inputClass}
-                  rows={3}
+                  rows={2}
                 />
               </Field>
-              <Button disabled={busy} className="w-full text-base py-3">
+              <PrivacyNotice variant="account" accepted={noticeAccepted} onChange={setNoticeAccepted} />
+              <Button disabled={busy || !noticeAccepted} className="w-full text-base py-3">
                 {busy ? 'Submitting…' : 'Submit Request'}
               </Button>
             </form>

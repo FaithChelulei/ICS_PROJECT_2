@@ -17,15 +17,13 @@ const { getPcName, getIpAddress } = require('../utils/requestMeta');
 const RISK_NOTICE =
   'Unusual activity detected during this action. You have been logged out as a precaution — check your email to confirm or report it.';
 
-// Roles whose actions are actually sent to the model in the live app.
-// SecurityAuditor is wired (its actions call scoreAction) but held at
-// log-only until it has a deployment_threshold in ml/models/risk_tiers.json:
-// at its research threshold (0.31) a normal triage session of 2-3 actions
-// already scores above the line (see docs/RISK_THRESHOLDS.md), so turning
-// it on without a calibrated threshold would log auditors out constantly.
-// To enable: add "deployment_threshold" to SecurityAuditor in
-// risk_tiers.json, restart the ML service, and add it to this list.
-const ROLES_SCORED_LIVE = ['Caregiver', 'SysAdmin'];
+// Roles whose actions are actually sent to the model in the live app -- all
+// three. Each needs a deployment_threshold in ml/models/risk_tiers.json:
+// at its research threshold (0.31) a normal auditor triage session of 2-3
+// actions already scored above the line, so SecurityAuditor was held at
+// log-only until it was calibrated at 0.65 (see docs/RISK_THRESHOLDS.md).
+// A role can be taken back to log-only by removing it from this list.
+const ROLES_SCORED_LIVE = ['Caregiver', 'SysAdmin', 'SecurityAuditor'];
 
 function scoreAction(req, actionType, childProfileId = null) {
   if (!ROLES_SCORED_LIVE.includes(req.user.role)) {

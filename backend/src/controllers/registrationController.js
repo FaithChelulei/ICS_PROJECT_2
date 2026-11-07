@@ -9,6 +9,7 @@ const { logAction } = require('../utils/auditLog');
 const { sendAccountApprovedEmail, sendAccountRejectedEmail } = require('../utils/mailer');
 const { generateTempPassword } = require('../utils/tempPassword');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
+const { checkPrivacyNotice } = require('../services/privacyNotice');
 
 // Derives a login username from a person's full name (e.g. "Faith Chelulei"
 // -> "faith.chelulei") and makes it unique against existing usernames by
@@ -48,6 +49,10 @@ async function submitRequest(req, res) {
   if (!REQUESTABLE_ROLES.includes(requestedRole)) {
     return res.status(400).json({ error: `requestedRole must be one of: ${REQUESTABLE_ROLES.join(', ')}` });
   }
+  const noticeError = checkPrivacyNotice(req.body);
+  if (noticeError) {
+    return res.status(400).json({ error: noticeError, code: 'PRIVACY_NOTICE_REQUIRED' });
+  }
 
   const { rows: existingUser } = await db.query('SELECT id FROM users WHERE email = $1', [email]);
   if (existingUser[0]) {
@@ -66,9 +71,10 @@ async function submitRequest(req, res) {
 
   const { rows: roleRows } = await db.query('SELECT id FROM roles WHERE name = $1', [requestedRole]);
   const { rows } = await db.query(
-    `INSERT INTO registration_requests (full_name, email, requested_role_id, reason)
-     VALUES ($1, $2, $3, $4) RETURNING id, created_at`,
-    [fullName, email, roleRows[0].id, reason || null]
+    `INSERT INTO registration_requests
+       (full_name, email, requested_role_id, reason, privacy_notice_version, privacy_notice_accepted_at)
+     VALUES ($1, $2, $3, $4, $5, now()) RETURNING id, created_at`,
+    [fullName, email, roleRows[0].id, reason || null, req.body.privacyNoticeVersion]
   );
 
   res.status(201).json({

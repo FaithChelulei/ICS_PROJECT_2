@@ -10,9 +10,12 @@ const router = express.Router();
 // Only the two routes someone could actually brute-force -- NOT /me (it's
 // called passively on every page load/refresh, a blanket /auth limit
 // would rate-limit normal use out of existence) and not /change-password.
-// 20 requests per 15 minutes per IP turns guessing a 6-digit MFA code from
-// "a few hundred requests" into "infeasible in a session".
-const authBruteForceLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20 });
+// 20 FAILED attempts per 15 minutes per IP turns guessing a 6-digit MFA
+// code from "a few hundred requests" into "infeasible in a session".
+// Successful logins don't count (skipSuccessfulRequests): only guessing
+// should use up the allowance, not a busy legitimate user -- counting every
+// login locked a full demo run (several real sign-ins) out after 20.
+const authBruteForceLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, skipSuccessfulRequests: true });
 
 router.post('/login', authBruteForceLimit, asyncHandler(login));
 router.post('/verify-mfa', authBruteForceLimit, asyncHandler(verifyMfa));

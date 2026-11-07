@@ -20,6 +20,7 @@
 // still decrypt. Rotating = add a new key, make it active, then re-encrypt
 // existing rows (see services/keyRotation.js) so the old key can be retired.
 const crypto = require('crypto');
+const { unlockedKeys, wrappedKeyEntries } = require('./keyVault');
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96-bit IV, the GCM standard size
@@ -39,10 +40,18 @@ function decodeKey(name, value) {
 }
 
 // Read fresh from process.env each call (cheap), so tests and the rotation
-// script see the current configuration.
+// script see the current configuration. Keys stored WRAPPED by Azure Key
+// Vault (ENCRYPTION_KEY_<n>_WRAPPED) come from the in-memory set that
+// keyVault.unlockKeys() filled at start-up -- see utils/keyVault.js.
 function loadKeys() {
-  const keys = new Map();
+  const keys = new Map(unlockedKeys());
+  for (const { id, name } of wrappedKeyEntries()) {
+    if (!keys.has(id)) {
+      throw new Error(`${name} is set but has not been unlocked -- call keyVault.unlockKeys() at start-up.`);
+    }
+  }
   if (process.env.ENCRYPTION_KEY) {
+    if (keys.has(LEGACY_KEY_ID)) throw new Error('Key #1 is configured both plain (ENCRYPTION_KEY) and wrapped -- remove the plain one.');
     keys.set(LEGACY_KEY_ID, decodeKey('ENCRYPTION_KEY', process.env.ENCRYPTION_KEY));
   }
   for (const [name, value] of Object.entries(process.env)) {
@@ -50,6 +59,7 @@ function loadKeys() {
     if (!m) continue;
     const id = Number(m[1]);
     if (id < 1 || id > 255) throw new Error(`${name}: key ids must be 1-255`);
+    if (keys.has(id)) throw new Error(`Key #${id} is configured both plain (${name}) and wrapped -- remove the plain one.`);
     keys.set(id, decodeKey(name, value));
   }
   if (keys.size === 0) {

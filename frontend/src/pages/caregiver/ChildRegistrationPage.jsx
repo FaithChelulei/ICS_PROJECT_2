@@ -1,24 +1,31 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
+import { CAREGIVER_NAV } from './nav.js';
 import { createChildProfile } from '../../api/children';
 import { PageHeader, Field, inputClass, Button, Alert, Card, Toast } from '../../components/ui.jsx';
+import PrivacyNotice, { PRIVACY_NOTICE_VERSION } from '../../components/PrivacyNotice.jsx';
 
 // Can't be born after today.
 const todayIso = new Date().toISOString().slice(0, 10);
 
-const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/caregiver/children/new', label: 'Register a Child' },
-  { to: '/caregiver/consent', label: 'Consent Management' },
-];
+const NAV = CAREGIVER_NAV;
 
 export default function ChildRegistrationPage() {
-  const [form, setForm] = useState({ fullName: '', dateOfBirth: '', familyBackground: '' });
+  // developmentalRecordsConsent is opt-in (unchecked by default): without it
+  // the backend refuses to store or show developmental records for this
+  // child until consent is granted in Consent Management.
+  const [form, setForm] = useState({
+    fullName: '',
+    dateOfBirth: '',
+    familyBackground: '',
+    developmentalRecordsConsent: false,
+  });
   const [error, setError] = useState('');
   const [riskNotice, setRiskNotice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [noticeAccepted, setNoticeAccepted] = useState(false);
   const navigate = useNavigate();
 
   function update(field, value) {
@@ -30,7 +37,7 @@ export default function ChildRegistrationPage() {
     setError('');
     setBusy(true);
     try {
-      const data = await createChildProfile(form);
+      const data = await createChildProfile({ ...form, privacyNoticeVersion: PRIVACY_NOTICE_VERSION });
       if (data.riskNotice) {
         setRiskNotice(data.riskNotice);
       } else {
@@ -51,41 +58,56 @@ export default function ChildRegistrationPage() {
         <Toast message="Child profile created successfully" onDone={() => setShowToast(false)} />
       )}
 
-      <div className="p-8 max-w-4xl">
+      <div className="px-8 py-6 max-w-4xl">
         {riskNotice ? (
           <Alert variant="warning">Profile created. {riskNotice}</Alert>
         ) : (
-          <div className="grid grid-cols-[1fr_300px] gap-6 items-start">
+          <div className="grid grid-cols-[1fr_260px] gap-6 items-start">
             <Card>
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {error && <Alert>{error}</Alert>}
-                <Field label="Full Name">
-                  <input
-                    required
-                    value={form.fullName}
-                    onChange={(e) => update('fullName', e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Date of Birth">
-                  <input
-                    type="date"
-                    required
-                    max={todayIso}
-                    value={form.dateOfBirth}
-                    onChange={(e) => update('dateOfBirth', e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Family Background" hint="Optional">
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Full Name">
+                    <input
+                      required
+                      value={form.fullName}
+                      onChange={(e) => update('fullName', e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Date of Birth">
+                    <input
+                      type="date"
+                      required
+                      max={todayIso}
+                      value={form.dateOfBirth}
+                      onChange={(e) => update('dateOfBirth', e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
+                <Field label="Family Background (optional)">
                   <textarea
                     value={form.familyBackground}
                     onChange={(e) => update('familyBackground', e.target.value)}
                     className={inputClass}
-                    rows={3}
+                    rows={2}
                   />
                 </Field>
-                <Button disabled={busy}>{busy ? 'Saving…' : 'Create Profile'}</Button>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.developmentalRecordsConsent}
+                    onChange={(e) => update('developmentalRecordsConsent', e.target.checked)}
+                    className="h-4 w-4 accent-brand-600"
+                  />
+                  <span className="text-[15px] text-slate-700">
+                    Also keep health and development records for this child{' '}
+                    <span className="text-sm text-slate-400">(you can change this later)</span>
+                  </span>
+                </label>
+                <PrivacyNotice variant="child" accepted={noticeAccepted} onChange={setNoticeAccepted} />
+                <Button disabled={busy || !noticeAccepted}>{busy ? 'Saving…' : 'Create Profile'}</Button>
               </form>
             </Card>
             <Card className="bg-mint border-[#EFE4D0]">

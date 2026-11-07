@@ -8,11 +8,14 @@ const PERMISSIONS = {
     'view_own_child_records',
     'submit_developmental_record',
     'manage_own_consent',
+    'correct_own_child_details',
+    'archive_own_child_profile',
   ],
   SecurityAuditor: [
     'view_flagged_sessions',
     'review_risk_scores',
     'view_audit_log',
+    'export_reports',
   ],
   SysAdmin: [
     'manage_users',

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout.jsx';
+import { CAREGIVER_NAV } from './nav.js';
 import { listMyChildren, getConsent, setConsent } from '../../api/children';
 import {
   PageHeader,
@@ -12,18 +13,14 @@ import {
   Avatar,
 } from '../../components/ui.jsx';
 
-const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/caregiver/children/new', label: 'Register a Child' },
-  { to: '/caregiver/consent', label: 'Consent Management' },
-];
+const NAV = CAREGIVER_NAV;
 
 // Friendly copy for the two scopes the backend actually tracks. No
 // "third-party sharing" entry here -- the app doesn't share data with
 // anyone, so a toggle for it would be fiction.
 const SCOPE_COPY = {
-  profile_identity: 'Your child’s name, date of birth, and other identifying details stored in their profile.',
-  developmental_records: 'Developmental and health records you or a clinician submit for this child.',
+  profile_identity: 'Your child’s name, date of birth and other details.',
+  developmental_records: 'Health and development records. Needed to add or view records.',
 };
 
 function formatDate(iso) {
@@ -46,8 +43,11 @@ export default function ConsentManagementPage() {
   useEffect(() => {
     listMyChildren()
       .then((res) => {
-        setChildren(res.children);
-        if (res.children.length > 0) setSelectedId(res.children[0].childProfileId);
+        // Archived profiles are frozen (consent can't change), so only
+        // active children are offered here.
+        const active = res.children.filter((c) => !c.archivedAt);
+        setChildren(active);
+        if (active.length > 0) setSelectedId(active[0].childProfileId);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoadingChildren(false));
@@ -92,13 +92,30 @@ export default function ConsentManagementPage() {
           <EmptyState>Register a child first to manage their consent.</EmptyState>
         ) : (
           <>
-            {children.length > 1 && (
-              <div className="flex gap-2 mb-6">
+            {/* A few children: one button each. More than that: a dropdown,
+                so the page doesn't grow sideways or wrap into many rows. */}
+            {children.length > 4 && (
+              <div className="mb-6 max-w-sm">
+                <select
+                  value={selectedId ?? ''}
+                  onChange={(e) => setSelectedId(Number(e.target.value))}
+                  className="w-full rounded-xl border border-[#E4D9C6] bg-white px-4 py-2.5 text-[15px] text-ink shadow-sm"
+                >
+                  {children.map((c) => (
+                    <option key={c.childProfileId} value={c.childProfileId}>
+                      {c.fullName} (born {c.dateOfBirth})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {children.length > 1 && children.length <= 4 && (
+              <div className="flex flex-wrap gap-2 mb-6">
                 {children.map((c) => (
                   <button
                     key={c.childProfileId}
                     onClick={() => setSelectedId(c.childProfileId)}
-                    className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-[15px] font-medium transition ${
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-2 text-[15px] font-medium transition ${
                       selectedId === c.childProfileId
                         ? 'border-brand-500 bg-brand-50 text-brand-700'
                         : 'border-[#EFE4D0] bg-white text-slate-600 hover:bg-cream-100'
