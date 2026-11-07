@@ -20,7 +20,7 @@
 // still decrypt. Rotating = add a new key, make it active, then re-encrypt
 // existing rows (see services/keyRotation.js) so the old key can be retired.
 const crypto = require('crypto');
-const { unlockedKeys, wrappedKeyEntries } = require('./keyVault');
+const { unlockedKeys, keysVersion, wrappedKeyEntries } = require('./keyVault');
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96-bit IV, the GCM standard size
@@ -39,11 +39,30 @@ function decodeKey(name, value) {
   return key;
 }
 
-// Read fresh from process.env each call (cheap), so tests and the rotation
-// script see the current configuration. Keys stored WRAPPED by Azure Key
-// Vault (ENCRYPTION_KEY_<n>_WRAPPED) come from the in-memory set that
-// keyVault.unlockKeys() filled at start-up -- see utils/keyVault.js.
+// Keys stored WRAPPED by Azure Key Vault (ENCRYPTION_KEY_<n>_WRAPPED) come
+// from the in-memory set that keyVault.unlockKeys() filled at start-up --
+// see utils/keyVault.js.
+//
+// Built once and cached: reading every environment variable costs about
+// 1.8 ms on Windows, which made it 99% of the time to decrypt one field
+// (a 50-child list spent a quarter of a second here). The cache is rebuilt
+// when Key Vault unlocks keys, and tests that swap keys call resetKeyCache().
+let cachedKeys = null;
+let cachedVersion = -1;
+
+function resetKeyCache() {
+  cachedKeys = null;
+}
+
 function loadKeys() {
+  if (cachedKeys && cachedVersion === keysVersion()) return cachedKeys;
+  const keys = readKeys();
+  cachedKeys = keys;
+  cachedVersion = keysVersion();
+  return keys;
+}
+
+function readKeys() {
   const keys = new Map(unlockedKeys());
   for (const { id, name } of wrappedKeyEntries()) {
     if (!keys.has(id)) {
@@ -153,4 +172,4 @@ function decryptField(bundle) {
   }
 }
 
-module.exports = { encryptField, decryptField, keyIdOf, loadKeys, activeKeyId, LEGACY_KEY_ID };
+module.exports = { encryptField, decryptField, keyIdOf, loadKeys, resetKeyCache, activeKeyId, LEGACY_KEY_ID };

@@ -25,6 +25,9 @@ const ALGORITHM = 'RSA-OAEP-256';
 
 // Plain keys unwrapped at start-up, by key id. Never written anywhere.
 const unlocked = new Map();
+// Goes up whenever the unlocked set changes, so encryption.js knows to
+// rebuild its cached key list.
+let version = 0;
 let clientFactory = null;
 
 function vaultConfigured() {
@@ -70,6 +73,7 @@ async function unlockKeys() {
     if (key.length !== 32) throw new Error(`${name} unwrapped to ${key.length} bytes, expected 32`);
     unlocked.set(id, key);
   }
+  version += 1;
   return entries.length;
 }
 
@@ -87,10 +91,15 @@ function unlockedKeys() {
   return unlocked;
 }
 
+function keysVersion() {
+  return version;
+}
+
 // Tests only: use a stand-in vault, and forget unlocked keys.
 function _setClientFactoryForTests(factory) {
   clientFactory = factory;
   unlocked.clear();
+  version += 1;
 }
 
-module.exports = { unlockKeys, wrapKey, unlockedKeys, vaultConfigured, wrappedKeyEntries, _setClientFactoryForTests };
+module.exports = { unlockKeys, wrapKey, unlockedKeys, keysVersion, vaultConfigured, wrappedKeyEntries, _setClientFactoryForTests };

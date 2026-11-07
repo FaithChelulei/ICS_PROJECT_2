@@ -12,9 +12,10 @@ function setKeys(env) {
     if (/^ENCRYPTION_(KEY|KEY_\d+|ACTIVE_KEY_ID)$/.test(name)) delete process.env[name];
   }
   Object.assign(process.env, env);
+  resetKeyCache();
 }
 
-const { encryptField, decryptField, keyIdOf } = require('../src/utils/encryption');
+const { encryptField, decryptField, keyIdOf, resetKeyCache } = require('../src/utils/encryption');
 
 // The pre-versioning format: iv || ciphertext || tag, with key #1.
 function legacyEncrypt(text, b64key) {
