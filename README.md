@@ -371,6 +371,7 @@ running.
 | `npm run test:perf` | Response time of access decisions against the < 1 second requirement | 7 of 7 scenarios under 1 s at the 95th percentile |
 | `npm run test:anomaly` | Ten insider and normal-use scenarios acted out against the live system | 10 of 10 |
 | `npm run test:pen` | Penetration-style attacks: fake identity, password guessing, privilege escalation, other families' data, consent bypass, injection, transport | 57 of 57 attacks refused |
+| `npm run sim:traffic` | Two simulated weeks of caregiver, auditor and administrator traffic with scripted insiders, scored through the live feature code; calibrates thresholds and reports false sign-outs ([`docs/LIVE_SIMULATION.md`](docs/LIVE_SIMULATION.md)) | Caregiver 0.40: 4 of 4 insiders caught, 0.6 false sign-outs per user per week |
 | `test\manual_test.ps1` | Interactive walk-through with real emailed one-time codes for all three roles | 18 passed, 0 failed |
 | `test\full_flow_test.ps1` | Interactive end-to-end flow including a flagged session | — |
 
@@ -456,9 +457,10 @@ page.
 ## Known limitations
 
 - **Domain shift.** The models learnt from synthetic office workers, not
-  caregivers. The live thresholds were calibrated on scripted app
-  sessions and should be recalibrated on real use before real child data
-  is stored.
+  caregivers. In simulated app traffic (`docs/LIVE_SIMULATION.md`), most
+  false sign-outs come from caregivers using the app after 20:00 or on a
+  second device, which the model reads as misuse. Real use should be
+  measured before real child data is stored.
 - **Evaluation protocol.** Research thresholds were chosen on the test
   set, and the test set's share of malicious sessions (1.8% for
   Caregivers) is higher than in the full data (0.37%), so the reported
@@ -477,6 +479,8 @@ page.
 
 - [`docs/RISK_THRESHOLDS.md`](docs/RISK_THRESHOLDS.md) — research vs. live
   thresholds and their calibration
+- [`docs/LIVE_SIMULATION.md`](docs/LIVE_SIMULATION.md) — simulated app traffic:
+  how the models behave on this app's users, and threshold recommendations
 - `backend/.env.example` — every setting, with comments
 - Comments at the top of each source file explain the design decisions
   and the evidence behind them
