@@ -12,6 +12,7 @@
     "test:perf": "node test/performance_test.js",
     "test:anomaly": "node test/anomaly_injection_test.js",
     "test:pen": "node test/penetration_test.js",
+    "sim:traffic": "node scripts/simulate-traffic.js",
     "retention:status": "node scripts/retention.js status",
     "retention:apply": "node scripts/retention.js apply",
     "cert:new": "node scripts/new-dev-cert.js",
