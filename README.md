@@ -7,7 +7,6 @@ Computer Science, Strathmore University.
 | | |
 |---|---|
 | **Author** | Faith Chelulei Cherop (163446) |
-| **Supervisor** | Eunice Manyasi |
 | **Stack** | React · Node.js/Express · PostgreSQL · Python/Flask · scikit-learn · TensorFlow/Keras |
 | **Dataset** | CERT Insider Threat Dataset r4.2 (Carnegie Mellon University) |
 
