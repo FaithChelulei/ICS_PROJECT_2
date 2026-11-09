@@ -46,6 +46,8 @@ For each role, separately:
   nothing.
 - **Five repeats** with different random groupings of people (seeds 42, 1,
   2, 3, 4). Figures are the mean, with the range in brackets.
+- **Baselines** on the same test people: a one-line rule, each model
+  alone, and the deployed combination (see below).
 
 ## Results on real CERT attacks (test set, unseen people)
 
@@ -95,6 +97,79 @@ scenario 2 25%, scenario 3 (other people's computers) 98%.
    only a few session measurements, so they overlap with normal work. Precision
    stays low (2% to 8%), which is why a flag triggers a reversible check plus
    human review and never an automatic penalty.
+
+## Baselines: what the machine learning adds
+
+On the same unseen test people, the deployed combination is compared with
+each model alone and with a one-line rule: **after hours, or more files
+than 95% of that person's own sessions**. Threshold-free measures, mean
+over the 5 splits (range in brackets):
+
+- **ROC-AUC**: how well attacks are ranked above normal sessions (0.5 is
+  guessing).
+- **PR-AUC** (average precision): the honest measure when attacks are
+  rare. Guessing scores the share of attacks in the test set.
+- **Recall at 1% false alarms**: the share of attacks caught when only 1
+  normal session in 100 is flagged.
+
+### Real CERT attacks
+
+| Role (share of attacks) | Detector | ROC-AUC | PR-AUC | Recall at 1% false alarms |
+|---|---|---|---|---|
+| Caregiver (0.91%) | Rule | 0.547 (0.542 to 0.556) | 0.015 | 0.4% |
+| | Isolation Forest | 0.760 (0.744 to 0.770) | 0.018 | 0.6% |
+| | Autoencoder | 0.712 (0.628 to 0.756) | 0.018 | **3.1%** |
+| | **Combined (deployed)** | **0.760** (0.744 to 0.770) | **0.019** | 0.7% |
+| Security Auditor (0.33%, one attacker) | Rule | 0.636 (0.633 to 0.642) | 0.044 | 5.7% |
+| | Isolation Forest | 0.658 (0.520 to 0.802) | 0.064 | 11.4% |
+| | Autoencoder | **0.700** (0.571 to 0.809) | 0.050 | 11.4% |
+| | **Combined (deployed)** | 0.666 (0.514 to 0.804) | **0.068** | **14.3%** |
+| SysAdmin (0.96%) | Rule | 0.424 (0.366 to 0.465) | 0.009 | 0.9% |
+| | Isolation Forest | 0.597 (0.509 to 0.763) | 0.018 | 0.6% |
+| | Autoencoder | 0.528 (0.476 to 0.653) | 0.024 | **4.2%** |
+| | **Combined (deployed)** | **0.618** (0.521 to 0.764) | **0.026** | 3.5% |
+
+### Synthetic attacks (built from real CERT attack sessions)
+
+| Role | Detector | ROC-AUC | PR-AUC | Recall at 1% false alarms |
+|---|---|---|---|---|
+| Caregiver | Rule | 0.618 | 0.012 | 0.4% |
+| | Isolation Forest | 0.857 | 0.047 | 23.4% |
+| | Autoencoder | 0.847 | **0.198** | **43.8%** |
+| | **Combined (deployed)** | **0.857** | 0.128 | 24.8% |
+| Security Auditor | Rule | 0.661 | 0.346 | 6.9% |
+| | Isolation Forest | 0.869 | 0.580 | 31.5% |
+| | Autoencoder | 0.860 | 0.632 | **42.9%** |
+| | **Combined (deployed)** | **0.873** | **0.642** | **42.9%** |
+| SysAdmin | Rule | 0.538 | 0.044 | 10.2% |
+| | Isolation Forest | 0.721 | 0.042 | 1.9% |
+| | Autoencoder | **0.853** | **0.539** | **50.1%** |
+| | **Combined (deployed)** | 0.846 | 0.358 | 38.9% |
+
+### What the baselines show
+
+1. **The models add a lot over a simple rule in ranking.** For caregivers
+   ROC-AUC rises from 0.547 to 0.760; for administrators the rule is worse
+   than guessing (0.424) and the combined model reaches 0.618. On
+   synthetic attacks every model beats the rule by 0.2 or more.
+2. **On real CERT attacks every detector has low precision.** Caregiver
+   PR-AUC is 0.019 against 0.009 for guessing: about twice as good as
+   chance, still low in absolute terms. CERT insiders change only a few
+   session measurements. This is why a flag starts a reversible check and
+   human review, never an automatic penalty.
+3. **The two models do different jobs.** The Isolation Forest gives the
+   ranking (for caregivers the combined ROC-AUC equals its own), while the
+   autoencoder catches more at a low false-alarm rate (3.1% against 0.6%
+   for caregivers at 1% false alarms) and is the strongest single model on
+   synthetic attacks. Averaging keeps the Isolation Forest's ranking and
+   gains part of the autoencoder's precision; it is best or level-best on
+   ROC-AUC in four of six comparisons, but it does not always beat the
+   autoencoder on PR-AUC.
+4. **What would improve it:** the autoencoder's share of the score is small
+   because its training maximum is an outlier (min-max scaling). Scaling
+   both scores by percentile instead, so neither dominates, is the obvious
+   next step; it would change every live score and limit, so it is left as
+   future work rather than changed before the defence.
 
 ## The live limits on this data
 
