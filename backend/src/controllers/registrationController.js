@@ -87,6 +87,9 @@ async function submitRequest(req, res) {
 // GET /admin/registration-requests?status=pending — SysAdmin only.
 async function listRequests(req, res) {
   const status = req.query.status || 'pending';
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'status must be pending, approved or rejected' });
+  }
   const { rows } = await db.query(
     `SELECT rr.id, rr.full_name, rr.email, r.name AS requested_role, rr.reason,
             rr.status, rr.created_at, rr.reviewed_at, rr.rejection_reason

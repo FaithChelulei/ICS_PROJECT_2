@@ -73,7 +73,7 @@ function Connect-WithMfa([string]$Email, [string]$Pw, [string]$Device = $ownDevi
   }
   Write-Host "  A 6-digit code was emailed to $($one.Body.email)." -ForegroundColor Yellow
   $code = Read-Host '  Type the code'
-  $two = Invoke-Api '/auth/verify-mfa' 'POST' @{ userId = $one.Body.userId; code = $code.Trim() } -Device $Device
+  $two = Invoke-Api '/auth/verify-mfa' 'POST' @{ challengeId = $one.Body.challengeId; code = $code.Trim() } -Device $Device
   Check "Signed in as $Email (device: $Device)" ($two.Status -eq 200 -and $two.Body.token) "status $($two.Status)"
   return $two.Body
 }

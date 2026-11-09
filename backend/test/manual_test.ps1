@@ -71,7 +71,7 @@ function Connect-WithMfa([string]$Email, [string]$Pw, [string]$Device = 'FAITH-T
   }
   Write-Host "  A 6-digit code was emailed to $($one.Body.email)." -ForegroundColor Yellow
   $code = Read-Host '  Type the code'
-  $two = Invoke-Api '/auth/verify-mfa' 'POST' @{ userId = $one.Body.userId; code = $code.Trim() } -Device $Device
+  $two = Invoke-Api '/auth/verify-mfa' 'POST' @{ challengeId = $one.Body.challengeId; code = $code.Trim() } -Device $Device
   Check "MFA code accepted, session issued for $Email" ($two.Status -eq 200 -and $two.Body.token) "status $($two.Status)"
   return $two.Body.token
 }
@@ -131,7 +131,7 @@ if ($ad) {
     $new = Invoke-Api '/auth/login' 'POST' @{ identifier = $email; password = $temp.Trim() }
     Write-Host '  New accounts use MFA too -- a code has just been emailed to the same inbox.' -ForegroundColor Yellow
     $code = Read-Host '  Type the code'
-    $newSession = Invoke-Api '/auth/verify-mfa' 'POST' @{ userId = $new.Body.userId; code = $code.Trim() }
+    $newSession = Invoke-Api '/auth/verify-mfa' 'POST' @{ challengeId = $new.Body.challengeId; code = $code.Trim() }
     Check 'The new caregiver can sign in with the temporary password' ($newSession.Status -eq 200 -and $newSession.Body.mustChangePassword)
     $blocked = Invoke-Api '/children' -Token $newSession.Body.token
     Check '...but sees no data until the temporary password is changed' ($blocked.Status -eq 403 -and $blocked.Body.code -eq 'MUST_CHANGE_PASSWORD')

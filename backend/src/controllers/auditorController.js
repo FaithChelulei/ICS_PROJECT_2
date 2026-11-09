@@ -9,12 +9,17 @@ const { logAction } = require('../utils/auditLog');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
 const { KNOWN_DEVICE_SQL, likelyReason } = require('../services/flagReason');
 
+const FLAG_STATUSES = ['pending', 'reviewing', 'confirmed', 'escalated', 'all'];
+
 async function listFlagged(req, res) {
   // This queue is scoped to FLAGGED sessions only (is_flagged = true) --
   // every scored session gets an auditor_status of 'pending' by default,
   // flagged or not, so without this filter an ordinary below-threshold
   // login would clutter the review queue right alongside real alerts.
   const status = req.query.status || 'pending';
+  if (!FLAG_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${FLAG_STATUSES.join(', ')}` });
+  }
   const params = [];
   let where = 'WHERE rs.is_flagged = TRUE';
   if (status !== 'all') {

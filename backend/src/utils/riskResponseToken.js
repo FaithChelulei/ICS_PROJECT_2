@@ -5,15 +5,25 @@
 // valid bearer token to present. The signed token in the URL is what
 // proves intent instead, scoped tightly: bound to one riskScoreId AND one
 // specific action (confirm or deny), expiring in 7 days.
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const PURPOSE = 'risk_response';
 
+// Signed with their own key, never the sign-in key, so a sign-in token can
+// never pass as an email-link token or the reverse. RISK_TOKEN_SECRET if
+// set; otherwise a key derived from JWT_SECRET for this one purpose, so an
+// existing install needs no new setting.
+function secret() {
+  if (process.env.RISK_TOKEN_SECRET) return process.env.RISK_TOKEN_SECRET;
+  return crypto.createHmac('sha256', process.env.JWT_SECRET).update('childguard risk-response links').digest('hex');
+}
+
 function signRiskResponseToken(riskScoreId, action) {
   return jwt.sign(
     { purpose: PURPOSE, riskScoreId, action },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    secret(),
+    { algorithm: 'HS256', expiresIn: '7d' }
   );
 }
 
@@ -21,7 +31,7 @@ function verifyRiskResponseToken(token, riskScoreId, action) {
   if (!token) return false;
   let payload;
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET);
+    payload = jwt.verify(token, secret(), { algorithms: ['HS256'] });
   } catch (err) {
     return false;
   }

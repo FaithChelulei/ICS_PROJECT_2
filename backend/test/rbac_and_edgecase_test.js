@@ -44,6 +44,8 @@ const ACCOUNTS = {
   ad: { tag: 'admin', role: 'SysAdmin', username: 'test.admin', name: 'Test Admin' },
   // Has no children and exists only to have its role changed and put back.
   rc: { tag: 'rolechange', role: 'Caregiver', username: 'test.rolechange', name: 'Test Role Change' },
+  // Signs in with an emailed code (the others skip it so the suite can run unattended).
+  mf: { tag: 'mfa', role: 'Caregiver', username: 'test.mfa', name: 'Test Sign-in Code' },
 };
 
 const results = [];
@@ -143,8 +145,51 @@ async function main() {
   record('Login with email works', Boolean(au.token));
   const ad = await login(adAcct.email);
 
+  console.log('\n=== Sign-in code (MFA) ===');
+  const mfAcct = await ensureTestAccount(ACCOUNTS.mf);
+  await db.query('UPDATE users SET mfa_required = TRUE WHERE id = $1', [mfAcct.id]);
+  try {
+    const signIn = () => api('/auth/login', { method: 'POST', body: { identifier: mfAcct.email, password: PASS } });
+    const verifyCode = (challengeId, code) => api('/auth/verify-mfa', { method: 'POST', body: { challengeId, code } });
+    // The emailed code is random and stored hashed; give the live one a known value.
+    const setKnownCode = async () => db.query('UPDATE mfa_codes SET code_hash = $1 WHERE user_id = $2 AND consumed = FALSE',
+      [await bcrypt.hash('123456', 10), mfAcct.id]);
+    const first = await signIn();
+    record('Step one returns a signed challenge, not the user id',
+      first.json && first.json.mfaRequired === true && typeof first.json.challengeId === 'string' && !('userId' in first.json));
+    await setKnownCode();
+    record('Sending a user id instead of the challenge is refused (400)',
+      (await api('/auth/verify-mfa', { method: 'POST', body: { userId: mfAcct.id, code: '123456' } })).status === 400);
+    record('A forged challenge is refused (401)', (await verifyCode(`${first.json.challengeId.slice(0, -4)}AAAA`, '123456')).status === 401);
+    const wrongCode = await verifyCode(first.json.challengeId, '000000');
+    record('A wrong code is refused and says how many tries are left', wrongCode.status === 401 && /4 tries left/.test(wrongCode.json.error),
+      wrongCode.json && wrongCode.json.error);
+    const right = await verifyCode(first.json.challengeId, '123456');
+    record('The right code signs in (200)', right.status === 200 && Boolean(right.json.token), `status=${right.status}`);
+    record('A used code cannot be used again (401)', (await verifyCode(first.json.challengeId, '123456')).status === 401);
+    const older = await signIn();
+    const newer = await signIn();
+    await setKnownCode();
+    record('Signing in again cancels the older code', (await verifyCode(older.json.challengeId, '123456')).status === 401);
+    let fifth = null;
+    for (let i = 0; i < 5; i += 1) fifth = await verifyCode(newer.json.challengeId, '000000');
+    record('After 5 wrong codes the code is cancelled', fifth.status === 401 && fifth.json.code === 'MFA_CODE_CANCELLED', fifth.json && fifth.json.error);
+    record('...and then even the right code is refused', (await verifyCode(newer.json.challengeId, '123456')).status === 401);
+  } finally {
+    await db.query('UPDATE users SET mfa_required = FALSE WHERE id = $1', [mfAcct.id]);
+  }
+
   const me = await api('/auth/me', { token: cg.token, device: deviceA });
   record('/auth/me returns fullName', me.json && me.json.fullName === ACCOUNTS.cg.name, JSON.stringify(me.json));
+
+  console.log('\n=== Bad page parameters get a clear 400, never a 500 ===');
+  await expectStatus('Unknown flagged-session status (400)', '/auditor/flagged-sessions?status=bogus', { token: au.token }, 400);
+  await expectStatus('A parameter given twice (400)', '/auditor/flagged-sessions?status=pending&status=all', { token: au.token }, 400);
+  await expectStatus('A nested parameter (400)', '/auditor/audit-log?q[x]=1', { token: au.token }, 400);
+  await expectStatus('Audit log "from" that is not a date (400)', '/auditor/audit-log?from=yesterday', { token: au.token }, 400);
+  await expectStatus('Audit log negative limit (400)', '/auditor/audit-log?limit=-5', { token: au.token }, 400);
+  await expectStatus('Unknown registration-request status (400)', '/admin/registration-requests?status=bogus', { token: ad.token }, 400);
+  await expectStatus('A valid date still works (200)', '/auditor/audit-log?from=2026-01-01&limit=5', { token: au.token }, 200);
 
   console.log('\n=== RBAC: each role against every other role\'s routes ===');
   await expectStatus('Caregiver -> auditor flagged sessions (403)', '/auditor/flagged-sessions', { token: cg.token, device: deviceA }, 403);
