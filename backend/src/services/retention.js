@@ -1,7 +1,8 @@
 // KDPA s.39 (limitation to retention): personal data is kept only as long
 // as it is needed. Applied ONLY to archived child profiles -- an active
 // child is never touched. Once a profile has been archived for longer than
-// RETENTION_DAYS (backend/.env, default 365), its identity -- name, date of
+// the retention period (Admin > System Settings, else RETENTION_DAYS in
+// backend/.env, default 365), its identity -- name, date of
 // birth, family background, and the free-text archive reason -- is
 // overwritten with a fixed placeholder. Developmental records, consent
 // history and the audit trail stay, linked only to the profile id: the
@@ -13,18 +14,14 @@
 // no child data otherwise.
 const db = require('../config/db');
 const { encryptField } = require('../utils/encryption');
+const { getSetting } = require('./systemSettings');
 
 const ANONYMISED_NAME = 'Anonymised child';
 const ANONYMISED_DOB = 'anonymised';
 
-function retentionDays() {
-  const days = Number(process.env.RETENTION_DAYS);
-  return Number.isInteger(days) && days > 0 ? days : 365;
-}
-
 function getRetentionStatus() {
   return db.runAsSystem(async () => {
-    const days = retentionDays();
+    const days = await getSetting('retention_days');
     const { rows } = await db.query(
       `SELECT COUNT(*) FILTER (WHERE archived_at IS NOT NULL AND identity_anonymised_at IS NULL)::int AS archived,
               COUNT(*) FILTER (WHERE archived_at IS NOT NULL AND identity_anonymised_at IS NULL
@@ -40,14 +37,15 @@ function getRetentionStatus() {
 
 // Anonymises every archived profile past the retention period, all-or-
 // nothing in one transaction. Returns the profile ids it anonymised.
-function applyRetention() {
+async function applyRetention() {
+  const days = await getSetting('retention_days');
   return db.runAsSystem(() => db.transaction(async (client) => {
     const { rows } = await client.query(
       `SELECT id FROM child_profiles
        WHERE archived_at IS NOT NULL AND identity_anonymised_at IS NULL
          AND archived_at < now() - make_interval(days => $1)
        ORDER BY id FOR UPDATE`,
-      [retentionDays()]
+      [days]
     );
     const ids = rows.map((r) => r.id);
     if (ids.length === 0) return [];
@@ -70,4 +68,4 @@ function applyRetention() {
   }));
 }
 
-module.exports = { getRetentionStatus, applyRetention, retentionDays };
+module.exports = { getRetentionStatus, applyRetention };

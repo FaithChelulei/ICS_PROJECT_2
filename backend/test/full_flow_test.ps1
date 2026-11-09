@@ -17,16 +17,24 @@
 # Nothing is deleted. The caregiver account is locked and unlocked during
 # the run, and its password is set back to the one you typed at the end.
 # Emails: 5 MFA codes, 1 risk alert, 1 account-unlocked notice.
-param([SecureString]$SecurePassword)
+param([SecureString]$SecurePassword, [string]$EmailBase)
 
 # Never stored in this file: asked for at run time, typing hidden.
 if (-not $SecurePassword) { $SecurePassword = Read-Host 'Password for the demo accounts' -AsSecureString }
 $Password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
 
 $base = 'https://localhost:4000'
-$caregiver = 'faith.chelulei+caregiver@strathmore.edu'
-$auditor = 'faith.chelulei+auditor@strathmore.edu'
-$admin = 'faith.chelulei+admin@strathmore.edu'
+# Accounts come from DEMO_EMAIL_BASE in backend/.env (you@example.com gives
+# you+caregiver@example.com, ...), or -EmailBase; nothing personal is kept here.
+if (-not $EmailBase) {
+  $envLine = Select-String -Path (Join-Path $PSScriptRoot '..\.env') -Pattern '^DEMO_EMAIL_BASE=' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($envLine) { $EmailBase = $envLine.Line.Split('=', 2)[1].Trim() }
+}
+if (-not $EmailBase -or $EmailBase -notmatch '^[^@\s]+@[^@\s]+$') { throw 'Set DEMO_EMAIL_BASE in backend/.env (or pass -EmailBase you@example.com).' }
+$inboxLocal, $inboxDomain = $EmailBase.Split('@')
+$caregiver = "$inboxLocal+caregiver@$inboxDomain"
+$auditor = "$inboxLocal+auditor@$inboxDomain"
+$admin = "$inboxLocal+admin@$inboxDomain"
 $noticeVersion = '2026-10'   # must match backend/src/services/privacyNotice.js
 $ownDevice = 'FAITH-TEST-PC'
 $unknownDevice = "UNKNOWN-LAPTOP-$(Get-Random -Maximum 99999)"

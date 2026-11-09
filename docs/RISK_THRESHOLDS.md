@@ -12,6 +12,24 @@ The Flask service (`ml/service/app.py`) uses `deployment_threshold` when it is
 set and falls back to `review_threshold` otherwise. Changing either needs a
 restart of the ML service (it reads the file once at start-up).
 
+A Security Auditor can also set a role's limit on the Risk Thresholds page,
+which needs no restart. The saved value (`risk_threshold_settings` table)
+overrides the file, and the backend compares it with the model's score.
+Each change needs the password and a reason, is written to the audit log, and
+emails every System Administrator. An auditor cannot change the limit for
+their own role. Allowed ranges, enforced by the app and by the database:
+
+| Role | Allowed range | Why the top of the range is safe |
+|---|---|---|
+| Caregiver | 0.35 to 0.50 | Mass access scores 0.82 |
+| SecurityAuditor | 0.55 to 0.75 | Mass access scores 1.00 |
+| SysAdmin | 0.50 to 0.70 | Mass access scores 1.00 |
+
+Night-time activity scores 0.79 or higher for every role, so it also stays
+above these ranges. Raising a limit does lose some detections: a new-device
+attack scored 0.47 to 0.50 for a caregiver in rehearsal, so a Caregiver limit
+of 0.50 would miss it.
+
 ## Why two numbers
 
 **`review_threshold`** is the value chosen on the CERT r4.2 held-out test
@@ -97,7 +115,7 @@ causes were found and fixed together:
 ## Honest limitation (say this in the defence)
 
 At the deployment thresholds, recall on the **CERT test set** would be far
-lower than the research figures (see `ml/scripts/ptx_log.txt`: Caregiver
+lower than the research figures (see `ml/results/11_precision_at_thresholds.txt`: Caregiver
 recall is 66% at 0.10 but ~4% at 0.30). The two thresholds answer different
 questions: the research one measures the model on CERT; the deployment one
 is a usability calibration for this app's own traffic, where the patterns

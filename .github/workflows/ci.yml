@@ -1,0 +1,112 @@
+# Installs ChildGuard from scratch the way the README describes and runs
+# the automated suites against the three running services. If a fresh
+# install breaks (seed, migrations, a missing setting), this goes red.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install Python packages
+        run: pip install -r requirements.txt
+
+      - name: Frontend builds
+        working-directory: frontend
+        run: npm ci && npm run build
+
+      - name: Backend unit tests
+        working-directory: backend
+        run: npm ci && npm test
+
+      - name: Create the database and the app account
+        run: |
+          psql -c "CREATE DATABASE ics_project_2;"
+          psql -c "CREATE ROLE app_user LOGIN PASSWORD 'ci-only-password';"
+
+      - name: Migrate, make a certificate and a data key, seed
+        working-directory: backend
+        env:
+          MIGRATE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/ics_project_2
+        run: |
+          cp .env.ci .env
+          node db/migrate.js
+          npm run cert:new
+          npm run key:new
+          node db/seed.js
+
+      # The risk model treats 20:00-06:00 as after hours, and the API and
+      # penetration suites assume ordinary daytime use (the anomaly suite
+      # plays its night-time attacks with a 02:00 clock of its own). CI can
+      # run at any hour, so the services and tests run in a time zone where
+      # it is currently about midday.
+      - name: Pick a daytime time zone
+        run: |
+          h=$((10#$(date -u +%H)))
+          off=$((h - 12))
+          if [ "$off" -ge 0 ]; then tz="Etc/GMT+$off"; else tz="Etc/GMT-$((-off))"; fi
+          echo "TZ=$tz" >> "$GITHUB_ENV"
+          echo "UTC hour $h -> TZ=$tz, local time $(TZ=$tz date +%H:%M)"
+
+      - name: Start the ML service
+        run: |
+          nohup python ml/service/app.py > ml-service.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5001/health && exit 0; sleep 2; done
+          cat ml-service.log; exit 1
+
+      - name: Start the backend
+        working-directory: backend
+        run: |
+          nohup node src/server.js > ../backend.log 2>&1 &
+          for i in $(seq 1 30); do curl -sfk https://localhost:4000/health && exit 0; sleep 1; done
+          cat ../backend.log; exit 1
+
+      - name: API checks
+        working-directory: backend
+        run: npm run test:api
+
+      - name: Insider (anomaly) scenarios
+        working-directory: backend
+        run: npm run test:anomaly
+
+      # After the anomaly suite: its alerts are what the email-link checks use.
+      - name: Penetration checks
+        working-directory: backend
+        run: npm run test:pen
+
+      - name: Service logs
+        if: failure()
+        run: |
+          echo "--- backend"; cat backend.log || true
+          echo "--- ml service"; cat ml-service.log || true

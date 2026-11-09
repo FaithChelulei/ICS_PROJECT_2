@@ -1,0 +1,1560 @@
+{
+  "_about": "Person-level split, limit chosen on validation, reported once on test; synthetic attack injection reported separately. See ml/scripts/12_validated_evaluation.py and docs/MODEL_EVALUATION_VALIDATED.md.",
+  "seeds": [
+    42,
+    1,
+    2,
+    3,
+    4
+  ],
+  "summary": {
+    "Caregiver": {
+      "limit": {
+        "mean": 0.096,
+        "min": 0.07,
+        "max": 0.11
+      },
+      "real_test": {
+        "auc": {
+          "mean": 0.7598881534954277,
+          "min": 0.7441408280231576,
+          "max": 0.7700747797400669,
+          "n_runs": 5
+        },
+        "precision": {
+          "mean": 0.024867695476609376,
+          "min": 0.01696238466997871,
+          "max": 0.028756541240966858,
+          "n_runs": 5
+        },
+        "recall": {
+          "mean": 0.6634154262805008,
+          "min": 0.6101694915254238,
+          "max": 0.7785016286644951,
+          "n_runs": 5
+        },
+        "f1": {
+          "mean": 0.04783773166034247,
+          "min": 0.033201361394735014,
+          "max": 0.055091421205900604,
+          "n_runs": 5
+        },
+        "false_alarm_rate": {
+          "mean": 0.24170779359987135,
+          "min": 0.21446584938704027,
+          "max": 0.3148240749159014,
+          "n_runs": 5
+        }
+      },
+      "synthetic_test": {
+        "auc": {
+          "mean": 0.8573170056820614,
+          "min": 0.7358594862813777,
+          "max": 0.9354241806313439,
+          "n_runs": 5
+        },
+        "precision": {
+          "mean": 0.00876107921544088,
+          "min": 0.0070967741935483875,
+          "max": 0.011852245548764283,
+          "n_runs": 5
+        },
+        "recall": {
+          "mean": 0.8336666666666666,
+          "min": 0.68,
+          "max": 0.99,
+          "n_runs": 5
+        },
+        "f1": {
+          "mean": 0.01732691920762298,
+          "min": 0.014092526690391459,
+          "max": 0.023332461417734762,
+          "n_runs": 5
+        },
+        "false_alarm_rate": {
+          "mean": 0.24170779359987135,
+          "min": 0.21446584938704027,
+          "max": 0.3148240749159014,
+          "n_runs": 5
+        }
+      },
+      "original_evaluation": {
+        "role": "Caregiver",
+        "auc": 0.7687053302790798,
+        "f1": 0.09545667935944917,
+        "precision": 0.05179440733612589,
+        "recall": 0.6079734219269103,
+        "accuracy": 0.7926461796006218,
+        "fpr": 0.2039695585996956,
+        "fnr": 0.3920265780730897,
+        "n_malicious_test": 1505
+      }
+    },
+    "SecurityAuditor": {
+      "limit": {
+        "mean": 0.49800000000000005,
+        "min": 0.31,
+        "max": 0.84
+      },
+      "real_test": {
+        "auc": {
+          "mean": 0.665586281073524,
+          "min": 0.5140915509531654,
+          "max": 0.8040865384615385,
+          "n_runs": 5
+        },
+        "precision": {
+          "mean": 0.01963518760094286,
+          "min": 0.0,
+          "max": 0.07142857142857142,
+          "n_runs": 5
+        },
+        "recall": {
+          "mean": 0.2571428571428571,
+          "min": 0.0,
+          "max": 0.42857142857142855,
+          "n_runs": 5
+        },
+        "f1": {
+          "mean": 0.02947249278499279,
+          "min": 0.0,
+          "max": 0.09523809523809523,
+          "n_runs": 5
+        },
+        "false_alarm_rate": {
+          "mean": 0.0881821514316969,
+          "min": 0.0006009615384615385,
+          "max": 0.22240527182866557,
+          "n_runs": 5
+        }
+      },
+      "synthetic_test": {
+        "auc": {
+          "mean": 0.873038294444879,
+          "min": 0.8273929159802307,
+          "max": 0.9402564102564104,
+          "n_runs": 5
+        },
+        "precision": {
+          "mean": 0.5967770684375502,
+          "min": 0.2751677852348993,
+          "max": 0.9901960784313726,
+          "n_runs": 5
+        },
+        "recall": {
+          "mean": 0.502,
+          "min": 0.33666666666666667,
+          "max": 0.6833333333333333,
+          "n_runs": 5
+        },
+        "f1": {
+          "mean": 0.47922096289661187,
+          "min": 0.3923444976076555,
+          "max": 0.5869074492099323,
+          "n_runs": 5
+        },
+        "false_alarm_rate": {
+          "mean": 0.0881821514316969,
+          "min": 0.0006009615384615385,
+          "max": 0.22240527182866557,
+          "n_runs": 5
+        }
+      },
+      "original_evaluation": {
+        "role": "SecurityAuditor",
+        "auc": 0.6649343948105558,
+        "f1": 0.03680981595092025,
+        "precision": 0.019230769230769232,
+        "recall": 0.42857142857142855,
+        "accuracy": 0.919280205655527,
+        "fpr": 0.07894736842105263,
+        "fnr": 0.5714285714285714,
+        "n_malicious_test": 7
+      }
+    },
+    "SysAdmin": {
+      "limit": {
+        "mean": 0.302,
+        "min": 0.19,
+        "max": 0.48
+      },
+      "real_test": {
+        "auc": {
+          "mean": 0.6178894297578665,
+          "min": 0.5211546391752577,
+          "max": 0.7635933064041666,
+          "n_runs": 5
+        },
+        "precision": {
+          "mean": 0.07495068900547902,
+          "min": 0.0054139408978118655,
+          "max": 0.3333333333333333,
+          "n_runs": 5
+        },
+        "recall": {
+          "mean": 0.1847535612445812,
+          "min": 0.0040650406504065045,
+          "max": 0.32,
+          "n_runs": 5
+        },
+        "f1": {
+          "mean": 0.01724571357343566,
+          "min": 0.008032128514056224,
+          "max": 0.03428571428571429,
+          "n_runs": 5
+        },
+        "false_alarm_rate": {
+          "mean": 0.13817827507981245,
+          "min": 0.0001942690626517727,
+          "max": 0.34964314036478983,
+          "n_runs": 5
+        }
+      },
+      "synthetic_test": {
+        "auc": {
+          "mean": 0.8458954934036942,
+          "min": 0.7740013877874703,
+          "max": 0.9094706913827655,
+          "n_runs": 5
+        },
+        "precision": {
+          "mean": 0.26700731613063,
+          "min": 0.03056288478452067,
+          "max": 0.9622641509433962,
+          "n_runs": 5
+        },
+        "recall": {
+          "mean": 0.593,
+          "min": 0.255,
+          "max": 0.755,
+          "n_runs": 5
+        },
+        "f1": {
+          "mean": 0.20720835693865425,
+          "min": 0.05855096882898062,
+          "max": 0.4031620553359684,
+          "n_runs": 5
+        },
+        "false_alarm_rate": {
+          "mean": 0.13817827507981245,
+          "min": 0.0001942690626517727,
+          "max": 0.34964314036478983,
+          "n_runs": 5
+        }
+      },
+      "original_evaluation": {
+        "role": "SysAdmin",
+        "auc": 0.7186740407290536,
+        "f1": 0.1270440251572327,
+        "precision": 0.07946498819826908,
+        "recall": 0.3166144200626959,
+        "accuracy": 0.8612970920355751,
+        "fpr": 0.12076796036333609,
+        "fnr": 0.6833855799373041,
+        "n_malicious_test": 319
+      }
+    }
+  },
+  "runs": {
+    "42": {
+      "Caregiver": {
+        "people": {
+          "train": 530,
+          "val": 205,
+          "test": 205
+        },
+        "insiders": {
+          "train": 0,
+          "val": 28,
+          "test": 29
+        },
+        "train_sessions": 237690,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.11,
+        "real_test": {
+          "limit": 0.11,
+          "auc": 0.7612870907356789,
+          "precision": 0.025882846065178666,
+          "recall": 0.6357786357786358,
+          "f1": 0.04974072395911997,
+          "false_alarm_rate": 0.22511745047706688,
+          "tp": 494,
+          "fp": 18592,
+          "tn": 63996,
+          "fn": 283,
+          "attacks": 777,
+          "normal": 82588
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.7612870907356789,
+          "precision": 0.009523809523809525,
+          "recall": 0.005148005148005148,
+          "f1": 0.006683375104427736,
+          "false_alarm_rate": 0.0050370513876107905,
+          "tp": 4,
+          "fp": 416,
+          "tn": 82172,
+          "fn": 773,
+          "attacks": 777,
+          "normal": 82588
+        },
+        "synthetic_test": {
+          "limit": 0.11,
+          "auc": 0.7997278054923234,
+          "precision": 0.011852245548764283,
+          "recall": 0.7433333333333333,
+          "f1": 0.023332461417734762,
+          "false_alarm_rate": 0.22511745047706688,
+          "tp": 223,
+          "fp": 18592,
+          "tn": 63996,
+          "fn": 77,
+          "attacks": 300,
+          "normal": 82588
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.7997278054923234,
+          "precision": 0.07142857142857142,
+          "recall": 0.10666666666666667,
+          "f1": 0.0855614973262032,
+          "false_alarm_rate": 0.0050370513876107905,
+          "tp": 32,
+          "fp": 416,
+          "tn": 82172,
+          "fn": 268,
+          "attacks": 300,
+          "normal": 82588
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.4,
+            "at_live_limit": 0.02,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.83,
+            "at_live_limit": 0.01,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.29,
+            "n": 100
+          }
+        },
+        "seconds": 42.4
+      },
+      "SecurityAuditor": {
+        "people": {
+          "train": 11,
+          "val": 4,
+          "test": 5
+        },
+        "insiders": {
+          "train": 0,
+          "val": 0,
+          "test": 1
+        },
+        "train_sessions": 5307,
+        "limit_chosen_on": "validation (synthetic attacks; no real attacker left for validation)",
+        "limit": 0.53,
+        "real_test": {
+          "limit": 0.53,
+          "auc": 0.7457916801031925,
+          "precision": 0.07142857142857142,
+          "recall": 0.14285714285714285,
+          "f1": 0.09523809523809523,
+          "false_alarm_rate": 0.005869074492099322,
+          "tp": 1,
+          "fp": 13,
+          "tn": 2202,
+          "fn": 6,
+          "attacks": 7,
+          "normal": 2215
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.7457916801031925,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "false_alarm_rate": 0.0013544018058690745,
+          "tp": 0,
+          "fp": 3,
+          "tn": 2212,
+          "fn": 7,
+          "attacks": 7,
+          "normal": 2215
+        },
+        "synthetic_test": {
+          "limit": 0.53,
+          "auc": 0.9090744920993229,
+          "precision": 0.9090909090909091,
+          "recall": 0.43333333333333335,
+          "f1": 0.5869074492099323,
+          "false_alarm_rate": 0.005869074492099322,
+          "tp": 130,
+          "fp": 13,
+          "tn": 2202,
+          "fn": 170,
+          "attacks": 300,
+          "normal": 2215
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.9090744920993229,
+          "precision": 0.9719626168224299,
+          "recall": 0.3466666666666667,
+          "f1": 0.5110565110565111,
+          "false_alarm_rate": 0.0013544018058690745,
+          "tp": 104,
+          "fp": 3,
+          "tn": 2212,
+          "fn": 196,
+          "attacks": 300,
+          "normal": 2215
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.22,
+            "at_live_limit": 0.04,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.08,
+            "at_live_limit": 0.01,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.99,
+            "n": 100
+          }
+        },
+        "seconds": 5.1
+      },
+      "SysAdmin": {
+        "people": {
+          "train": 17,
+          "val": 12,
+          "test": 11
+        },
+        "insiders": {
+          "train": 0,
+          "val": 6,
+          "test": 6
+        },
+        "train_sessions": 24990,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.19,
+        "real_test": {
+          "limit": 0.19,
+          "auc": 0.5912605821292889,
+          "precision": 0.009564293304994687,
+          "recall": 0.25,
+          "f1": 0.01842374616171955,
+          "false_alarm_rate": 0.16727990666786324,
+          "tp": 18,
+          "fp": 1864,
+          "tn": 9279,
+          "fn": 54,
+          "attacks": 72,
+          "normal": 11143
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.5912605821292889,
+          "precision": 0.5,
+          "recall": 0.013888888888888888,
+          "f1": 0.02702702702702703,
+          "false_alarm_rate": 8.974243919949744e-05,
+          "tp": 1,
+          "fp": 1,
+          "tn": 11142,
+          "fn": 71,
+          "attacks": 72,
+          "normal": 11143
+        },
+        "synthetic_test": {
+          "limit": 0.19,
+          "auc": 0.8497731759849233,
+          "precision": 0.06659989984977466,
+          "recall": 0.665,
+          "f1": 0.12107419208010924,
+          "false_alarm_rate": 0.16727990666786324,
+          "tp": 133,
+          "fp": 1864,
+          "tn": 9279,
+          "fn": 67,
+          "attacks": 200,
+          "normal": 11143
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.8497731759849233,
+          "precision": 0.9767441860465116,
+          "recall": 0.21,
+          "f1": 0.345679012345679,
+          "false_alarm_rate": 8.974243919949744e-05,
+          "tp": 42,
+          "fp": 1,
+          "tn": 11142,
+          "fn": 158,
+          "attacks": 200,
+          "normal": 11143
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.54,
+            "at_live_limit": 0.06,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.79,
+            "at_live_limit": 0.36,
+            "n": 100
+          }
+        },
+        "seconds": 7.8
+      }
+    },
+    "1": {
+      "Caregiver": {
+        "people": {
+          "train": 530,
+          "val": 205,
+          "test": 205
+        },
+        "insiders": {
+          "train": 0,
+          "val": 28,
+          "test": 29
+        },
+        "train_sessions": 234969,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.1,
+        "real_test": {
+          "limit": 0.1,
+          "auc": 0.7700747797400669,
+          "precision": 0.028756541240966858,
+          "recall": 0.6541950113378685,
+          "f1": 0.055091421205900604,
+          "false_alarm_rate": 0.22200704024788964,
+          "tp": 577,
+          "fp": 19488,
+          "tn": 68293,
+          "fn": 305,
+          "attacks": 882,
+          "normal": 87781
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.7700747797400669,
+          "precision": 0.005641748942172073,
+          "recall": 0.0045351473922902496,
+          "f1": 0.00502828409805154,
+          "false_alarm_rate": 0.008031350747883938,
+          "tp": 4,
+          "fp": 705,
+          "tn": 87076,
+          "fn": 878,
+          "attacks": 882,
+          "normal": 87781
+        },
+        "synthetic_test": {
+          "limit": 0.1,
+          "auc": 0.9354241806313439,
+          "precision": 0.01000762001524003,
+          "recall": 0.985,
+          "f1": 0.019813930098063866,
+          "false_alarm_rate": 0.22200704024788964,
+          "tp": 197,
+          "fp": 19488,
+          "tn": 68293,
+          "fn": 3,
+          "attacks": 200,
+          "normal": 87781
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.9354241806313439,
+          "precision": 0.06374501992031872,
+          "recall": 0.24,
+          "f1": 0.10073452256033578,
+          "false_alarm_rate": 0.008031350747883938,
+          "tp": 48,
+          "fp": 705,
+          "tn": 87076,
+          "fn": 152,
+          "attacks": 200,
+          "normal": 87781
+        },
+        "synthetic_recall_by_scenario": {
+          "2": {
+            "at_validated_limit": 0.97,
+            "at_live_limit": 0.02,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.46,
+            "n": 100
+          }
+        },
+        "seconds": 40.4
+      },
+      "SecurityAuditor": {
+        "people": {
+          "train": 11,
+          "val": 4,
+          "test": 5
+        },
+        "insiders": {
+          "train": 0,
+          "val": 0,
+          "test": 1
+        },
+        "train_sessions": 5417,
+        "limit_chosen_on": "validation (synthetic attacks; no real attacker left for validation)",
+        "limit": 0.84,
+        "real_test": {
+          "limit": 0.84,
+          "auc": 0.8040865384615385,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "false_alarm_rate": 0.0006009615384615385,
+          "tp": 0,
+          "fp": 1,
+          "tn": 1663,
+          "fn": 7,
+          "attacks": 7,
+          "normal": 1664
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.8040865384615385,
+          "precision": 0.3333333333333333,
+          "recall": 0.14285714285714285,
+          "f1": 0.2,
+          "false_alarm_rate": 0.001201923076923077,
+          "tp": 1,
+          "fp": 2,
+          "tn": 1662,
+          "fn": 6,
+          "attacks": 7,
+          "normal": 1664
+        },
+        "synthetic_test": {
+          "limit": 0.84,
+          "auc": 0.9402564102564104,
+          "precision": 0.9901960784313726,
+          "recall": 0.33666666666666667,
+          "f1": 0.5024875621890548,
+          "false_alarm_rate": 0.0006009615384615385,
+          "tp": 101,
+          "fp": 1,
+          "tn": 1663,
+          "fn": 199,
+          "attacks": 300,
+          "normal": 1664
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.9402564102564104,
+          "precision": 0.9823008849557522,
+          "recall": 0.37,
+          "f1": 0.5375302663438256,
+          "false_alarm_rate": 0.001201923076923077,
+          "tp": 111,
+          "fp": 2,
+          "tn": 1662,
+          "fn": 189,
+          "attacks": 300,
+          "normal": 1664
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.04,
+            "at_live_limit": 0.04,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.0,
+            "at_live_limit": 0.07,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 0.97,
+            "at_live_limit": 1.0,
+            "n": 100
+          }
+        },
+        "seconds": 5.0
+      },
+      "SysAdmin": {
+        "people": {
+          "train": 17,
+          "val": 12,
+          "test": 11
+        },
+        "insiders": {
+          "train": 0,
+          "val": 6,
+          "test": 6
+        },
+        "train_sessions": 24104,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.48,
+        "real_test": {
+          "limit": 0.48,
+          "auc": 0.7635933064041666,
+          "precision": 0.3333333333333333,
+          "recall": 0.0040650406504065045,
+          "f1": 0.008032128514056224,
+          "false_alarm_rate": 0.0001942690626517727,
+          "tp": 1,
+          "fp": 2,
+          "tn": 10293,
+          "fn": 245,
+          "attacks": 246,
+          "normal": 10295
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.7635933064041666,
+          "precision": 0.3333333333333333,
+          "recall": 0.0040650406504065045,
+          "f1": 0.008032128514056224,
+          "false_alarm_rate": 0.0001942690626517727,
+          "tp": 1,
+          "fp": 2,
+          "tn": 10293,
+          "fn": 245,
+          "attacks": 246,
+          "normal": 10295
+        },
+        "synthetic_test": {
+          "limit": 0.48,
+          "auc": 0.862520883924235,
+          "precision": 0.9622641509433962,
+          "recall": 0.255,
+          "f1": 0.4031620553359684,
+          "false_alarm_rate": 0.0001942690626517727,
+          "tp": 51,
+          "fp": 2,
+          "tn": 10293,
+          "fn": 149,
+          "attacks": 200,
+          "normal": 10295
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.862520883924235,
+          "precision": 0.9565217391304348,
+          "recall": 0.22,
+          "f1": 0.35772357723577236,
+          "false_alarm_rate": 0.0001942690626517727,
+          "tp": 44,
+          "fp": 2,
+          "tn": 10293,
+          "fn": 156,
+          "attacks": 200,
+          "normal": 10295
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.12,
+            "at_live_limit": 0.05,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.39,
+            "at_live_limit": 0.39,
+            "n": 100
+          }
+        },
+        "seconds": 8.3
+      }
+    },
+    "2": {
+      "Caregiver": {
+        "people": {
+          "train": 530,
+          "val": 205,
+          "test": 205
+        },
+        "insiders": {
+          "train": 0,
+          "val": 28,
+          "test": 29
+        },
+        "train_sessions": 234985,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.1,
+        "real_test": {
+          "limit": 0.1,
+          "auc": 0.7560407797212733,
+          "precision": 0.024178875801972612,
+          "recall": 0.638432364096081,
+          "f1": 0.04659316326059879,
+          "false_alarm_rate": 0.2321245529714585,
+          "tp": 505,
+          "fp": 20381,
+          "tn": 67421,
+          "fn": 286,
+          "attacks": 791,
+          "normal": 87802
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.7560407797212733,
+          "precision": 0.010452961672473868,
+          "recall": 0.0037926675094816687,
+          "f1": 0.0055658627087198514,
+          "false_alarm_rate": 0.0032345504658208243,
+          "tp": 3,
+          "fp": 284,
+          "tn": 87518,
+          "fn": 788,
+          "attacks": 791,
+          "normal": 87802
+        },
+        "synthetic_test": {
+          "limit": 0.1,
+          "auc": 0.8873596842896516,
+          "precision": 0.007499391283175067,
+          "recall": 0.77,
+          "f1": 0.014854111405835544,
+          "false_alarm_rate": 0.2321245529714585,
+          "tp": 154,
+          "fp": 20381,
+          "tn": 67421,
+          "fn": 46,
+          "attacks": 200,
+          "normal": 87802
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.8873596842896516,
+          "precision": 0.14457831325301204,
+          "recall": 0.24,
+          "f1": 0.18045112781954886,
+          "false_alarm_rate": 0.0032345504658208243,
+          "tp": 48,
+          "fp": 284,
+          "tn": 87518,
+          "fn": 152,
+          "attacks": 200,
+          "normal": 87802
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.54,
+            "at_live_limit": 0.01,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.47,
+            "n": 100
+          }
+        },
+        "seconds": 40.3
+      },
+      "SecurityAuditor": {
+        "people": {
+          "train": 11,
+          "val": 4,
+          "test": 5
+        },
+        "insiders": {
+          "train": 0,
+          "val": 0,
+          "test": 1
+        },
+        "train_sessions": 4827,
+        "limit_chosen_on": "validation (synthetic attacks; no real attacker left for validation)",
+        "limit": 0.31,
+        "real_test": {
+          "limit": 0.31,
+          "auc": 0.5140915509531654,
+          "precision": 0.0055248618784530384,
+          "recall": 0.42857142857142855,
+          "f1": 0.01090909090909091,
+          "false_alarm_rate": 0.22240527182866557,
+          "tp": 3,
+          "fp": 540,
+          "tn": 1888,
+          "fn": 4,
+          "attacks": 7,
+          "normal": 2428
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.5140915509531654,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "false_alarm_rate": 0.005766062602965404,
+          "tp": 0,
+          "fp": 14,
+          "tn": 2414,
+          "fn": 7,
+          "attacks": 7,
+          "normal": 2428
+        },
+        "synthetic_test": {
+          "limit": 0.31,
+          "auc": 0.8273929159802307,
+          "precision": 0.2751677852348993,
+          "recall": 0.6833333333333333,
+          "f1": 0.3923444976076555,
+          "false_alarm_rate": 0.22240527182866557,
+          "tp": 205,
+          "fp": 540,
+          "tn": 1888,
+          "fn": 95,
+          "attacks": 300,
+          "normal": 2428
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.8273929159802307,
+          "precision": 0.8985507246376812,
+          "recall": 0.41333333333333333,
+          "f1": 0.5662100456621004,
+          "false_alarm_rate": 0.005766062602965404,
+          "tp": 124,
+          "fp": 14,
+          "tn": 2414,
+          "fn": 176,
+          "attacks": 300,
+          "normal": 2428
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.48,
+            "at_live_limit": 0.11,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.57,
+            "at_live_limit": 0.14,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.99,
+            "n": 100
+          }
+        },
+        "seconds": 4.8
+      },
+      "SysAdmin": {
+        "people": {
+          "train": 17,
+          "val": 12,
+          "test": 11
+        },
+        "insiders": {
+          "train": 0,
+          "val": 6,
+          "test": 6
+        },
+        "train_sessions": 23183,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.37,
+        "real_test": {
+          "limit": 0.37,
+          "auc": 0.6396423984984688,
+          "precision": 0.01854714064914992,
+          "recall": 0.22641509433962265,
+          "f1": 0.03428571428571429,
+          "false_alarm_rate": 0.06044740599714422,
+          "tp": 12,
+          "fp": 635,
+          "tn": 9870,
+          "fn": 41,
+          "attacks": 53,
+          "normal": 10505
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.6396423984984688,
+          "precision": 0.03821656050955414,
+          "recall": 0.11320754716981132,
+          "f1": 0.05714285714285714,
+          "false_alarm_rate": 0.014374107567824845,
+          "tp": 6,
+          "fp": 151,
+          "tn": 10354,
+          "fn": 47,
+          "attacks": 53,
+          "normal": 10505
+        },
+        "synthetic_test": {
+          "limit": 0.37,
+          "auc": 0.8337113279390767,
+          "precision": 0.15782493368700265,
+          "recall": 0.595,
+          "f1": 0.24947589098532494,
+          "false_alarm_rate": 0.06044740599714422,
+          "tp": 119,
+          "fp": 635,
+          "tn": 9870,
+          "fn": 81,
+          "attacks": 200,
+          "normal": 10505
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.8337113279390767,
+          "precision": 0.41245136186770426,
+          "recall": 0.53,
+          "f1": 0.4638949671772429,
+          "false_alarm_rate": 0.014374107567824845,
+          "tp": 106,
+          "fp": 151,
+          "tn": 10354,
+          "fn": 94,
+          "attacks": 200,
+          "normal": 10505
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.57,
+            "at_live_limit": 0.48,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.62,
+            "at_live_limit": 0.58,
+            "n": 100
+          }
+        },
+        "seconds": 7.7
+      }
+    },
+    "3": {
+      "Caregiver": {
+        "people": {
+          "train": 530,
+          "val": 205,
+          "test": 205
+        },
+        "insiders": {
+          "train": 0,
+          "val": 28,
+          "test": 29
+        },
+        "train_sessions": 238361,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.1,
+        "real_test": {
+          "limit": 0.1,
+          "auc": 0.7678972892569617,
+          "precision": 0.028557829604950024,
+          "recall": 0.6101694915254238,
+          "f1": 0.05456198848135799,
+          "false_alarm_rate": 0.21446584938704027,
+          "tp": 540,
+          "fp": 18369,
+          "tn": 67281,
+          "fn": 345,
+          "attacks": 885,
+          "normal": 85650
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.7678972892569617,
+          "precision": 0.008791208791208791,
+          "recall": 0.004519774011299435,
+          "f1": 0.005970149253731343,
+          "false_alarm_rate": 0.005265615878575598,
+          "tp": 4,
+          "fp": 451,
+          "tn": 85199,
+          "fn": 881,
+          "attacks": 885,
+          "normal": 85650
+        },
+        "synthetic_test": {
+          "limit": 0.1,
+          "auc": 0.7358594862813777,
+          "precision": 0.007349365036476628,
+          "recall": 0.68,
+          "f1": 0.01454156642608928,
+          "false_alarm_rate": 0.21446584938704027,
+          "tp": 136,
+          "fp": 18369,
+          "tn": 67281,
+          "fn": 64,
+          "attacks": 200,
+          "normal": 85650
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.7358594862813777,
+          "precision": 0.0998003992015968,
+          "recall": 0.25,
+          "f1": 0.14265335235378032,
+          "false_alarm_rate": 0.005265615878575598,
+          "tp": 50,
+          "fp": 451,
+          "tn": 85199,
+          "fn": 150,
+          "attacks": 200,
+          "normal": 85650
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.36,
+            "at_live_limit": 0.03,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.47,
+            "n": 100
+          }
+        },
+        "seconds": 40.5
+      },
+      "SecurityAuditor": {
+        "people": {
+          "train": 11,
+          "val": 4,
+          "test": 5
+        },
+        "insiders": {
+          "train": 0,
+          "val": 0,
+          "test": 1
+        },
+        "train_sessions": 5239,
+        "limit_chosen_on": "validation (synthetic attacks; no real attacker left for validation)",
+        "limit": 0.32,
+        "real_test": {
+          "limit": 0.32,
+          "auc": 0.6593214285714285,
+          "precision": 0.012048192771084338,
+          "recall": 0.42857142857142855,
+          "f1": 0.0234375,
+          "false_alarm_rate": 0.123,
+          "tp": 3,
+          "fp": 246,
+          "tn": 1754,
+          "fn": 4,
+          "attacks": 7,
+          "normal": 2000
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.6593214285714285,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "false_alarm_rate": 0.007,
+          "tp": 0,
+          "fp": 14,
+          "tn": 1986,
+          "fn": 7,
+          "attacks": 7,
+          "normal": 2000
+        },
+        "synthetic_test": {
+          "limit": 0.32,
+          "auc": 0.8593408333333333,
+          "precision": 0.42657342657342656,
+          "recall": 0.61,
+          "f1": 0.5020576131687243,
+          "false_alarm_rate": 0.123,
+          "tp": 183,
+          "fp": 246,
+          "tn": 1754,
+          "fn": 117,
+          "attacks": 300,
+          "normal": 2000
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.8593408333333333,
+          "precision": 0.8082191780821918,
+          "recall": 0.19666666666666666,
+          "f1": 0.3163538873994638,
+          "false_alarm_rate": 0.007,
+          "tp": 59,
+          "fp": 14,
+          "tn": 1986,
+          "fn": 241,
+          "attacks": 300,
+          "normal": 2000
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.39,
+            "at_live_limit": 0.07,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.44,
+            "at_live_limit": 0.0,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.52,
+            "n": 100
+          }
+        },
+        "seconds": 4.7
+      },
+      "SysAdmin": {
+        "people": {
+          "train": 17,
+          "val": 12,
+          "test": 11
+        },
+        "insiders": {
+          "train": 0,
+          "val": 6,
+          "test": 6
+        },
+        "train_sessions": 23325,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.28,
+        "real_test": {
+          "limit": 0.28,
+          "auc": 0.5211546391752577,
+          "precision": 0.0054139408978118655,
+          "recall": 0.32,
+          "f1": 0.01064773735581189,
+          "false_alarm_rate": 0.34964314036478983,
+          "tp": 24,
+          "fp": 4409,
+          "tn": 8201,
+          "fn": 51,
+          "attacks": 75,
+          "normal": 12610
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.5211546391752577,
+          "precision": 0.008492569002123142,
+          "recall": 0.05333333333333334,
+          "f1": 0.014652014652014652,
+          "false_alarm_rate": 0.03703409992069786,
+          "tp": 4,
+          "fp": 467,
+          "tn": 12143,
+          "fn": 71,
+          "attacks": 75,
+          "normal": 12610
+        },
+        "synthetic_test": {
+          "limit": 0.28,
+          "auc": 0.7740013877874703,
+          "precision": 0.03056288478452067,
+          "recall": 0.695,
+          "f1": 0.05855096882898062,
+          "false_alarm_rate": 0.34964314036478983,
+          "tp": 139,
+          "fp": 4409,
+          "tn": 8201,
+          "fn": 61,
+          "attacks": 200,
+          "normal": 12610
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.7740013877874703,
+          "precision": 0.15245009074410162,
+          "recall": 0.42,
+          "f1": 0.2237017310252996,
+          "false_alarm_rate": 0.03703409992069786,
+          "tp": 84,
+          "fp": 467,
+          "tn": 12143,
+          "fn": 116,
+          "attacks": 200,
+          "normal": 12610
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.57,
+            "at_live_limit": 0.22,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.82,
+            "at_live_limit": 0.62,
+            "n": 100
+          }
+        },
+        "seconds": 7.6
+      }
+    },
+    "4": {
+      "Caregiver": {
+        "people": {
+          "train": 530,
+          "val": 205,
+          "test": 205
+        },
+        "insiders": {
+          "train": 0,
+          "val": 28,
+          "test": 29
+        },
+        "train_sessions": 234266,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.07,
+        "real_test": {
+          "limit": 0.07,
+          "auc": 0.7441408280231576,
+          "precision": 0.01696238466997871,
+          "recall": 0.7785016286644951,
+          "f1": 0.033201361394735014,
+          "false_alarm_rate": 0.3148240749159014,
+          "tp": 478,
+          "fp": 27702,
+          "tn": 60290,
+          "fn": 136,
+          "attacks": 614,
+          "normal": 87992
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.7441408280231576,
+          "precision": 0.006144393241167435,
+          "recall": 0.006514657980456026,
+          "f1": 0.006324110671936759,
+          "false_alarm_rate": 0.007352941176470588,
+          "tp": 4,
+          "fp": 647,
+          "tn": 87345,
+          "fn": 610,
+          "attacks": 614,
+          "normal": 87992
+        },
+        "synthetic_test": {
+          "limit": 0.07,
+          "auc": 0.9282138717156105,
+          "precision": 0.0070967741935483875,
+          "recall": 0.99,
+          "f1": 0.014092526690391459,
+          "false_alarm_rate": 0.3148240749159014,
+          "tp": 198,
+          "fp": 27702,
+          "tn": 60290,
+          "fn": 2,
+          "attacks": 200,
+          "normal": 87992
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.4,
+          "auc": 0.9282138717156105,
+          "precision": 0.06502890173410404,
+          "recall": 0.225,
+          "f1": 0.10089686098654709,
+          "false_alarm_rate": 0.007352941176470588,
+          "tp": 45,
+          "fp": 647,
+          "tn": 87345,
+          "fn": 155,
+          "attacks": 200,
+          "normal": 87992
+        },
+        "synthetic_recall_by_scenario": {
+          "2": {
+            "at_validated_limit": 0.98,
+            "at_live_limit": 0.01,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 1.0,
+            "at_live_limit": 0.44,
+            "n": 100
+          }
+        },
+        "seconds": 33.4
+      },
+      "SecurityAuditor": {
+        "people": {
+          "train": 11,
+          "val": 4,
+          "test": 5
+        },
+        "insiders": {
+          "train": 0,
+          "val": 0,
+          "test": 1
+        },
+        "train_sessions": 4548,
+        "limit_chosen_on": "validation (synthetic attacks; no real attacker left for validation)",
+        "limit": 0.49,
+        "real_test": {
+          "limit": 0.49,
+          "auc": 0.6046402072782946,
+          "precision": 0.009174311926605505,
+          "recall": 0.2857142857142857,
+          "f1": 0.017777777777777778,
+          "false_alarm_rate": 0.08903544929925804,
+          "tp": 2,
+          "fp": 216,
+          "tn": 2210,
+          "fn": 5,
+          "attacks": 7,
+          "normal": 2426
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.6046402072782946,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "false_alarm_rate": 0.08738664468260511,
+          "tp": 0,
+          "fp": 212,
+          "tn": 2214,
+          "fn": 7,
+          "attacks": 7,
+          "normal": 2426
+        },
+        "synthetic_test": {
+          "limit": 0.49,
+          "auc": 0.8291268205550976,
+          "precision": 0.38285714285714284,
+          "recall": 0.44666666666666666,
+          "f1": 0.4123076923076923,
+          "false_alarm_rate": 0.08903544929925804,
+          "tp": 134,
+          "fp": 216,
+          "tn": 2210,
+          "fn": 166,
+          "attacks": 300,
+          "normal": 2426
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.65,
+          "auc": 0.8291268205550976,
+          "precision": 0.3026315789473684,
+          "recall": 0.30666666666666664,
+          "f1": 0.304635761589404,
+          "false_alarm_rate": 0.08738664468260511,
+          "tp": 92,
+          "fp": 212,
+          "tn": 2214,
+          "fn": 208,
+          "attacks": 300,
+          "normal": 2426
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.23,
+            "at_live_limit": 0.13,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.17,
+            "at_live_limit": 0.08,
+            "n": 100
+          },
+          "3": {
+            "at_validated_limit": 0.94,
+            "at_live_limit": 0.71,
+            "n": 100
+          }
+        },
+        "seconds": 5.3
+      },
+      "SysAdmin": {
+        "people": {
+          "train": 17,
+          "val": 12,
+          "test": 11
+        },
+        "insiders": {
+          "train": 0,
+          "val": 6,
+          "test": 6
+        },
+        "train_sessions": 24670,
+        "limit_chosen_on": "validation (real CERT attacks)",
+        "limit": 0.19,
+        "real_test": {
+          "limit": 0.19,
+          "auc": 0.5737962225821506,
+          "precision": 0.007894736842105263,
+          "recall": 0.1232876712328767,
+          "f1": 0.01483924154987634,
+          "false_alarm_rate": 0.11332665330661322,
+          "tp": 9,
+          "fp": 1131,
+          "tn": 8849,
+          "fn": 64,
+          "attacks": 73,
+          "normal": 9980
+        },
+        "real_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.5737962225821506,
+          "precision": 0.5,
+          "recall": 0.0273972602739726,
+          "f1": 0.05194805194805195,
+          "false_alarm_rate": 0.0002004008016032064,
+          "tp": 2,
+          "fp": 2,
+          "tn": 9978,
+          "fn": 71,
+          "attacks": 73,
+          "normal": 9980
+        },
+        "synthetic_test": {
+          "limit": 0.19,
+          "auc": 0.9094706913827655,
+          "precision": 0.11778471138845553,
+          "recall": 0.755,
+          "f1": 0.203778677462888,
+          "false_alarm_rate": 0.11332665330661322,
+          "tp": 151,
+          "fp": 1131,
+          "tn": 8849,
+          "fn": 49,
+          "attacks": 200,
+          "normal": 9980
+        },
+        "synthetic_test_at_live_limit": {
+          "limit": 0.6,
+          "auc": 0.9094706913827655,
+          "precision": 0.9823008849557522,
+          "recall": 0.555,
+          "f1": 0.7092651757188498,
+          "false_alarm_rate": 0.0002004008016032064,
+          "tp": 111,
+          "fp": 2,
+          "tn": 9978,
+          "fn": 89,
+          "attacks": 200,
+          "normal": 9980
+        },
+        "synthetic_recall_by_scenario": {
+          "1": {
+            "at_validated_limit": 0.72,
+            "at_live_limit": 0.48,
+            "n": 100
+          },
+          "2": {
+            "at_validated_limit": 0.79,
+            "at_live_limit": 0.63,
+            "n": 100
+          }
+        },
+        "seconds": 23.9
+      }
+    }
+  }
+}

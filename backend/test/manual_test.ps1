@@ -15,16 +15,24 @@
 #
 # Emails you'll receive: 3 MFA codes (caregiver, auditor, admin) and one
 # approval email with a temporary password for the new account.
-param([SecureString]$SecurePassword)
+param([SecureString]$SecurePassword, [string]$EmailBase)
 
 # Never stored in this file: asked for at run time, typing hidden.
 if (-not $SecurePassword) { $SecurePassword = Read-Host 'Password for the demo accounts' -AsSecureString }
 $Password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
 
 $base = 'https://localhost:4000'
-$caregiver = 'faith.chelulei+caregiver@strathmore.edu'
-$auditor = 'faith.chelulei+auditor@strathmore.edu'
-$admin = 'faith.chelulei+admin@strathmore.edu'
+# Accounts come from DEMO_EMAIL_BASE in backend/.env (you@example.com gives
+# you+caregiver@example.com, ...), or -EmailBase; nothing personal is kept here.
+if (-not $EmailBase) {
+  $envLine = Select-String -Path (Join-Path $PSScriptRoot '..\.env') -Pattern '^DEMO_EMAIL_BASE=' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($envLine) { $EmailBase = $envLine.Line.Split('=', 2)[1].Trim() }
+}
+if (-not $EmailBase -or $EmailBase -notmatch '^[^@\s]+@[^@\s]+$') { throw 'Set DEMO_EMAIL_BASE in backend/.env (or pass -EmailBase you@example.com).' }
+$inboxLocal, $inboxDomain = $EmailBase.Split('@')
+$caregiver = "$inboxLocal+caregiver@$inboxDomain"
+$auditor = "$inboxLocal+auditor@$inboxDomain"
+$admin = "$inboxLocal+admin@$inboxDomain"
 $noticeVersion = '2026-10'   # must match backend/src/services/privacyNotice.js
 $script:passed = 0
 $script:failed = 0
@@ -103,7 +111,7 @@ if ($au) {
 }
 
 Step '6. Someone requests an account on the public form'
-$email = "faithchelulei35+walkthrough$(Get-Date -Format 'yyyyMMddHHmmss')@gmail.com"
+$email = "$inboxLocal+walkthrough$(Get-Date -Format 'yyyyMMddHHmmss')@$inboxDomain"
 $reqNo = Invoke-Api '/auth/register' 'POST' @{ fullName = 'Walkthrough Caregiver'; email = $email; requestedRole = 'Caregiver' }
 Check 'Without accepting the privacy notice: refused' ($reqNo.Status -eq 400 -and $reqNo.Body.code -eq 'PRIVACY_NOTICE_REQUIRED')
 $req = Invoke-Api '/auth/register' 'POST' @{ fullName = 'Walkthrough Caregiver'; email = $email; requestedRole = 'Caregiver'; reason = 'Walkthrough test'; privacyNoticeVersion = $noticeVersion }
@@ -118,7 +126,7 @@ if ($ad) {
   if ($requestId) {
     $ok = Invoke-Api "/admin/registration-requests/$requestId/approve" 'POST' -Token $ad
     Check 'Approved -- account created, temporary password emailed' ($ok.Status -eq 200)
-    Write-Host "  Check faithchelulei35@gmail.com for the approval email to $email." -ForegroundColor Yellow
+    Write-Host "  Check $EmailBase for the approval email to $email." -ForegroundColor Yellow
     $temp = Read-Host '  Paste the temporary password from it'
     $new = Invoke-Api '/auth/login' 'POST' @{ identifier = $email; password = $temp.Trim() }
     Write-Host '  New accounts use MFA too -- a code has just been emailed to the same inbox.' -ForegroundColor Yellow

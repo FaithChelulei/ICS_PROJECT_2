@@ -2,7 +2,7 @@
 // data to leave an immutable trail — this is the one place that trail is
 // written, so every record route calls through here rather than writing
 // to audit_log ad hoc. The app's DB role should never get UPDATE/DELETE on
-// audit_log (see the note in schema.sql) — INSERT + SELECT only.
+// audit_log (see db/007_app_user_grants.sql) — INSERT + SELECT only.
 const db = require('../config/db');
 
 async function logAction({ userId, action, detail = null, accessRequestId = null }) {

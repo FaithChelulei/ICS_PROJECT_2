@@ -1,5 +1,5 @@
 -- Migration: Kenya Data Protection Act 2019 features. Additive, safe to
--- re-run. Run AFTER migration_rls.sql, as the table owner (postgres), then
+-- re-run. Run AFTER 004_rls.sql, as the table owner (postgres), then
 -- restart the backend.
 --
 --   s.40(3)  archive (restrict processing) a child profile instead of

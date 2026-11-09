@@ -56,9 +56,10 @@ const FILE_ACTION_TYPES = [
   'create_child_profile', 'view_own_child_records', 'submit_developmental_record', 'correct_child_details',
   'archive_child_profile', 'restore_child_profile',
   // Security Auditor
-  'view_audit_log', 'review_flagged_session', 'export_report', 'record_breach_decision',
+  'view_audit_log', 'review_flagged_session', 'export_report', 'record_breach_decision', 'change_risk_threshold',
   // SysAdmin
   'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data', 'apply_retention',
+  'change_user_role', 'change_system_setting',
 ];
 
 // Roles whose CERT "session" is really a whole workday (see rationale

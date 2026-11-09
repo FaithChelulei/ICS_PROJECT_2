@@ -119,10 +119,48 @@ Please log in and you will be asked to change this password. If you did not requ
   });
 }
 
+// Sent to the person whose role a SysAdmin changed (FR-25).
+async function sendRoleChangedEmail(toEmail, { role }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] Role changed for ${toEmail}: ${role}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'Your account role has changed',
+    text: `A System Administrator changed your account role to ${role}. You have been signed out, and your access has changed from your next sign-in.
+
+If you did not expect this, contact the system administrator immediately.`,
+  });
+}
+
+// Sent to every System Administrator when a Security Auditor changes a risk
+// threshold (FR-21), so the change is seen by someone other than the person
+// who made it.
+async function sendThresholdChangedEmail(toEmail, { role, from, to, reason, changedBy }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] ${changedBy} changed the ${role} risk limit from ${from} to ${to}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'A risk limit was changed',
+    text: `${changedBy} changed the ${role} risk limit from ${from} to ${to}.
+
+Reason given: ${reason}
+
+A higher limit flags fewer sessions. If this change was not expected, review it in the audit log.`,
+  });
+}
+
 module.exports = {
   sendMfaCodeEmail,
   sendRiskAlertEmail,
   sendAccountApprovedEmail,
   sendAccountRejectedEmail,
   sendAccountUnlockedEmail,
+  sendRoleChangedEmail,
+  sendThresholdChangedEmail,
 };

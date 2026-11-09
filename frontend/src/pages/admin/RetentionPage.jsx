@@ -89,9 +89,8 @@ export default function RetentionPage() {
               <ul className="list-disc pl-5 space-y-1.5 text-[15px] text-slate-600">
                 <li>A caregiver archives a profile when a child leaves the programme. Nothing is deleted, and it can be restored.</li>
                 <li>
-                  After <strong>{status.retentionDays} day(s)</strong> archived (<span className="font-mono">RETENTION_DAYS</span>{' '}
-                  in <span className="font-mono">backend/.env</span>), the child’s name, date of birth and family background are
-                  replaced with a placeholder.
+                  After <strong>{status.retentionDays} day(s)</strong> archived (set in System Settings), the child’s name, date of
+                  birth and family background are replaced with a placeholder.
                 </li>
                 <li>Developmental records, consent history and the audit trail stay, linked only to the profile number.</li>
                 <li>Active profiles are never affected. Every run is written to the audit log.</li>

@@ -264,6 +264,12 @@ async function nightTimeLive(n, role) {
 // Night-time activity, through the real risk engine with a 02:00 clock.
 async function nightTime(n, role, actionType) {
   const acct = await account(`night-${role.toLowerCase()}`, role);
+  // Caregivers' after-hours feature uses their own usual hours (activity at
+  // this time on 3+ days in the last 30, featureComputation.js). Every run of
+  // this test adds 02:00 activity, so after a few runs 02:00 became "usual"
+  // for this test account. Move its earlier activity out of that window so
+  // each run is a person with no night-time history, as the scenario means.
+  await db.query("UPDATE access_requests SET requested_at = requested_at - interval '60 days' WHERE user_id = $1", [acct.id]);
   const since = new Date();
   const night = new Date();
   night.setHours(2, 0, 0, 0);

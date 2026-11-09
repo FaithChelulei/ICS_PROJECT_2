@@ -8,6 +8,7 @@
 // write needed to put it in the queue).
 const db = require('../config/db');
 const { computeFeatures } = require('./featureComputation');
+const { thresholdFor } = require('./riskThresholds');
 const { scoreSession } = require('../utils/mlClient');
 const { sendRiskAlertEmail } = require('../utils/mailer');
 const { logAction } = require('../utils/auditLog');
@@ -55,19 +56,24 @@ async function recordAndScore({ userId, role, actionType, childProfileId = null,
     return { accessRequestId, scored: false, flagged: false };
   }
 
+  // The model gives the score; the limit in force may be one the Security
+  // Auditor has set on screen (FR-21), so the decision is made here.
+  const threshold = await thresholdFor(role, result.threshold);
+  const flagged = Number(result.risk_score) >= threshold;
+
   const { rows: riskRows } = await db.query(
     `INSERT INTO risk_scores
        (access_request_id, isoforest_score, autoencoder_score, combined_score, role_threshold, is_flagged)
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-    [accessRequestId, result.iso_score, result.ae_score, result.risk_score, result.threshold, result.flagged]
+    [accessRequestId, result.iso_score, result.ae_score, result.risk_score, threshold, flagged]
   );
   const riskScoreId = riskRows[0].id;
 
-  if (result.flagged) {
+  if (flagged) {
     await handleFlagged({ riskScoreId, accessRequestId, sessionId, userId, role, pcName, actionType, now });
   }
 
-  return { accessRequestId, riskScoreId, scored: true, flagged: result.flagged, riskScore: result.risk_score };
+  return { accessRequestId, riskScoreId, scored: true, flagged, riskScore: result.risk_score };
 }
 
 // Applies the automatic half of risk_tiers.json's response_policy. The

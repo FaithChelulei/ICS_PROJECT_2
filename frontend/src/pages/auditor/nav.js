@@ -4,4 +4,5 @@ export const AUDITOR_NAV = [
   { to: '/', label: 'Flagged Sessions', icon: 'flag' },
   { to: '/auditor/audit-log', label: 'Audit Log', icon: 'file' },
   { to: '/auditor/reports', label: 'Reports', icon: 'report' },
+  { to: '/auditor/risk-thresholds', label: 'Risk Thresholds', icon: 'shield' },
 ];

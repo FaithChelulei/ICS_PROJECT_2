@@ -14,6 +14,7 @@
 // services/consent.js (shared with childRecordsController.js).
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
+const { refuseNotOwner } = require('../services/ownership');
 const { SCOPES } = require('../services/consent');
 
 async function findOwnChildProfile(childProfileId, caregiverId) {
@@ -29,7 +30,7 @@ async function findOwnChildProfile(childProfileId, caregiverId) {
 async function getConsent(req, res) {
   const childProfileId = Number(req.params.childProfileId);
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
-  if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  if (!owned) return refuseNotOwner(req, res, childProfileId, 'view_consent');
 
   const { rows } = await db.query(
     `SELECT id, scope, consent_given, recorded_at
@@ -72,7 +73,7 @@ async function setConsent(req, res) {
   }
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
-  if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  if (!owned) return refuseNotOwner(req, res, childProfileId, 'change_consent');
   // Archived = restricted (s.40(3)): the consent history stays readable,
   // but it can't change until the profile is restored.
   if (owned.archived_at) {
