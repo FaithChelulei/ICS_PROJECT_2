@@ -33,7 +33,7 @@ $inboxLocal, $inboxDomain = $EmailBase.Split('@')
 $caregiver = "$inboxLocal+caregiver@$inboxDomain"
 $auditor = "$inboxLocal+auditor@$inboxDomain"
 $admin = "$inboxLocal+admin@$inboxDomain"
-$noticeVersion = '2026-10'   # must match backend/src/services/privacyNotice.js
+$noticeVersion = '2026-11'   # must match backend/src/services/privacyNotice.js
 $script:passed = 0
 $script:failed = 0
 

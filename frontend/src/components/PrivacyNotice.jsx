@@ -5,7 +5,7 @@ import { useState } from 'react';
 // explanation is one click away. Accepting is required, and the version
 // accepted is stored by the backend (services/privacyNotice.js -- keep the
 // two versions in step when the text changes).
-export const PRIVACY_NOTICE_VERSION = '2026-10';
+export const PRIVACY_NOTICE_VERSION = '2026-11';
 
 const NOTICES = {
   account: {
@@ -13,6 +13,8 @@ const NOTICES = {
     details: [
       'An administrator checks every request before an account is created.',
       'Activity is recorded to help keep children’s information safe.',
+      // KDPA s.35: say that activity is checked automatically and what that can do.
+      'Your activity is also checked automatically for unusual patterns. If something looks unusual you may be signed out and emailed to confirm it was you. A person reviews every such alert, and nothing lasting happens to your account without one.',
       'Your details are never sold or shared.',
     ],
   },

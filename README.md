@@ -502,6 +502,9 @@ page.
 - [`docs/MODEL_EVALUATION_VALIDATED.md`](docs/MODEL_EVALUATION_VALIDATED.md) —
   stricter re-evaluation: unseen people, limits chosen on validation,
   synthetic attacks
+- [`docs/DPIA.md`](docs/DPIA.md) — data protection impact assessment
+  (Kenya Data Protection Act 2019) and threat model, with the gaps to
+  close before real use
 - [`docs/LIVE_SIMULATION.md`](docs/LIVE_SIMULATION.md) — simulated app traffic:
   how the models behave on this app's users, and threshold recommendations
 - `backend/.env.example` — every setting, with comments
