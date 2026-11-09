@@ -621,8 +621,13 @@ async function main() {
     const { rows: applied } = await db.query(
       `SELECT rs.role_threshold FROM risk_scores rs JOIN access_requests ar ON ar.id = rs.access_request_id
        WHERE ar.user_id = $1 ORDER BY rs.id DESC LIMIT 1`, [cgAcct.id]);
-    record('The very next action is scored against the new limit', scored.status === 200 && Number(applied[0].role_threshold) === 0.42,
-      `threshold=${applied[0] && applied[0].role_threshold}`);
+    // Either answer is correct here: a normal read (200), or -- when this
+    // caregiver's activity so far crosses the new limit, as on a fresh
+    // database -- a read refused before any record is sent (401). What is
+    // checked is that the limit used was the new one.
+    const answered = scored.status === 200 || (scored.status === 401 && scored.json && scored.json.code === 'SESSION_REVOKED_RISK');
+    record('The very next action is scored against the new limit', answered && Number(applied[0].role_threshold) === 0.42,
+      `status=${scored.status}, threshold=${applied[0] && applied[0].role_threshold}`);
     const { rows: limitLog } = await db.query(
       "SELECT detail FROM audit_log WHERE action = 'risk_threshold_changed' AND user_id = $1 AND created_at >= $2", [auAcct.id, since]);
     record('The change is in the audit log with its reason', limitLog.length === 1 && limitLog[0].detail.includes('to=0.42') && limitLog[0].detail.includes(WHY));
