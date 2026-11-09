@@ -77,7 +77,7 @@ function OverviewPanels({ overview: o }) {
               ))}
             </ul>
           )}
-          <p className="mt-3 text-xs text-slate-400">The model gives a score, not a reason. These are worked out from each flagged action.</p>
+          <p className="mt-3 text-xs text-slate-400">From the feature that raised each score most (the model re-scores the session with that value made normal). Flags stored before this was recorded are estimated from the action.</p>
         </Card>
       </div>
     </div>
@@ -251,9 +251,18 @@ export default function AuditorDashboard() {
                     <span className="min-w-0 text-ink font-medium truncate" title={`${s.email} (${s.role})`}>
                       {s.email} <span className="text-slate-400 font-normal">({s.role})</span>
                     </span>
-                    <span className="min-w-0" title={`Likely reason: ${s.likely_reason}. Action: ${s.action_type}`}>
+                    <span
+                      className="min-w-0"
+                      title={
+                        s.main_factors?.length
+                          ? `What raised the score (model): ${s.main_factors.map((f) => `${f.text} (+${f.raisedBy.toFixed(2)})`).join('; ')}. Action: ${s.action_type}`
+                          : `Likely reason (estimated, scored before evidence was stored): ${s.likely_reason}. Action: ${s.action_type}`
+                      }
+                    >
                       <span className="block truncate text-ink">{s.likely_reason}</span>
-                      <span className="block truncate text-xs text-slate-400">{s.action_type}</span>
+                      <span className="block truncate text-xs text-slate-400">
+                        {s.main_factors?.length ? s.main_factors[0].text : s.action_type}
+                      </span>
                     </span>
                     <span
                       className={`font-mono font-semibold ${

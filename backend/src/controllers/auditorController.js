@@ -7,7 +7,9 @@
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
-const { KNOWN_DEVICE_SQL, likelyReason } = require('../services/flagReason');
+const { KNOWN_DEVICE_SQL, likelyReason, mainFactors } = require('../services/flagReason');
+
+const FLAG_STATUSES = ['pending', 'reviewing', 'confirmed', 'escalated', 'all'];
 
 async function listFlagged(req, res) {
   // This queue is scoped to FLAGGED sessions only (is_flagged = true) --
@@ -15,6 +17,9 @@ async function listFlagged(req, res) {
   // flagged or not, so without this filter an ordinary below-threshold
   // login would clutter the review queue right alongside real alerts.
   const status = req.query.status || 'pending';
+  if (!FLAG_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${FLAG_STATUSES.join(', ')}` });
+  }
   const params = [];
   let where = 'WHERE rs.is_flagged = TRUE';
   if (status !== 'all') {
@@ -28,6 +33,8 @@ async function listFlagged(req, res) {
             rs.breach_decision, rs.breach_decision_reason, rs.breach_decided_at,
             ar.action_type, ar.pc_name, ar.ip_address, ar.requested_at,
             ${KNOWN_DEVICE_SQL} AS known_device,
+            -- to_jsonb(rs): still works on a database without 008_score_evidence.sql (NULL)
+            to_jsonb(rs) -> 'drivers' AS drivers, to_jsonb(rs) ->> 'model_version' AS model_version,
             u.id AS user_id, u.email, r.name AS role
      FROM risk_scores rs
      JOIN access_requests ar ON ar.id = rs.access_request_id
@@ -40,7 +47,9 @@ async function listFlagged(req, res) {
 
   // The auditor's home screen -- loads on sign-in and after every review.
   await logOnlyAction(req, 'view_flagged_sessions');
-  res.json({ flaggedSessions: rows.map((r) => ({ ...r, likely_reason: likelyReason(r) })) });
+  res.json({
+    flaggedSessions: rows.map(({ drivers, ...r }) => ({ ...r, likely_reason: likelyReason({ ...r, drivers }), main_factors: mainFactors({ drivers }) })),
+  });
 }
 
 async function reviewFlagged(req, res) {
@@ -57,15 +66,16 @@ async function reviewFlagged(req, res) {
   );
   if (!rows[0]) return res.status(404).json({ error: 'Risk score not found' });
 
+  // Scored: an insider auditor quietly closing out many alerts is exactly
+  // the kind of behaviour this role's model should see. Scored first, so the
+  // audit entry is linked to its risk score.
+  const risk = await scoreAction(req, 'review_flagged_session');
   await logAction({
     userId: req.user.id,
     action: 'auditor_reviewed_flagged_session',
     detail: `risk_score_id=${riskScoreId}, new_status=${status}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  // Scored: an insider auditor quietly closing out many alerts is exactly
-  // the kind of behaviour this role's model should see.
-  const risk = await scoreAction(req, 'review_flagged_session');
   res.json({ riskScoreId, auditorStatus: status, ...riskFields(risk) });
 }
 
@@ -113,13 +123,14 @@ async function recordBreachDecision(req, res) {
   if (!rows[0]) return res.status(409).json({ error: 'A breach decision has already been recorded for this session' });
 
   const hours = (new Date(rows[0].breach_decided_at) - new Date(flag.created_at)) / 3600000;
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'record_breach_decision');
   await logAction({
     userId: req.user.id,
     action: 'breach_decision_recorded',
     detail: `risk_score_id=${riskScoreId}, decision=${decision}, hours_after_flag=${hours.toFixed(1)}, within_72h=${hours <= BREACH_WINDOW_HOURS}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'record_breach_decision');
   res.json({
     riskScoreId,
     breachDecision: decision,

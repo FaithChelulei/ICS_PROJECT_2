@@ -73,7 +73,7 @@ async function auditorOverview(req, res) {
        GROUP BY d ORDER BY d`
     ),
     db.query(
-      `SELECT ar.requested_at, ${KNOWN_DEVICE_SQL} AS known_device
+      `SELECT ar.requested_at, ${KNOWN_DEVICE_SQL} AS known_device, to_jsonb(rs) -> 'drivers' AS drivers
        FROM risk_scores rs JOIN access_requests ar ON ar.id = rs.access_request_id
        WHERE rs.is_flagged AND rs.created_at >= now() - interval '7 days'`
     ),

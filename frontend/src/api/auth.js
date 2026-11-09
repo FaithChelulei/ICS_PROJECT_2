@@ -3,8 +3,8 @@ import { apiFetch } from './client';
 export const login = (identifier, password) =>
   apiFetch('/auth/login', { method: 'POST', body: { identifier, password }, auth: false });
 
-export const verifyMfa = (userId, code) =>
-  apiFetch('/auth/verify-mfa', { method: 'POST', body: { userId, code }, auth: false });
+export const verifyMfa = (challengeId, code) =>
+  apiFetch('/auth/verify-mfa', { method: 'POST', body: { challengeId, code }, auth: false });
 
 export const logout = () => apiFetch('/auth/logout', { method: 'POST' });
 

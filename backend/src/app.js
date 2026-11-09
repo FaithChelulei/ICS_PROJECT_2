@@ -31,6 +31,18 @@ app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'https://localhost:5173' }
 
 app.use(express.json());
 
+// Every query parameter this API reads is a single piece of text. Express
+// turns ?a=1&a=2 into an array and ?a[b]=1 into an object, which would
+// otherwise reach a database query and fail as a 500. Refuse them once,
+// here, with a clear 400.
+app.use((req, res, next) => {
+  const bad = Object.entries(req.query).find(([, v]) => typeof v !== 'string');
+  if (bad) {
+    return res.status(400).json({ error: `Query parameter "${bad[0]}" must appear once, as plain text` });
+  }
+  next();
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/auth', authRoutes);

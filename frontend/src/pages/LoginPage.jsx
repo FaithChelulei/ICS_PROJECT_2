@@ -84,7 +84,7 @@ export default function LoginPage() {
   const [step, setStep] = useState('credentials');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [userId, setUserId] = useState(null);
+  const [challengeId, setChallengeId] = useState(null); // signed reference to the emailed code
   const [mfaEmail, setMfaEmail] = useState(''); // the real destination, which may differ from what was typed
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -119,7 +119,7 @@ export default function LoginPage() {
     try {
       const data = await apiLogin(identifier, password);
       if (data.mfaRequired) {
-        setUserId(data.userId);
+        setChallengeId(data.challengeId);
         setMfaEmail(data.email);
         setStep('mfa');
       } else {
@@ -138,10 +138,15 @@ export default function LoginPage() {
     setError('');
     setBusy(true);
     try {
-      const data = await apiVerifyMfa(userId, code);
+      const data = await apiVerifyMfa(challengeId, code);
       completeLogin(data);
       navigate(location.state?.from?.pathname || '/', { replace: true });
     } catch (err) {
+      // After too many wrong codes the code is cancelled: back to step one.
+      if (err.code === 'MFA_CODE_CANCELLED') {
+        setStep('credentials');
+        setCode('');
+      }
       setError(err.message);
     } finally {
       setBusy(false);

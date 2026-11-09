@@ -27,13 +27,14 @@ async function update(req, res) {
   if (current.value === value) return res.status(409).json({ error: 'That is already the current value.' });
 
   await saveSetting({ key, value, reason, userId: req.user.id });
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'change_system_setting');
   await logAction({
     userId: req.user.id,
     action: 'system_setting_changed',
     detail: `setting=${key}, from=${current.value}, to=${value}, reason=${reason}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'change_system_setting');
   res.json({ message: `${label} is now ${value} ${unit}.`, ...riskFields(risk) });
 }
 

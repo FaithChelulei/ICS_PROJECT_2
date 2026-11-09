@@ -291,13 +291,13 @@ async function main() {
   if (flags.length === 2) {
     const [a, b] = flags.map((f) => f.id);
     check('"This was me" link for one alert used on a DIFFERENT alert',
-      isRefused(await api(`/risk-response/${b}/confirm?token=${signRiskResponseToken(a, 'confirm')}`)));
+      isRefused(await api(`/risk-response/${b}/confirm`, { method: 'POST', body: { token: signRiskResponseToken(a, 'confirm') } })));
     check('"This was me" token used on the "This was NOT me" link',
-      isRefused(await api(`/risk-response/${a}/deny?token=${signRiskResponseToken(a, 'confirm')}`)));
+      isRefused(await api(`/risk-response/${a}/deny`, { method: 'POST', body: { token: signRiskResponseToken(a, 'confirm') } })));
   } else {
     check('Email-link checks (SKIPPED: run npm run test:anomaly first to create test alerts)', true);
   }
-  check('Forged email-link token', isRefused(await api('/risk-response/1/confirm?token=forged')));
+  check('Forged email-link token', isRefused(await api('/risk-response/1/confirm', { method: 'POST', body: { token: 'forged' } })));
 
   const blocked = results.filter((r) => r.pass).length;
   console.log('\n=== SUMMARY ===');

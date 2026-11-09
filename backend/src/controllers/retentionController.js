@@ -11,12 +11,13 @@ async function status(req, res) {
 
 async function apply(req, res) {
   const ids = await applyRetention();
+  const risk = await scoreAction(req, 'apply_retention');
   await logAction({
     userId: req.user.id,
     action: 'apply_retention',
     detail: `anonymised=${ids.length}${ids.length ? `, child_profile_ids=${ids.join(',')}` : ''}`,
+    accessRequestId: risk.accessRequestId,
   });
-  const risk = await scoreAction(req, 'apply_retention');
   res.json({ anonymised: ids.length, childProfileIds: ids, status: await getRetentionStatus(), ...riskFields(risk) });
 }
 

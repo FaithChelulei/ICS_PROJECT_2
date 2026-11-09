@@ -364,6 +364,7 @@ loopback address and never leaves the machine.
 | `PORT` | Backend port (4000) |
 | `DATABASE_URL` | Connection string — must use the restricted `app_user` |
 | `JWT_SECRET`, `JWT_EXPIRES_IN` | Signing secret and lifetime (1 h) of session tokens |
+| `RISK_TOKEN_SECRET` | Optional: separate secret for the "This was me" email links (otherwise derived from `JWT_SECRET`, never equal to it) |
 | `ENCRYPTION_KEY` / `ENCRYPTION_KEY_<n>` / `ENCRYPTION_KEY_<n>_WRAPPED` | Data encryption keys (plain for local development, wrapped when Key Vault is used) |
 | `KEY_VAULT_URL`, `KEY_VAULT_KEY_NAME` | Azure Key Vault and the master key that wraps the data keys |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Mail account for one-time codes and risk alerts |

@@ -44,6 +44,8 @@ const ACCOUNTS = {
   ad: { tag: 'admin', role: 'SysAdmin', username: 'test.admin', name: 'Test Admin' },
   // Has no children and exists only to have its role changed and put back.
   rc: { tag: 'rolechange', role: 'Caregiver', username: 'test.rolechange', name: 'Test Role Change' },
+  // Signs in with an emailed code (the others skip it so the suite can run unattended).
+  mf: { tag: 'mfa', role: 'Caregiver', username: 'test.mfa', name: 'Test Sign-in Code' },
 };
 
 const results = [];
@@ -143,8 +145,51 @@ async function main() {
   record('Login with email works', Boolean(au.token));
   const ad = await login(adAcct.email);
 
+  console.log('\n=== Sign-in code (MFA) ===');
+  const mfAcct = await ensureTestAccount(ACCOUNTS.mf);
+  await db.query('UPDATE users SET mfa_required = TRUE WHERE id = $1', [mfAcct.id]);
+  try {
+    const signIn = () => api('/auth/login', { method: 'POST', body: { identifier: mfAcct.email, password: PASS } });
+    const verifyCode = (challengeId, code) => api('/auth/verify-mfa', { method: 'POST', body: { challengeId, code } });
+    // The emailed code is random and stored hashed; give the live one a known value.
+    const setKnownCode = async () => db.query('UPDATE mfa_codes SET code_hash = $1 WHERE user_id = $2 AND consumed = FALSE',
+      [await bcrypt.hash('123456', 10), mfAcct.id]);
+    const first = await signIn();
+    record('Step one returns a signed challenge, not the user id',
+      first.json && first.json.mfaRequired === true && typeof first.json.challengeId === 'string' && !('userId' in first.json));
+    await setKnownCode();
+    record('Sending a user id instead of the challenge is refused (400)',
+      (await api('/auth/verify-mfa', { method: 'POST', body: { userId: mfAcct.id, code: '123456' } })).status === 400);
+    record('A forged challenge is refused (401)', (await verifyCode(`${first.json.challengeId.slice(0, -4)}AAAA`, '123456')).status === 401);
+    const wrongCode = await verifyCode(first.json.challengeId, '000000');
+    record('A wrong code is refused and says how many tries are left', wrongCode.status === 401 && /4 tries left/.test(wrongCode.json.error),
+      wrongCode.json && wrongCode.json.error);
+    const right = await verifyCode(first.json.challengeId, '123456');
+    record('The right code signs in (200)', right.status === 200 && Boolean(right.json.token), `status=${right.status}`);
+    record('A used code cannot be used again (401)', (await verifyCode(first.json.challengeId, '123456')).status === 401);
+    const older = await signIn();
+    const newer = await signIn();
+    await setKnownCode();
+    record('Signing in again cancels the older code', (await verifyCode(older.json.challengeId, '123456')).status === 401);
+    let fifth = null;
+    for (let i = 0; i < 5; i += 1) fifth = await verifyCode(newer.json.challengeId, '000000');
+    record('After 5 wrong codes the code is cancelled', fifth.status === 401 && fifth.json.code === 'MFA_CODE_CANCELLED', fifth.json && fifth.json.error);
+    record('...and then even the right code is refused', (await verifyCode(newer.json.challengeId, '123456')).status === 401);
+  } finally {
+    await db.query('UPDATE users SET mfa_required = FALSE WHERE id = $1', [mfAcct.id]);
+  }
+
   const me = await api('/auth/me', { token: cg.token, device: deviceA });
   record('/auth/me returns fullName', me.json && me.json.fullName === ACCOUNTS.cg.name, JSON.stringify(me.json));
+
+  console.log('\n=== Bad page parameters get a clear 400, never a 500 ===');
+  await expectStatus('Unknown flagged-session status (400)', '/auditor/flagged-sessions?status=bogus', { token: au.token }, 400);
+  await expectStatus('A parameter given twice (400)', '/auditor/flagged-sessions?status=pending&status=all', { token: au.token }, 400);
+  await expectStatus('A nested parameter (400)', '/auditor/audit-log?q[x]=1', { token: au.token }, 400);
+  await expectStatus('Audit log "from" that is not a date (400)', '/auditor/audit-log?from=yesterday', { token: au.token }, 400);
+  await expectStatus('Audit log negative limit (400)', '/auditor/audit-log?limit=-5', { token: au.token }, 400);
+  await expectStatus('Unknown registration-request status (400)', '/admin/registration-requests?status=bogus', { token: ad.token }, 400);
+  await expectStatus('A valid date still works (200)', '/auditor/audit-log?from=2026-01-01&limit=5', { token: au.token }, 200);
 
   console.log('\n=== RBAC: each role against every other role\'s routes ===');
   await expectStatus('Caregiver -> auditor flagged sessions (403)', '/auditor/flagged-sessions', { token: cg.token, device: deviceA }, 403);
@@ -406,9 +451,20 @@ async function main() {
   const deviceB = `test-device-B-${crypto.randomBytes(3).toString('hex')}`;
   const cg2 = await login(cgAcct.email, deviceB);
   const view = await api(`/children/${childId}/records`, { token: cg2.token, device: deviceB });
-  record('Viewing records still succeeds (200)', view.status === 200, `status=${view.status}`);
-  const flagged = Boolean(view.json && view.json.riskNotice);
-  record('Action from an unrecognised device IS flagged', flagged, flagged ? 'riskNotice returned' : 'not flagged');
+  const flagged = view.status === 401 && Boolean(view.json) && view.json.code === 'SESSION_REVOKED_RISK';
+  record('Action from an unrecognised device IS flagged', flagged, `status=${view.status}`);
+  record('The flagged read discloses nothing (no records sent)', flagged && !('records' in view.json));
+  const { rows: refusedLog } = await db.query(
+    `SELECT al.access_request_id, rs.is_flagged FROM audit_log al
+     LEFT JOIN risk_scores rs ON rs.access_request_id = al.access_request_id
+     WHERE al.user_id = $1 AND al.action = 'view_developmental_records_refused' ORDER BY al.id DESC LIMIT 1`, [cgAcct.id]);
+  record('The refused read is in the audit log, linked to its flagged score',
+    refusedLog[0] && refusedLog[0].access_request_id && refusedLog[0].is_flagged === true);
+  const { rows: linked } = await db.query(
+    `SELECT rs.combined_score FROM audit_log al JOIN risk_scores rs ON rs.access_request_id = al.access_request_id
+     WHERE al.user_id = $1 AND al.action = 'view_developmental_records' ORDER BY al.id DESC LIMIT 1`, [cgAcct.id]);
+  record('A normal records read in the audit log shows its risk score (not "Unscored")', linked.length === 1,
+    linked[0] ? `score ${linked[0].combined_score}` : 'no linked score');
 
   let riskScoreId = null;
   if (flagged) {
@@ -430,6 +486,19 @@ async function main() {
     console.log('\n=== Security Auditor reviews it ===');
     const queue = await api('/auditor/flagged-sessions?status=pending', { token: au.token });
     record('Flagged session appears in the auditor queue', queue.json && queue.json.flaggedSessions.some((s) => s.risk_score_id === riskScoreId));
+    const { rows: [evidenceCols] } = await db.query(
+      "SELECT count(*)::int AS n FROM information_schema.columns WHERE table_name = 'risk_scores' AND column_name IN ('features', 'drivers', 'model_version')");
+    if (evidenceCols.n === 3) {
+      const { rows: [ev] } = await db.query('SELECT features, drivers, model_version FROM risk_scores WHERE id = $1', [riskScoreId]);
+      record('The score is stored with the 7 feature values and the model version',
+        ev.features && Object.keys(ev.features).length === 7 && /^Caregiver-[0-9a-f]{12}$/.test(ev.model_version || ''), ev.model_version);
+      const item = queue.json.flaggedSessions.find((s) => s.risk_score_id === riskScoreId);
+      record('The auditor sees what raised the score: the unrecognised device',
+        item && item.likely_reason === 'Unknown device' && item.main_factors.length > 0 && /device/i.test(item.main_factors[0].text),
+        item && item.main_factors.map((f) => `${f.text} +${f.raisedBy}`).join('; '));
+    } else {
+      console.log('SKIP - evidence checks: run node db/migrate.js (008_score_evidence.sql) on this database first');
+    }
     await expectStatus('Auditor sets status=reviewing', `/auditor/flagged-sessions/${riskScoreId}/review`,
       { method: 'POST', token: au.token, body: { status: 'reviewing' } }, 200);
     await expectStatus('Auditor rejects an invalid status (400)', `/auditor/flagged-sessions/${riskScoreId}/review`,
@@ -439,13 +508,22 @@ async function main() {
 
     console.log('\n=== Owner\'s "This was me" link ===');
     const confirmToken = signRiskResponseToken(riskScoreId, 'confirm');
-    const c1 = await api(`/risk-response/${riskScoreId}/confirm?token=${confirmToken}`);
-    record('Confirm link accepted', c1.status === 200 && c1.text.includes('Thanks for confirming'), `status=${c1.status}`);
-    const c2 = await api(`/risk-response/${riskScoreId}/confirm?token=${confirmToken}`);
-    record('Second click is a harmless no-op', c2.text.includes('already responded'));
-    const d1 = await api(`/risk-response/${riskScoreId}/deny?token=${signRiskResponseToken(riskScoreId, 'deny')}`);
+    const denyToken = signRiskResponseToken(riskScoreId, 'deny');
+    const ownerResponse = async () => (await db.query('SELECT owner_response FROM risk_scores WHERE id = $1', [riskScoreId])).rows[0].owner_response;
+    // A mail scanner opens both links: that must change nothing.
+    const openedConfirm = await api(`/risk-response/${riskScoreId}/confirm?token=${confirmToken}`);
+    const openedDeny = await api(`/risk-response/${riskScoreId}/deny?token=${denyToken}`);
+    record('Opening the email links only shows a page with a button',
+      openedConfirm.status === 200 && openedConfirm.text.includes('method="post"') && openedDeny.status === 200 && openedDeny.text.includes('method="post"'));
+    record('Opening the links changes nothing (a mail scanner cannot act)', (await ownerResponse()) === 'pending');
+    const c1 = await api(`/risk-response/${riskScoreId}/confirm`, { method: 'POST', body: { token: confirmToken } });
+    record('Pressing "Yes, this was me" is accepted', c1.status === 200 && c1.text.includes('Thanks for confirming'), `status=${c1.status}`);
+    record('The owner’s answer is recorded', (await ownerResponse()) === 'confirmed_benign');
+    const c2 = await api(`/risk-response/${riskScoreId}/confirm`, { method: 'POST', body: { token: confirmToken } });
+    record('Second press is a harmless no-op', c2.text.includes('already responded'));
+    const d1 = await api(`/risk-response/${riskScoreId}/deny`, { method: 'POST', body: { token: denyToken } });
     record('Deny after confirm is also a no-op (no lock)', d1.text.includes('already responded'));
-    const bad = await api(`/risk-response/${riskScoreId}/confirm?token=forged`);
+    const bad = await api(`/risk-response/${riskScoreId}/confirm`, { method: 'POST', body: { token: 'forged' } });
     record('Forged link token is refused', bad.status >= 400, `status=${bad.status}`);
 
     console.log('\n=== Breach decision on a suspected breach (KDPA s.43) ===');
@@ -556,8 +634,13 @@ async function main() {
     const { rows: applied } = await db.query(
       `SELECT rs.role_threshold FROM risk_scores rs JOIN access_requests ar ON ar.id = rs.access_request_id
        WHERE ar.user_id = $1 ORDER BY rs.id DESC LIMIT 1`, [cgAcct.id]);
-    record('The very next action is scored against the new limit', scored.status === 200 && Number(applied[0].role_threshold) === 0.42,
-      `threshold=${applied[0] && applied[0].role_threshold}`);
+    // Either answer is correct here: a normal read (200), or -- when this
+    // caregiver's activity so far crosses the new limit, as on a fresh
+    // database -- a read refused before any record is sent (401). What is
+    // checked is that the limit used was the new one.
+    const answered = scored.status === 200 || (scored.status === 401 && scored.json && scored.json.code === 'SESSION_REVOKED_RISK');
+    record('The very next action is scored against the new limit', answered && Number(applied[0].role_threshold) === 0.42,
+      `status=${scored.status}, threshold=${applied[0] && applied[0].role_threshold}`);
     const { rows: limitLog } = await db.query(
       "SELECT detail FROM audit_log WHERE action = 'risk_threshold_changed' AND user_id = $1 AND created_at >= $2", [auAcct.id, since]);
     record('The change is in the audit log with its reason', limitLog.length === 1 && limitLog[0].detail.includes('to=0.42') && limitLog[0].detail.includes(WHY));

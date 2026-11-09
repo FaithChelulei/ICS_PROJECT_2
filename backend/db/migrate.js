@@ -10,8 +10,9 @@
 //   then:       node db/migrate.js
 //
 // A database set up before this script existed (tables present, no
-// schema_migrations table) is recorded as already up to date the first
-// time, without running anything; only files added later are applied.
+// schema_migrations table) had files 001-007 applied by hand. The first
+// run records those as applied without running them, then applies any
+// later file (008 onwards) as normal.
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
@@ -23,6 +24,8 @@ if (!url) {
 }
 
 const files = fs.readdirSync(__dirname).filter((f) => /^\d{3}_.+\.sql$/.test(f)).sort();
+// The files that existed when databases were still set up by hand.
+const LAST_HAND_APPLIED = '007_app_user_grants.sql';
 
 async function main() {
   const client = new Client({ connectionString: url });
@@ -35,9 +38,9 @@ async function main() {
     )`);
     const { rows: [{ legacy }] } = await client.query("SELECT to_regclass('public.users') IS NOT NULL AS legacy");
     if (!existed && legacy) {
-      for (const f of files) await client.query('INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING', [f]);
-      console.log(`Existing database found: recorded ${files.length} file(s) as already applied. Nothing was run.`);
-      return;
+      const handApplied = files.filter((f) => f <= LAST_HAND_APPLIED);
+      for (const f of handApplied) await client.query('INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING', [f]);
+      console.log(`Existing database found: recorded ${handApplied.length} file(s) (up to ${LAST_HAND_APPLIED}) as already applied.`);
     }
 
     const { rows } = await client.query('SELECT filename FROM schema_migrations');

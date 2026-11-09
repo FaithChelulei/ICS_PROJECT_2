@@ -170,10 +170,13 @@ async function createChildProfile(req, res) {
       return { childProfileId: id, createdAt: rows[0].created_at };
     });
 
+    // Scored first, so the audit entry below is linked to its risk score.
+    const risk = await scoreAction(req, 'create_child_profile', childProfileId);
     await logAction({
       userId: req.user.id,
       action: 'create_child_profile',
       detail: `Created child_profile_id=${childProfileId}`,
+      accessRequestId: risk.accessRequestId,
     });
     if (developmentalRecordsConsent) {
       await logAction({
@@ -183,7 +186,6 @@ async function createChildProfile(req, res) {
       });
     }
 
-    const risk = await scoreAction(req, 'create_child_profile', childProfileId);
     res.status(201).json({
       childProfileId,
       createdAt,
@@ -241,13 +243,14 @@ async function updateChildDetails(req, res) {
     [...values, childProfileId]
   );
 
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'correct_child_details', childProfileId);
   await logAction({
     userId: req.user.id,
     action: 'correct_child_details',
     detail: `child_profile_id=${childProfileId}, fields=${fields.join(',')}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'correct_child_details', childProfileId);
   res.json({ childProfileId, updatedFields: fields, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
@@ -268,13 +271,14 @@ async function archiveChild(req, res) {
     'UPDATE child_profiles SET archived_at = now(), archive_reason = $1 WHERE id = $2 RETURNING archived_at',
     [reason || null, childProfileId]
   );
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'archive_child_profile', childProfileId);
   await logAction({
     userId: req.user.id,
     action: 'archive_child_profile',
     detail: `child_profile_id=${childProfileId}${reason ? ', reason given' : ''}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'archive_child_profile', childProfileId);
   res.json({ childProfileId, archivedAt: rows[0].archived_at, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
@@ -292,9 +296,13 @@ async function restoreChild(req, res) {
   }
 
   await db.query('UPDATE child_profiles SET archived_at = NULL, archive_reason = NULL WHERE id = $1', [childProfileId]);
-  await logAction({ userId: req.user.id, action: 'restore_child_profile', detail: `child_profile_id=${childProfileId}` });
-
   const risk = await scoreAction(req, 'restore_child_profile', childProfileId);
+  await logAction({
+    userId: req.user.id,
+    action: 'restore_child_profile',
+    detail: `child_profile_id=${childProfileId}`,
+    accessRequestId: risk.accessRequestId,
+  });
   res.json({ childProfileId, archivedAt: null, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
 }
 
@@ -372,13 +380,14 @@ async function submitRecord(req, res) {
     ]
   );
 
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'submit_developmental_record', childProfileId);
   await logAction({
     userId: req.user.id,
     action: 'submit_developmental_record',
     detail: `child_profile_id=${childProfileId}, record_id=${rows[0].id}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'submit_developmental_record', childProfileId);
   res.status(201).json({
     recordId: rows[0].id,
     createdAt: rows[0].created_at,
@@ -395,6 +404,21 @@ async function listRecords(req, res) {
   if (!owned) return refuseNotOwner(req, res, childProfileId, 'view_developmental_records');
   if (refuseIfArchived(res, owned)) return;
   if (await denyWithoutRecordsConsent(req, res, childProfileId, 'view_developmental_records')) return;
+
+  // Scored BEFORE any record is read or decrypted, like report downloads:
+  // if this read is the one that crosses the limit, nothing is disclosed.
+  // The session is already ended; the frontend signs the user out and shows
+  // why. The refused read stays in the audit log, linked to its score.
+  const risk = await scoreAction(req, 'view_own_child_records', childProfileId);
+  if (risk.flagged) {
+    await logAction({
+      userId: req.user.id,
+      action: 'view_developmental_records_refused',
+      detail: `child_profile_id=${childProfileId}, reason=risk_flagged`,
+      accessRequestId: risk.accessRequestId,
+    });
+    return res.status(401).json({ error: RISK_NOTICE, code: 'SESSION_REVOKED_RISK' });
+  }
 
   const { rows } = await db.query(
     `SELECT id, milestone_enc, health_indicator_enc, assessment_score_enc,
@@ -418,10 +442,9 @@ async function listRecords(req, res) {
     userId: req.user.id,
     action: 'view_developmental_records',
     detail: `child_profile_id=${childProfileId}, count=${records.length}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'view_own_child_records', childProfileId);
-  res.json({ records, ...(risk.flagged ? { riskNotice: RISK_NOTICE } : {}) });
+  res.json({ records });
 }
 
 module.exports = {

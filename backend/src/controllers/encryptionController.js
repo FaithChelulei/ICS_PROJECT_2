@@ -23,13 +23,14 @@ async function reencrypt(req, res) {
     return res.status(500).json({ error: `Re-encryption failed and was rolled back: ${err.message}` });
   }
 
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'reencrypt_data');
   await logAction({
     userId: req.user.id,
     action: 'reencrypt_child_data',
     detail: `active_key=${result.activeKeyId}, rows=${result.updatedRows}, values=${result.updatedValues}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'reencrypt_data');
   res.json({ ...result, status: await getStatus(), ...riskFields(risk) });
 }
 

@@ -163,3 +163,29 @@ the test auditor peaks at 0.46. **Not caught:** an auditor working from a
 new device (0.45–0.53), the same limitation SysAdmin has. Auditors cannot
 see child identities or records at all (row-level security), which limits
 what a compromised auditor account could take.
+
+## Why a session was flagged (the auditor's "main factor")
+
+Every score is stored with the 7 feature values the model was given, the
+model version (a fingerprint of the exact model files) and the features
+that raised the score (`risk_scores.features`, `.model_version`,
+`.drivers`; `backend/db/008_score_evidence.sql`).
+
+The model gives a score, not a reason, so the scoring service works the
+reason out from the model itself: it re-scores the session once per
+feature with that one value reset to a normal working session in this app
+(`NORMAL_SESSION` in `ml/service/app.py`), and reports the features whose
+reset lowers the score most. The normal session is this app's, not the
+CERT training average, because ordinary app use already differs from CERT
+office sessions (domain shift) and would otherwise be named as the cause.
+Checked on the attack patterns above:
+
+| Pattern | Main factor reported | Raised the score by |
+|---|---|---|
+| Night-time action | Activity after hours | 0.62 |
+| New device | A device this account had not used before | 0.03 |
+| Burst | Actions in the last hour, then records opened | 0.06, 0.05 |
+| Normal session | none | — |
+
+Flags stored before this existed show the older estimate (night hours,
+else an unrecognised device, else high activity).

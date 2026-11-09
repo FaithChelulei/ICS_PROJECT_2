@@ -248,6 +248,7 @@ async function downloadReport(req, res) {
     userId: req.user.id,
     action: 'export_report',
     detail: `report=${req.params.report}, format=${format}, rows=${rows.length}, from=${from || 'start'}, to=${to || 'now'}${filterText ? `, filters: ${filterText}` : ''}`,
+    accessRequestId: risk.accessRequestId,
   });
 
   const now = new Date();

@@ -87,6 +87,9 @@ async function submitRequest(req, res) {
 // GET /admin/registration-requests?status=pending — SysAdmin only.
 async function listRequests(req, res) {
   const status = req.query.status || 'pending';
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'status must be pending, approved or rejected' });
+  }
   const { rows } = await db.query(
     `SELECT rr.id, rr.full_name, rr.email, r.name AS requested_role, rr.reason,
             rr.status, rr.created_at, rr.reviewed_at, rr.rejection_reason
@@ -166,14 +169,15 @@ async function approveRequest(req, res) {
     tempPassword,
   });
 
+  // Creating an account is a privileged change -- scored (first, so the
+  // audit entry is linked to its risk score).
+  const risk = await scoreAction(req, 'approve_registration');
   await logAction({
     userId: req.user.id,
     action: 'approve_registration_request',
     detail: `request_id=${requestId}, new user email=${request.email}, role=${request.requested_role}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  // Creating an account is a privileged change -- scored.
-  const risk = await scoreAction(req, 'approve_registration');
   res.json({
     message: `Approved. Username "${username}" created; temporary password emailed to ${request.email}.`,
     username,
@@ -202,13 +206,14 @@ async function rejectRequest(req, res) {
     reason: rejectionReason,
   });
 
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'reject_registration');
   await logAction({
     userId: req.user.id,
     action: 'reject_registration_request',
     detail: `request_id=${requestId}, email=${rows[0].email}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'reject_registration');
   res.json({ message: 'Request rejected.', ...riskFields(risk) });
 }
 

@@ -1,10 +1,16 @@
 // Login flow (MFA required for every role — see registrationController.js
 // for why this now covers Caregiver too, not just SecurityAuditor/SysAdmin):
 //   1. POST /auth/login          { email, password }
-//        -> emails a 6-digit code, returns { mfaRequired: true, userId }
+//        -> emails a 6-digit code, returns { mfaRequired: true, challengeId }
 //           instead of a token
-//   2. POST /auth/verify-mfa     { userId, code }
+//   2. POST /auth/verify-mfa     { challengeId, code }
 //        -> returns the token
+//
+// The challengeId is a signed, short-lived reference to that one emailed
+// code -- not the user's id, so nobody can send code guesses against
+// another person's account. Each code allows MFA_MAX_ATTEMPTS wrong tries
+// and is then cancelled; signing in again cancels any older code, so only
+// one code per account is ever live.
 //
 // "Token" here means: a new row in `sessions`, and a JWT whose payload
 // just points at that row's id. Revoking the row (sessions.revoked_at)
@@ -20,6 +26,34 @@ const { logAccessRequest } = require('../services/riskEngine');
 const { getPcName, getIpAddress } = require('../utils/requestMeta');
 
 const MFA_CODE_TTL_MINUTES = 10;
+const MFA_MAX_ATTEMPTS = 5;
+const MFA_PURPOSE = 'mfa_challenge';
+
+// Signed with a key derived from JWT_SECRET for this purpose only, so a
+// challenge can never pass as a session token or the reverse.
+const challengeSecret = () =>
+  crypto.createHmac('sha256', process.env.JWT_SECRET).update('childguard mfa challenge').digest('hex');
+
+function signChallenge(codeId, userId) {
+  return jwt.sign({ purpose: MFA_PURPOSE, codeId, userId }, challengeSecret(), {
+    algorithm: 'HS256',
+    expiresIn: `${MFA_CODE_TTL_MINUTES}m`,
+  });
+}
+
+function readChallenge(challengeId) {
+  try {
+    const p = jwt.verify(challengeId, challengeSecret(), { algorithms: ['HS256'] });
+    return p.purpose === MFA_PURPOSE ? p : null;
+  } catch {
+    return null;
+  }
+}
+
+// Wrong tries per code. Held in memory: a restart forgets the count, but a
+// code that reached the limit is already cancelled in the database, and
+// every code expires after MFA_CODE_TTL_MINUTES anyway.
+const failedTries = new Map();
 
 // Creates the session row and logs the login to access_requests -- but
 // does NOT run it through ML scoring. The model was trained on COMPLETED
@@ -43,7 +77,7 @@ async function issueSession({ userId, role, email, fullName, mustChangePassword,
   const token = jwt.sign(
     { userId, role, sessionId },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+    { algorithm: 'HS256', expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
   );
 
   // role/email/fullName/mustChangePassword are returned alongside the
@@ -108,8 +142,10 @@ async function login(req, res) {
   const codeHash = await bcrypt.hash(code, 10);
   const expiresAt = new Date(Date.now() + MFA_CODE_TTL_MINUTES * 60 * 1000);
 
-  await db.query(
-    'INSERT INTO mfa_codes (user_id, code_hash, expires_at) VALUES ($1, $2, $3)',
+  // Only one live code per account: a new sign-in cancels any older one.
+  await db.query('UPDATE mfa_codes SET consumed = TRUE WHERE user_id = $1 AND consumed = FALSE', [user.id]);
+  const { rows: codeRows } = await db.query(
+    'INSERT INTO mfa_codes (user_id, code_hash, expires_at) VALUES ($1, $2, $3) RETURNING id',
     [user.id, codeHash, expiresAt]
   );
   // Always the account's real registered email -- never whatever
@@ -119,29 +155,44 @@ async function login(req, res) {
   // email included here too so the frontend can show "code sent to
   // ___" using the REAL destination, even when the person typed a
   // username (not an email) as their identifier to get this far.
-  return res.json({ mfaRequired: true, userId: user.id, email: user.email });
+  return res.json({ mfaRequired: true, challengeId: signChallenge(codeRows[0].id, user.id), email: user.email });
 }
 
 async function verifyMfa(req, res) {
-  const { userId, code } = req.body;
-  if (!userId || !code) {
-    return res.status(400).json({ error: 'userId and code are required' });
+  const { challengeId, code } = req.body;
+  if (typeof challengeId !== 'string' || typeof code !== 'string' || !challengeId || !code) {
+    return res.status(400).json({ error: 'challengeId and code are required' });
   }
+  const challenge = readChallenge(challengeId);
+  if (!challenge) {
+    return res.status(401).json({ error: 'This sign-in has expired. Sign in again for a new code.' });
+  }
+  const { codeId, userId } = challenge;
 
   const { rows } = await db.query(
     `SELECT id, code_hash FROM mfa_codes
-     WHERE user_id = $1 AND consumed = FALSE AND expires_at > now()
-     ORDER BY created_at DESC LIMIT 1`,
-    [userId]
+     WHERE id = $1 AND user_id = $2 AND consumed = FALSE AND expires_at > now()`,
+    [codeId, userId]
   );
   const record = rows[0];
   if (!record) {
-    return res.status(401).json({ error: 'No valid code found. Request a new login.' });
+    failedTries.delete(codeId);
+    return res.status(401).json({ error: 'No valid code found. Sign in again for a new code.' });
   }
 
   const ok = await bcrypt.compare(code, record.code_hash);
-  if (!ok) return res.status(401).json({ error: 'Incorrect code' });
+  if (!ok) {
+    const tries = (failedTries.get(codeId) || 0) + 1;
+    if (tries >= MFA_MAX_ATTEMPTS) {
+      failedTries.delete(codeId);
+      await db.query('UPDATE mfa_codes SET consumed = TRUE WHERE id = $1', [codeId]);
+      return res.status(401).json({ error: 'Too many incorrect codes. Sign in again for a new code.', code: 'MFA_CODE_CANCELLED' });
+    }
+    failedTries.set(codeId, tries);
+    return res.status(401).json({ error: `Incorrect code. ${MFA_MAX_ATTEMPTS - tries} tries left.` });
+  }
 
+  failedTries.delete(codeId);
   await db.query('UPDATE mfa_codes SET consumed = TRUE WHERE id = $1', [record.id]);
 
   const { rows: userRows } = await db.query(
