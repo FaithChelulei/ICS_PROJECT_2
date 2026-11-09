@@ -1,6 +1,10 @@
 {
   "name": "ics-project-2-backend",
   "version": "1.0.0",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "Node/Express + PostgreSQL backend for the Child Data Security System",
   "main": "src/server.js",
   "type": "commonjs",

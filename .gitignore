@@ -33,3 +33,12 @@ frontend/.env
 
 # Local process logs from running the services
 *.log
+
+# Script output: stderr captures are noise (TensorFlow start-up warnings).
+# Results worth keeping go in ml/results/, named after their script.
+ml/scripts/*_log.txt
+ml/scripts/*_err.txt
+
+# Editor settings (machine-specific paths)
+.vscode/
+*.code-workspace

@@ -1,7 +1,7 @@
 # Model evaluation: person-level split, validation limits, synthetic attacks
 
 Script: `ml/scripts/12_validated_evaluation.py`. Results:
-`ml/models/validated_results.json`, log `ml/scripts/validated_log.txt`.
+`ml/models/validated_results.json`, log `ml/results/12_validated_evaluation.txt`.
 The models the website uses (`ml/models/*.joblib`, `*.keras`) were not
 changed. This is a second, stricter evaluation of the same method.
 

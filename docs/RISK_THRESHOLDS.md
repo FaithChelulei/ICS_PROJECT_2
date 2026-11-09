@@ -115,7 +115,7 @@ causes were found and fixed together:
 ## Honest limitation (say this in the defence)
 
 At the deployment thresholds, recall on the **CERT test set** would be far
-lower than the research figures (see `ml/scripts/ptx_log.txt`: Caregiver
+lower than the research figures (see `ml/results/11_precision_at_thresholds.txt`: Caregiver
 recall is 66% at 0.10 but ~4% at 0.30). The two thresholds answer different
 questions: the research one measures the model on CERT; the deployment one
 is a usability calibration for this app's own traffic, where the patterns
