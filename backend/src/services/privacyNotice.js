@@ -5,7 +5,7 @@
 // notice each account request and each child profile was accepted under.
 //
 // Changing the notice text = bump this version AND the frontend's.
-const PRIVACY_NOTICE_VERSION = '2026-10';
+const PRIVACY_NOTICE_VERSION = '2026-11';
 
 // Returns an error message, or null if the request accepted the current notice.
 function checkPrivacyNotice(body) {

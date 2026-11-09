@@ -185,7 +185,7 @@ Built with the Kenya Data Protection Act 2019 in mind:
 ICS_PROJECT_2/
 ├── ml/
 │   ├── data/                 CERT r4.2 files (raw logon/file/device CSVs are not in git)
-│   ├── data/processed/       sessions_features.csv (~470k sessions, 7 features)
+│   ├── data/processed/       sessions_features.csv (~470k sessions, 7 features; release download)
 │   ├── scripts/              01 preprocess → 02 train → 03 demo; 04–11 design diagnostics
 │   ├── models/               per-role scaler, Isolation Forest, Autoencoder, metrics, charts
 │   └── service/app.py        Flask scoring service (/score, /health)
@@ -429,6 +429,18 @@ sessions instead — see [`docs/RISK_THRESHOLDS.md`](docs/RISK_THRESHOLDS.md).
 
 **Run it**
 
+The processed sessions file (57 MB) is not in git. Download it from the
+[`data-v1` release](https://github.com/FaithChelulei/ICS_PROJECT_2/releases/tag/data-v1)
+into `ml/data/processed/`, or with the GitHub CLI:
+
+```powershell
+gh release download data-v1 -D ml\data\processed
+```
+
+(SHA-256 `62fafbe2050754870734018c3c84a025bba3ab3fd59e3745cfa715e5f3dfffa6`.)
+The trained models are in git, so the website does not need this file;
+only retraining and the evaluation scripts do.
+
 ```powershell
 python ml\scripts\03_run_inference_demo.py   # score all sessions with the saved models (< 1 min)
 python ml\scripts\02_train_models.py         # retrain all 6 models and overwrite ml\models\
@@ -502,6 +514,9 @@ page.
 - [`docs/MODEL_EVALUATION_VALIDATED.md`](docs/MODEL_EVALUATION_VALIDATED.md) —
   stricter re-evaluation: unseen people, limits chosen on validation,
   synthetic attacks
+- [`docs/DPIA.md`](docs/DPIA.md) — data protection impact assessment
+  (Kenya Data Protection Act 2019) and threat model, with the gaps to
+  close before real use
 - [`docs/LIVE_SIMULATION.md`](docs/LIVE_SIMULATION.md) — simulated app traffic:
   how the models behave on this app's users, and threshold recommendations
 - `backend/.env.example` — every setting, with comments

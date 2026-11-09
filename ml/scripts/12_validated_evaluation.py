@@ -29,6 +29,13 @@ What this script does instead, separately for each role:
     For the Security Auditor, whose only real attacker is in the test set,
     the limit is chosen on the synthetic validation attacks.
 
+Baselines (9 November review): on the same test people, the deployed
+combination (Isolation Forest + Autoencoder, averaged) is compared with
+each model alone and with a one-line rule -- after hours, or more files
+than 95% of that person's own sessions -- by ROC-AUC, PR-AUC (average
+precision, the honest measure when attacks are rare) and recall at a 1%
+false-alarm rate. Threshold-free, so no limit is chosen for them.
+
 Synthetic results are reported separately and never mixed with the real
 CERT results. The deployed models in ml/models/ are not changed: nothing
 here is saved except the results file.
@@ -48,7 +55,7 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
-from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score, roc_auc_score, roc_curve
 from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
 from tensorflow import keras
@@ -115,12 +122,36 @@ def train_models(x_train, seed):
             "iso_lo": iso_raw.min(), "iso_hi": iso_raw.max(), "ae_lo": ae_raw.min(), "ae_hi": ae_raw.max()}
 
 
-def score(m, x):
+def score_parts(m, x):
     xs = m["scaler"].transform(x)
     iso = np.clip((-m["iso"].score_samples(xs) - m["iso_lo"]) / max(m["iso_hi"] - m["iso_lo"], 1e-9), 0, 1)
     ae_raw = np.mean((xs - m["ae"].predict(xs, verbose=0, batch_size=4096)) ** 2, axis=1)
     ae = np.clip((ae_raw - m["ae_lo"]) / max(m["ae_hi"] - m["ae_lo"], 1e-9), 0, 1)
-    return (iso + ae) / 2.0
+    return {"iso": iso, "ae": ae, "combined": (iso + ae) / 2.0}
+
+
+def score(m, x):
+    return score_parts(m, x)["combined"]
+
+
+def rule_score(frame, p95):
+    # The one-line rule: after hours, or more files than 95% of this
+    # person's own sessions. 0, 1 or 2 conditions met, so it can be ranked.
+    over = (frame["files_accessed_per_session"].to_numpy(dtype=float) > frame["user"].map(p95).to_numpy(dtype=float)).astype(float)
+    return frame["is_after_hours"].to_numpy(dtype=float) + over
+
+
+def detector_metrics(y, s):
+    y = np.asarray(y)
+    if not 0 < y.sum() < len(y):
+        return None
+    fpr, tpr, _ = roc_curve(y, s)
+    return {
+        "roc_auc": float(roc_auc_score(y, s)),
+        "pr_auc": float(average_precision_score(y, s)),
+        "recall_at_1pct_fpr": float(tpr[np.searchsorted(fpr, 0.01, side="right") - 1]),
+        "attack_share": float(y.mean()),
+    }
 
 
 def best_limit(y, s):
@@ -164,7 +195,7 @@ def synthetic_attacks(base_normal, donors, rng):
         made = base[FEATURES].to_numpy(dtype=float).copy()
         for f in feats:
             made[:, FEATURES.index(f)] = donor[f].to_numpy(dtype=float)
-        rows.append(pd.DataFrame(made, columns=FEATURES).assign(scenario=scen))
+        rows.append(pd.DataFrame(made, columns=FEATURES).assign(scenario=scen, user=base["user"].to_numpy()))
     return pd.concat(rows, ignore_index=True)
 
 
@@ -224,8 +255,30 @@ def run(seed, df):
             }
             for scen in sorted(test["syn"]["scenario"].unique())
         }
+        # Baselines on the same test people (threshold-free measures).
+        d = part["test"]
+        p95 = d.groupby("user")["files_accessed_per_session"].quantile(0.95)
+        parts_real = score_parts(m, d[FEATURES].to_numpy(dtype=float))
+        normal_mask = (d["label"] == 0).to_numpy()
+        parts_syn = score_parts(m, test["syn"][FEATURES].to_numpy(dtype=float))
+        rule_real = rule_score(d, p95)
+        rule_syn = rule_score(test["syn"], p95)
+        out["baselines"] = {}
+        for label, real_s, syn_s in [
+            ("rule", rule_real, rule_syn),
+            ("isolation_forest", parts_real["iso"], parts_syn["iso"]),
+            ("autoencoder", parts_real["ae"], parts_syn["ae"]),
+            ("combined", parts_real["combined"], parts_syn["combined"]),
+        ]:
+            out["baselines"][label] = {
+                "real": detector_metrics(test["y"], real_s),
+                "synthetic": detector_metrics(y_syn_test, np.r_[real_s[normal_mask], syn_s]),
+            }
         out["seconds"] = round(time.time() - t0, 1)
         per_role[name] = out
+        b = out["baselines"]
+        line = "  ".join(f"{k}={v['real']['pr_auc']:.4f}" for k, v in b.items() if v["real"])
+        print(f"  [{seed}] {name:15s} PR-AUC on real attacks: {line or 'none'}", flush=True)
         r = out["real_test"]
         sy = out["synthetic_test"]
         print(f"  [{seed}] {name:15s} limit={limit:.2f} ({'real' if has_real_val else 'synthetic'} val)  "
@@ -260,6 +313,13 @@ def main():
             "real_test": {f: collect("real_test", f) for f in ("auc", "precision", "recall", "f1", "false_alarm_rate")},
             "synthetic_test": {f: collect("synthetic_test", f) for f in ("auc", "precision", "recall", "f1", "false_alarm_rate")},
             "original_evaluation": next(o for o in ORIGINAL if o["role"] == name),
+            "baselines": {
+                det: {
+                    kind: {f: collect_baseline(runs, name, det, kind, f) for f in ("roc_auc", "pr_auc", "recall_at_1pct_fpr", "attack_share")}
+                    for kind in ("real", "synthetic")
+                }
+                for det in ("rule", "isolation_forest", "autoencoder", "combined")
+            },
         }
 
     OUT.write_text(json.dumps({
@@ -267,6 +327,11 @@ def main():
         "seeds": seeds, "summary": summary, "runs": runs,
     }, indent=2, default=float))
     print(f"\nSaved {OUT}", flush=True)
+
+
+def collect_baseline(runs, name, det, kind, field):
+    vals = [runs[s][name]["baselines"][det][kind][field] for s in runs if runs[s][name]["baselines"][det][kind]]
+    return {"mean": float(np.mean(vals)), "min": float(np.min(vals)), "max": float(np.max(vals)), "n_runs": len(vals)} if vals else None
 
 
 def collect_limits(runs, name):
