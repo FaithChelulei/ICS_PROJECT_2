@@ -486,6 +486,19 @@ async function main() {
     console.log('\n=== Security Auditor reviews it ===');
     const queue = await api('/auditor/flagged-sessions?status=pending', { token: au.token });
     record('Flagged session appears in the auditor queue', queue.json && queue.json.flaggedSessions.some((s) => s.risk_score_id === riskScoreId));
+    const { rows: [evidenceCols] } = await db.query(
+      "SELECT count(*)::int AS n FROM information_schema.columns WHERE table_name = 'risk_scores' AND column_name IN ('features', 'drivers', 'model_version')");
+    if (evidenceCols.n === 3) {
+      const { rows: [ev] } = await db.query('SELECT features, drivers, model_version FROM risk_scores WHERE id = $1', [riskScoreId]);
+      record('The score is stored with the 7 feature values and the model version',
+        ev.features && Object.keys(ev.features).length === 7 && /^Caregiver-[0-9a-f]{12}$/.test(ev.model_version || ''), ev.model_version);
+      const item = queue.json.flaggedSessions.find((s) => s.risk_score_id === riskScoreId);
+      record('The auditor sees what raised the score: the unrecognised device',
+        item && item.likely_reason === 'Unknown device' && item.main_factors.length > 0 && /device/i.test(item.main_factors[0].text),
+        item && item.main_factors.map((f) => `${f.text} +${f.raisedBy}`).join('; '));
+    } else {
+      console.log('SKIP - evidence checks: run node db/migrate.js (008_score_evidence.sql) on this database first');
+    }
     await expectStatus('Auditor sets status=reviewing', `/auditor/flagged-sessions/${riskScoreId}/review`,
       { method: 'POST', token: au.token, body: { status: 'reviewing' } }, 200);
     await expectStatus('Auditor rejects an invalid status (400)', `/auditor/flagged-sessions/${riskScoreId}/review`,

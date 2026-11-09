@@ -7,7 +7,7 @@
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
-const { KNOWN_DEVICE_SQL, likelyReason } = require('../services/flagReason');
+const { KNOWN_DEVICE_SQL, likelyReason, mainFactors } = require('../services/flagReason');
 
 const FLAG_STATUSES = ['pending', 'reviewing', 'confirmed', 'escalated', 'all'];
 
@@ -33,6 +33,8 @@ async function listFlagged(req, res) {
             rs.breach_decision, rs.breach_decision_reason, rs.breach_decided_at,
             ar.action_type, ar.pc_name, ar.ip_address, ar.requested_at,
             ${KNOWN_DEVICE_SQL} AS known_device,
+            -- to_jsonb(rs): still works on a database without 008_score_evidence.sql (NULL)
+            to_jsonb(rs) -> 'drivers' AS drivers, to_jsonb(rs) ->> 'model_version' AS model_version,
             u.id AS user_id, u.email, r.name AS role
      FROM risk_scores rs
      JOIN access_requests ar ON ar.id = rs.access_request_id
@@ -45,7 +47,9 @@ async function listFlagged(req, res) {
 
   // The auditor's home screen -- loads on sign-in and after every review.
   await logOnlyAction(req, 'view_flagged_sessions');
-  res.json({ flaggedSessions: rows.map((r) => ({ ...r, likely_reason: likelyReason(r) })) });
+  res.json({
+    flaggedSessions: rows.map(({ drivers, ...r }) => ({ ...r, likely_reason: likelyReason({ ...r, drivers }), main_factors: mainFactors({ drivers }) })),
+  });
 }
 
 async function reviewFlagged(req, res) {

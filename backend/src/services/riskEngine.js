@@ -42,6 +42,23 @@ async function logAccessRequest({ userId, actionType, childProfileId = null, pcN
   return { accessRequestId, scored: false, flagged: false };
 }
 
+// The evidence columns come from db/008_score_evidence.sql. Until that has
+// been applied, scores are still stored, just without the evidence, so an
+// install that has not migrated yet keeps working. Checked once.
+let evidenceColumns = null;
+function hasEvidenceColumns() {
+  if (!evidenceColumns) {
+    evidenceColumns = db.query(
+      `SELECT count(*)::int AS n FROM information_schema.columns
+       WHERE table_name = 'risk_scores' AND column_name IN ('features', 'drivers', 'model_version')`
+    ).then(({ rows }) => {
+      if (rows[0].n !== 3) console.warn('[risk-engine] run node db/migrate.js to store the evidence with each score (008_score_evidence.sql)');
+      return rows[0].n === 3;
+    }).catch(() => false);
+  }
+  return evidenceColumns;
+}
+
 async function recordAndScore({ userId, role, actionType, childProfileId = null, pcName, ipAddress, sessionId, now = new Date() }) {
 
   const accessRequestId = await insertAccessRequest({ userId, childProfileId, actionType, pcName, ipAddress, sessionId, now });
@@ -61,12 +78,21 @@ async function recordAndScore({ userId, role, actionType, childProfileId = null,
   const threshold = await thresholdFor(role, result.threshold);
   const flagged = Number(result.risk_score) >= threshold;
 
-  const { rows: riskRows } = await db.query(
-    `INSERT INTO risk_scores
-       (access_request_id, isoforest_score, autoencoder_score, combined_score, role_threshold, is_flagged)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-    [accessRequestId, result.iso_score, result.ae_score, result.risk_score, threshold, flagged]
-  );
+  const values = [accessRequestId, result.iso_score, result.ae_score, result.risk_score, threshold, flagged];
+  const { rows: riskRows } = (await hasEvidenceColumns())
+    ? await db.query(
+      `INSERT INTO risk_scores
+         (access_request_id, isoforest_score, autoencoder_score, combined_score, role_threshold, is_flagged,
+          features, drivers, model_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+      [...values, JSON.stringify(features), JSON.stringify(result.drivers || []), result.model_version || null]
+    )
+    : await db.query(
+      `INSERT INTO risk_scores
+         (access_request_id, isoforest_score, autoencoder_score, combined_score, role_threshold, is_flagged)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      values
+    );
   const riskScoreId = riskRows[0].id;
 
   if (flagged) {
