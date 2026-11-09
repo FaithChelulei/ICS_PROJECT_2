@@ -477,6 +477,9 @@ page.
 
 - [`docs/RISK_THRESHOLDS.md`](docs/RISK_THRESHOLDS.md) — research vs. live
   thresholds and their calibration
+- [`docs/MODEL_EVALUATION_VALIDATED.md`](docs/MODEL_EVALUATION_VALIDATED.md) —
+  stricter re-evaluation: unseen people, limits chosen on validation,
+  synthetic attacks
 - `backend/.env.example` — every setting, with comments
 - Comments at the top of each source file explain the design decisions
   and the evidence behind them
