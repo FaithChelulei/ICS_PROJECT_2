@@ -11,6 +11,7 @@
 const db = require('../config/db');
 const { encryptField, decryptField } = require('../utils/encryption');
 const { logAction } = require('../utils/auditLog');
+const { refuseNotOwner } = require('../services/ownership');
 const { recordAndScore, logAccessRequest } = require('../services/riskEngine');
 const { getPcName, getIpAddress } = require('../utils/requestMeta');
 const { hasConsent } = require('../services/consent');
@@ -226,9 +227,7 @@ async function updateChildDetails(req, res) {
   }
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
-  if (!owned) {
-    return res.status(403).json({ error: 'Not authorized for this child profile' });
-  }
+  if (!owned) return refuseNotOwner(req, res, childProfileId, 'update_child_details');
   if (refuseIfArchived(res, owned)) return;
 
   const values = fields.map((f) => {
@@ -262,7 +261,7 @@ async function archiveChild(req, res) {
   const reason = typeof req.body.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
-  if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  if (!owned) return refuseNotOwner(req, res, childProfileId, 'archive_child');
   if (owned.archived_at) return res.status(409).json({ error: 'This profile is already archived' });
 
   const { rows } = await db.query(
@@ -286,7 +285,7 @@ async function restoreChild(req, res) {
   const childProfileId = Number(req.params.childProfileId);
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
-  if (!owned) return res.status(403).json({ error: 'Not authorized for this child profile' });
+  if (!owned) return refuseNotOwner(req, res, childProfileId, 'restore_child');
   if (!owned.archived_at) return res.status(409).json({ error: 'This profile is not archived' });
   if (owned.identity_anonymised_at) {
     return res.status(409).json({ error: 'This profile’s identity was anonymised after the retention period and can’t be restored' });
@@ -354,11 +353,7 @@ async function submitRecord(req, res) {
   }
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
-  if (!owned) {
-    // Deliberately the same 403 whether the child doesn't exist or just
-    // isn't theirs — don't leak which other childProfileIds exist.
-    return res.status(403).json({ error: 'Not authorized for this child profile' });
-  }
+  if (!owned) return refuseNotOwner(req, res, childProfileId, 'submit_developmental_record');
   if (refuseIfArchived(res, owned)) return;
   if (await denyWithoutRecordsConsent(req, res, childProfileId, 'submit_developmental_record')) return;
 
@@ -397,9 +392,7 @@ async function listRecords(req, res) {
   const childProfileId = Number(req.params.childProfileId);
 
   const owned = await findOwnChildProfile(childProfileId, req.user.id);
-  if (!owned) {
-    return res.status(403).json({ error: 'Not authorized for this child profile' });
-  }
+  if (!owned) return refuseNotOwner(req, res, childProfileId, 'view_developmental_records');
   if (refuseIfArchived(res, owned)) return;
   if (await denyWithoutRecordsConsent(req, res, childProfileId, 'view_developmental_records')) return;
 
