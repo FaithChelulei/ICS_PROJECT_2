@@ -318,7 +318,9 @@ async function main() {
   record('Second test caregiver registers a child (201)', kid.status === 201, `status=${kid.status}`);
   await expectStatus('Another caregiver cannot archive this child (403)', `/children/${kidId}/archive`,
     { method: 'POST', token: cg.token, device: deviceA, body: {} }, 403);
-  const probeSince = new Date();
+  // An id, not a time: a refusal logged a moment earlier can share the
+  // same millisecond once the two clocks are rounded.
+  const { rows: [{ last: probeAfterId }] } = await db.query('SELECT COALESCE(MAX(id), 0) AS last FROM audit_log');
   const probe = await api(`/children/${kidId}/records`, { token: cg.token, device: deviceA });
   record('Another caregiver cannot view this child’s records (403)', probe.status === 403 && probe.json && probe.json.code === 'NOT_YOUR_CHILD', `status=${probe.status}`);
   await expectStatus('Another caregiver cannot read this child’s consent (403)', `/children/${kidId}/consent`, { token: cg.token, device: deviceA }, 403);
@@ -326,7 +328,7 @@ async function main() {
   record('A profile number that does not exist gets the same answer (no hint it is missing)',
     missing.status === 403 && missing.json && missing.json.error === probe.json.error);
   const { rows: probeLog } = await db.query(
-    "SELECT detail FROM audit_log WHERE user_id = $1 AND action = 'access_denied_not_owner' AND created_at >= $2 ORDER BY id", [cgAcct.id, probeSince]);
+    "SELECT detail FROM audit_log WHERE user_id = $1 AND action = 'access_denied_not_owner' AND id > $2 ORDER BY id", [cgAcct.id, probeAfterId]);
   record('Each attempt on another family’s child is in the audit log',
     probeLog.length === 3 && probeLog[0].detail === `child_profile_id=${kidId}, attempted=view_developmental_records`
       && probeLog[1].detail === `child_profile_id=${kidId}, attempted=view_consent`,
