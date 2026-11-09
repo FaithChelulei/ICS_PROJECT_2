@@ -124,7 +124,7 @@ backend:
 
 - Permission map per role in `backend/src/middleware/rbac.js`, checked on
   every route.
-- **Row-level security** (`backend/db/migration_rls.sql`): deny by
+- **Row-level security** (`backend/db/004_rls.sql`): deny by
   default; a caregiver sees and changes only rows of their own children,
   even if an application check were bypassed.
 - **Consent** is opt-in per scope. The identity scope is required while
@@ -190,7 +190,7 @@ ICS_PROJECT_2/
 │   ├── models/               per-role scaler, Isolation Forest, Autoencoder, metrics, charts
 │   └── service/app.py        Flask scoring service (/score, /health)
 ├── backend/
-│   ├── db/                   schema.sql, migration_*.sql, seed.js
+│   ├── db/                   numbered SQL (001_schema.sql …), migrate.js, seed.js
 │   ├── src/
 │   │   ├── routes/           one file per area (auth, children, auditor, admin, …)
 │   │   ├── controllers/      request handling
@@ -270,46 +270,65 @@ pip install -r requirements.txt
 
 ### 2. Database
 
-Create the database and the restricted account the backend uses, then
-apply the schema and migrations **in this order** as the `postgres`
-owner. Messages that an object already exists are harmless.
+Create the database and the restricted account the backend connects as
+(same commands on every system):
 
-```powershell
+```
 psql -U postgres -c "CREATE DATABASE ics_project_2;"
 psql -U postgres -c "CREATE ROLE app_user LOGIN PASSWORD 'choose-a-password';"
-cd backend\db
-psql -U postgres -d ics_project_2 -f schema.sql
-psql -U postgres -d ics_project_2 -f migration_registration.sql
-psql -U postgres -d ics_project_2 -f migration_risk_scoring.sql
-psql -U postgres -d ics_project_2 -f migration_username.sql
-psql -U postgres -d ics_project_2 -f migration_rls.sql
-psql -U postgres -d ics_project_2 -f migration_kdpa.sql
 ```
 
-Give `app_user` its rights (it may add and read audit entries, never
-change or delete them):
-
-```sql
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
-REVOKE UPDATE, DELETE ON audit_log FROM app_user;
-```
+The tables are created in step 3 by `db/migrate.js`, which applies the
+numbered files in `backend/db/` (`001_schema.sql` to
+`007_app_user_grants.sql`) in order, each once, and records them in
+`schema_migrations`. A file that fails is rolled back and stops the run.
+The last file gives `app_user` its rights: it can read and write the
+application tables, but only add and read audit entries, never change or
+delete them.
 
 ### 3. Backend
+
+Windows (PowerShell):
 
 ```powershell
 cd backend
 npm install
 copy .env.example .env      # then fill it in (see Configuration)
+$env:MIGRATE_DATABASE_URL = "postgres://postgres:<postgres-password>@localhost:5432/ics_project_2"
+node db/migrate.js          # create all tables, policies and rights
 npm run cert:new            # local TLS certificate in backend/certs/ (gitignored)
 npm run cert:trust          # trust it for your Windows user — click Yes
 npm run key:new             # create a data encryption key
 node db/seed.js             # one demo account per role
 ```
 
-The demo accounts use `DEMO_ACCOUNT_PASSWORD` from `.env`; no password is
-stored in the code. Firefox keeps its own certificate store, so use
-Chrome or Edge, or accept the certificate in Firefox manually.
+macOS / Linux:
+
+```bash
+cd backend
+npm install
+cp .env.example .env        # then fill it in (see Configuration)
+export MIGRATE_DATABASE_URL="postgres://postgres:<postgres-password>@localhost:5432/ics_project_2"
+node db/migrate.js
+npm run cert:new
+# trust the certificate: macOS
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain certs/localhost-cert.pem
+# or Ubuntu/Debian
+sudo cp certs/localhost-cert.pem /usr/local/share/ca-certificates/childguard-localhost.crt && sudo update-ca-certificates
+npm run key:new
+node db/seed.js
+```
+
+`node db/seed.js` creates `demo.caregiver`, `demo.auditor` and
+`demo.admin`. Their password is `DEMO_ACCOUNT_PASSWORD` and their emails
+are built from `DEMO_EMAIL_BASE` (`you@example.com` gives
+`you+caregiver@example.com` and so on), both from `.env`, so nothing
+personal is stored in the code. Use an inbox you can read: sign-in codes
+are emailed. Firefox keeps its own certificate store, so use Chrome or
+Edge, or accept the certificate in Firefox manually.
+
+A database set up before `migrate.js` existed is recognised the first
+time it runs and recorded as up to date without changes.
 
 ### 4. Frontend
 
@@ -353,6 +372,7 @@ loopback address and never leaves the machine.
 | `FRONTEND_ORIGIN` | The only origin allowed by CORS |
 | `TLS_CERT_FILE`, `TLS_KEY_FILE` | Certificate files for HTTPS |
 | `DEMO_ACCOUNT_PASSWORD` | Password for the seeded demo accounts |
+| `DEMO_EMAIL_BASE` | Inbox the demo and test accounts are built from (`you+caregiver@…`) |
 | `RETENTION_DAYS` | Days after archiving before a profile is anonymised (365) |
 | `REPORT_EXPORTS_PER_HOUR` | Report downloads allowed per auditor per hour (10) |
 
@@ -489,4 +509,5 @@ page.
 - The project report (Chapters 1–6) is submitted separately to Strathmore
   University
 
-**Licence:** no open-source licence has been added; all rights reserved.
+**Licence:** all rights reserved; see [`LICENSE`](LICENSE). The code is
+published to be read and assessed, not reused.

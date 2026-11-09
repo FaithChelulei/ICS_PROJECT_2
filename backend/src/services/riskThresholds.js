@@ -5,7 +5,7 @@
 // Each role has hard limits. The low end keeps ordinary work from being
 // signed out; the high end still catches mass access (0.82 to 1.00 in the
 // calibration table, docs/RISK_THRESHOLDS.md). The same limits are CHECK
-// constraints in db/migration_admin_controls.sql.
+// constraints in db/006_admin_controls.sql.
 const db = require('../config/db');
 const { sendThresholdChangedEmail } = require('../utils/mailer');
 const tiers = require('../../../ml/models/risk_tiers.json');

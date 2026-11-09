@@ -119,9 +119,10 @@ async function expectStatus(label, path, opts, expected) {
 
 async function main() {
   const health = await api('/health').catch(() => null);
-  if (!health || health.status !== 200) throw new Error('Backend is not running on :4000 -- start it with npm run dev first.');
-  const ml = await fetch('http://127.0.0.1:5001/health').catch(() => null);
-  if (!ml || !ml.ok) throw new Error('ML service is not running on :5001 -- start ml/service/app.py first.');
+  if (!health || health.status !== 200) throw new Error(`Backend is not answering at ${BASE} -- start it with npm start first.`);
+  const mlBase = (process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001').replace(/\/+$/, '');
+  const ml = await fetch(`${mlBase}/health`).catch(() => null);
+  if (!ml || !ml.ok) throw new Error(`ML service is not answering at ${mlBase} -- start ml/service/app.py first.`);
 
   console.log('Preparing dedicated test accounts (your real accounts are not touched)...');
   const cgAcct = await ensureTestAccount(ACCOUNTS.cg);
@@ -271,7 +272,7 @@ async function main() {
   const { rows: rlsOn } = await db.query(
     "SELECT bool_and(relrowsecurity) AS on FROM pg_class WHERE relname IN ('child_profiles','child_identifiers','developmental_records','consent_records')");
   record('RLS is enabled on all four child-data tables', rlsOn[0].on === true,
-    rlsOn[0].on ? '' : 'run backend/db/migration_rls.sql as postgres');
+    rlsOn[0].on ? '' : 'run node db/migrate.js as postgres');
   if (rlsOn[0].on) {
     const { rows: others } = await db.runAsSystem(() => db.query(
       'SELECT id FROM child_profiles WHERE caregiver_id <> $1 ORDER BY id LIMIT 1', [cgAcct.id]));
@@ -308,7 +309,10 @@ async function main() {
   }
 
   console.log('\n=== Archive / restrict a child profile (KDPA s.40(3)) ===');
-  const deviceC = 'test-device-C';
+  // The same device the penetration and performance suites use for this
+  // account. A different one would (correctly) look like a new device and
+  // be flagged whenever another suite ran first on the same day.
+  const deviceC = 'test-device-A';
   const care2 = await login(ACCOUNTS.cg2.username, deviceC);
   const as2 = (path, opts = {}) => api(path, { token: care2.token, device: deviceC, ...opts });
   const kid = await as2('/children', {
@@ -649,7 +653,13 @@ main()
     process.exit(failures ? 1 : 0);
   })
   .catch(async (err) => {
-    console.error(err);
+    // A request that was unexpectedly refused (for example a session the
+    // risk engine ended) makes later checks read missing data. Report what
+    // passed so far and why it stopped, instead of only a stack trace.
+    const failed = results.filter((r) => !r.ok);
+    console.error(`
+STOPPED after ${results.length} checks (${failed.length} failed so far): ${err.message}`);
+    failed.forEach((f) => console.error(`  FAILED: ${f.name} :: ${f.detail || ''}`));
     try { await lockTestAccounts(); await db.pool.end(); } catch { /* ignore */ }
     process.exit(1);
   });

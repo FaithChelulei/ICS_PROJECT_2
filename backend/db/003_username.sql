@@ -3,7 +3,7 @@
 -- or a generated username. Additive + backfilling, safe to re-run.
 --
 -- This must be run by the table owner (the app's runtime DB role,
--- app_user, deliberately has no ALTER privileges -- see schema.sql /
+-- app_user, deliberately has no ALTER privileges -- see 001_schema.sql /
 -- least-privilege notes). Run this in pgAdmin connected as the owner
 -- BEFORE testing login again -- authController.js already queries
 -- u.full_name and u.username, so login/me/approveRequest will fail with

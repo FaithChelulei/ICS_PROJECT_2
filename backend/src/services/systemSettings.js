@@ -2,7 +2,7 @@
 // keys, passwords and connection details stay in backend/.env and are never
 // editable or shown here. The default for each is its value in backend/.env.
 // The limits are repeated as CHECK constraints in
-// db/migration_admin_controls.sql.
+// db/006_admin_controls.sql.
 const db = require('../config/db');
 
 const SETTINGS = {

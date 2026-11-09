@@ -2,7 +2,7 @@
 // through this — never opens its own client — so connections are reused
 // instead of exhausted.
 //
-// Row-level security (db/migration_rls.sql): the child-data tables only
+// Row-level security (db/004_rls.sql): the child-data tables only
 // return rows the requesting user may see. Postgres learns WHO is asking
 // from two transaction-local settings, app.user_id and app.role, which this
 // module sets on every query made while a request context is active (see
