@@ -57,15 +57,16 @@ async function reviewFlagged(req, res) {
   );
   if (!rows[0]) return res.status(404).json({ error: 'Risk score not found' });
 
+  // Scored: an insider auditor quietly closing out many alerts is exactly
+  // the kind of behaviour this role's model should see. Scored first, so the
+  // audit entry is linked to its risk score.
+  const risk = await scoreAction(req, 'review_flagged_session');
   await logAction({
     userId: req.user.id,
     action: 'auditor_reviewed_flagged_session',
     detail: `risk_score_id=${riskScoreId}, new_status=${status}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  // Scored: an insider auditor quietly closing out many alerts is exactly
-  // the kind of behaviour this role's model should see.
-  const risk = await scoreAction(req, 'review_flagged_session');
   res.json({ riskScoreId, auditorStatus: status, ...riskFields(risk) });
 }
 
@@ -113,13 +114,14 @@ async function recordBreachDecision(req, res) {
   if (!rows[0]) return res.status(409).json({ error: 'A breach decision has already been recorded for this session' });
 
   const hours = (new Date(rows[0].breach_decided_at) - new Date(flag.created_at)) / 3600000;
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'record_breach_decision');
   await logAction({
     userId: req.user.id,
     action: 'breach_decision_recorded',
     detail: `risk_score_id=${riskScoreId}, decision=${decision}, hours_after_flag=${hours.toFixed(1)}, within_72h=${hours <= BREACH_WINDOW_HOURS}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'record_breach_decision');
   res.json({
     riskScoreId,
     breachDecision: decision,

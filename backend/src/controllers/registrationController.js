@@ -166,14 +166,15 @@ async function approveRequest(req, res) {
     tempPassword,
   });
 
+  // Creating an account is a privileged change -- scored (first, so the
+  // audit entry is linked to its risk score).
+  const risk = await scoreAction(req, 'approve_registration');
   await logAction({
     userId: req.user.id,
     action: 'approve_registration_request',
     detail: `request_id=${requestId}, new user email=${request.email}, role=${request.requested_role}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  // Creating an account is a privileged change -- scored.
-  const risk = await scoreAction(req, 'approve_registration');
   res.json({
     message: `Approved. Username "${username}" created; temporary password emailed to ${request.email}.`,
     username,
@@ -202,13 +203,14 @@ async function rejectRequest(req, res) {
     reason: rejectionReason,
   });
 
+  // Scored first, so the audit entry below is linked to its risk score.
+  const risk = await scoreAction(req, 'reject_registration');
   await logAction({
     userId: req.user.id,
     action: 'reject_registration_request',
     detail: `request_id=${requestId}, email=${rows[0].email}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  const risk = await scoreAction(req, 'reject_registration');
   res.json({ message: 'Request rejected.', ...riskFields(risk) });
 }
 

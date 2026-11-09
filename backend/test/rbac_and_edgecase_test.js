@@ -406,9 +406,20 @@ async function main() {
   const deviceB = `test-device-B-${crypto.randomBytes(3).toString('hex')}`;
   const cg2 = await login(cgAcct.email, deviceB);
   const view = await api(`/children/${childId}/records`, { token: cg2.token, device: deviceB });
-  record('Viewing records still succeeds (200)', view.status === 200, `status=${view.status}`);
-  const flagged = Boolean(view.json && view.json.riskNotice);
-  record('Action from an unrecognised device IS flagged', flagged, flagged ? 'riskNotice returned' : 'not flagged');
+  const flagged = view.status === 401 && Boolean(view.json) && view.json.code === 'SESSION_REVOKED_RISK';
+  record('Action from an unrecognised device IS flagged', flagged, `status=${view.status}`);
+  record('The flagged read discloses nothing (no records sent)', flagged && !('records' in view.json));
+  const { rows: refusedLog } = await db.query(
+    `SELECT al.access_request_id, rs.is_flagged FROM audit_log al
+     LEFT JOIN risk_scores rs ON rs.access_request_id = al.access_request_id
+     WHERE al.user_id = $1 AND al.action = 'view_developmental_records_refused' ORDER BY al.id DESC LIMIT 1`, [cgAcct.id]);
+  record('The refused read is in the audit log, linked to its flagged score',
+    refusedLog[0] && refusedLog[0].access_request_id && refusedLog[0].is_flagged === true);
+  const { rows: linked } = await db.query(
+    `SELECT rs.combined_score FROM audit_log al JOIN risk_scores rs ON rs.access_request_id = al.access_request_id
+     WHERE al.user_id = $1 AND al.action = 'view_developmental_records' ORDER BY al.id DESC LIMIT 1`, [cgAcct.id]);
+  record('A normal records read in the audit log shows its risk score (not "Unscored")', linked.length === 1,
+    linked[0] ? `score ${linked[0].combined_score}` : 'no linked score');
 
   let riskScoreId = null;
   if (flagged) {
@@ -439,13 +450,22 @@ async function main() {
 
     console.log('\n=== Owner\'s "This was me" link ===');
     const confirmToken = signRiskResponseToken(riskScoreId, 'confirm');
-    const c1 = await api(`/risk-response/${riskScoreId}/confirm?token=${confirmToken}`);
-    record('Confirm link accepted', c1.status === 200 && c1.text.includes('Thanks for confirming'), `status=${c1.status}`);
-    const c2 = await api(`/risk-response/${riskScoreId}/confirm?token=${confirmToken}`);
-    record('Second click is a harmless no-op', c2.text.includes('already responded'));
-    const d1 = await api(`/risk-response/${riskScoreId}/deny?token=${signRiskResponseToken(riskScoreId, 'deny')}`);
+    const denyToken = signRiskResponseToken(riskScoreId, 'deny');
+    const ownerResponse = async () => (await db.query('SELECT owner_response FROM risk_scores WHERE id = $1', [riskScoreId])).rows[0].owner_response;
+    // A mail scanner opens both links: that must change nothing.
+    const openedConfirm = await api(`/risk-response/${riskScoreId}/confirm?token=${confirmToken}`);
+    const openedDeny = await api(`/risk-response/${riskScoreId}/deny?token=${denyToken}`);
+    record('Opening the email links only shows a page with a button',
+      openedConfirm.status === 200 && openedConfirm.text.includes('method="post"') && openedDeny.status === 200 && openedDeny.text.includes('method="post"'));
+    record('Opening the links changes nothing (a mail scanner cannot act)', (await ownerResponse()) === 'pending');
+    const c1 = await api(`/risk-response/${riskScoreId}/confirm`, { method: 'POST', body: { token: confirmToken } });
+    record('Pressing "Yes, this was me" is accepted', c1.status === 200 && c1.text.includes('Thanks for confirming'), `status=${c1.status}`);
+    record('The owner’s answer is recorded', (await ownerResponse()) === 'confirmed_benign');
+    const c2 = await api(`/risk-response/${riskScoreId}/confirm`, { method: 'POST', body: { token: confirmToken } });
+    record('Second press is a harmless no-op', c2.text.includes('already responded'));
+    const d1 = await api(`/risk-response/${riskScoreId}/deny`, { method: 'POST', body: { token: denyToken } });
     record('Deny after confirm is also a no-op (no lock)', d1.text.includes('already responded'));
-    const bad = await api(`/risk-response/${riskScoreId}/confirm?token=forged`);
+    const bad = await api(`/risk-response/${riskScoreId}/confirm`, { method: 'POST', body: { token: 'forged' } });
     record('Forged link token is refused', bad.status >= 400, `status=${bad.status}`);
 
     console.log('\n=== Breach decision on a suspected breach (KDPA s.43) ===');

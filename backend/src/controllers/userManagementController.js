@@ -99,14 +99,15 @@ async function unlockAccount(req, res) {
 
   await sendAccountUnlockedEmail(user.email, { tempPassword });
 
+  // Privileged action on someone else's account -- scored (first, so the
+  // audit entry is linked to its risk score).
+  const risk = await scoreAction(req, 'unlock_account');
   await logAction({
     userId: req.user.id,
     action: 'admin_unlocked_account',
     detail: `unlocked user_id=${userId}, email=${user.email}`,
+    accessRequestId: risk.accessRequestId,
   });
-
-  // Privileged action on someone else's account -- scored.
-  const risk = await scoreAction(req, 'unlock_account');
   res.json({
     message: `Account unlocked. New temporary password emailed to ${user.email}.`,
     ...riskFields(risk),
@@ -158,10 +159,12 @@ async function changeRole(req, res) {
     );
   });
 
+  const risk = await scoreAction(req, 'change_user_role');
   await logAction({
     userId: req.user.id,
     action: 'user_role_changed',
     detail: `user_id=${userId}, email=${user.email}, from=${user.role}, to=${role}, reason=${reason}`,
+    accessRequestId: risk.accessRequestId,
   });
   try {
     await sendRoleChangedEmail(user.email, { role });
@@ -169,7 +172,6 @@ async function changeRole(req, res) {
     console.error(`[user-management] role change email to user ${userId} failed:`, err.message);
   }
 
-  const risk = await scoreAction(req, 'change_user_role');
   res.json({ message: `${user.email} is now a ${role} and has been signed out.`, ...riskFields(risk) });
 }
 

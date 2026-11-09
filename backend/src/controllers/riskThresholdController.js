@@ -30,14 +30,15 @@ async function update(req, res) {
   if (current.threshold === threshold) return res.status(409).json({ error: 'That is already the current limit.' });
 
   await saveThreshold({ role, threshold, reason, userId: req.user.id });
+  const risk = await scoreAction(req, 'change_risk_threshold');
   await logAction({
     userId: req.user.id,
     action: 'risk_threshold_changed',
     detail: `role=${role}, from=${current.threshold}, to=${threshold}, reason=${reason}`,
+    accessRequestId: risk.accessRequestId,
   });
   await notifyAdmins({ role, from: current.threshold, to: threshold, reason, changedBy: req.user.email });
 
-  const risk = await scoreAction(req, 'change_risk_threshold');
   res.json({
     message: `The ${role} limit is now ${threshold.toFixed(2)}. It applies from the next action.`,
     ...riskFields(risk),

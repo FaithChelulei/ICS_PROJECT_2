@@ -4,9 +4,17 @@
 // first route that reads audit_log back out, for the Security Auditor's
 // "Audit Log" screen. Permission: 'view_audit_log' (see middleware/rbac.js).
 const db = require('../config/db');
-const { scoreAction, riskFields } = require('../services/actionScoring');
+const { scoreAction, RISK_NOTICE } = require('../services/actionScoring');
 
 async function listAuditLog(req, res) {
+  // Reading the audit trail is the sensitive data read for this role, so it
+  // is scored -- BEFORE anything is read, like report downloads: if this is
+  // the read that crosses the limit (mass scraping), nothing is sent.
+  const risk = await scoreAction(req, 'view_audit_log');
+  if (risk.flagged) {
+    return res.status(401).json({ error: RISK_NOTICE, code: 'SESSION_REVOKED_RISK' });
+  }
+
   const limit = Math.min(Number(req.query.limit) || 100, 200);
   const params = [];
   const clauses = [];
@@ -48,10 +56,7 @@ async function listAuditLog(req, res) {
 
   const { rows: countRows } = await db.query('SELECT count(*)::int AS total FROM audit_log');
 
-  // Reading the audit trail is the sensitive data read for this role --
-  // scored, so mass scraping of the log stands out.
-  const risk = await scoreAction(req, 'view_audit_log');
-  res.json({ entries: rows, totalEvents: countRows[0].total, ...riskFields(risk) });
+  res.json({ entries: rows, totalEvents: countRows[0].total });
 }
 
 module.exports = { listAuditLog };
