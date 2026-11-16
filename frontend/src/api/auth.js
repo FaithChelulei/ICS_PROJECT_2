@@ -10,6 +10,11 @@ export const logout = () => apiFetch('/auth/logout', { method: 'POST' });
 
 export const me = () => apiFetch('/auth/me');
 
+// A paused account (until verified): see the pause and send an explanation.
+export const getPausedCase = () => apiFetch('/auth/paused-case');
+export const sendExplanation = (explanation) =>
+  apiFetch('/auth/paused-case/explanation', { method: 'POST', body: { explanation } });
+
 export const changePassword = (currentPassword, newPassword) =>
   apiFetch('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } });
 

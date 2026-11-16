@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     setUnauthorizedHandler((data) => {
       // Tell the login screen why the user landed there (shown once).
-      if (data?.code === 'SESSION_REVOKED_RISK') {
+      if (data?.code === 'SESSION_REVOKED_RISK' || data?.code === 'ACCOUNT_PAUSED') {
         try {
           sessionStorage.setItem('childguard_logout_reason', data.error);
         } catch {
@@ -52,11 +52,11 @@ export function AuthProvider({ children }) {
   // Called once a full session exists -- either login() returned a token
   // directly (no MFA edge case) or verify-mfa did.
   function completeLogin(sessionData) {
-    const { token: newToken, role, email, fullName, mustChangePassword } = sessionData;
+    const { token: newToken, role, email, fullName, mustChangePassword, paused } = sessionData;
     localStorage.setItem(STORAGE_KEY, newToken);
     setAuthToken(newToken);
     setToken(newToken);
-    setUser({ role, email, fullName, mustChangePassword });
+    setUser({ role, email, fullName, mustChangePassword, paused: paused === true });
   }
 
   function setMustChangePassword(value) {

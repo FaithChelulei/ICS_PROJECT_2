@@ -34,11 +34,13 @@ export default function CaregiverDashboard() {
   const [riskNotice, setRiskNotice] = useState(null);
   const [error, setError] = useState('');
   const [lastSignIn, setLastSignIn] = useState(null);
+  const [pendingAccess, setPendingAccess] = useState(0);
 
   useEffect(() => {
     listMyChildren()
       .then((data) => {
         setChildren(data.children);
+        setPendingAccess(data.pendingAccessRequests || 0);
         if (data.riskNotice) setRiskNotice(data.riskNotice);
       })
       .catch((err) => setError(err.message))
@@ -69,7 +71,7 @@ export default function CaregiverDashboard() {
           </Link>
         }
       />
-      <div className="p-8 max-w-5xl">
+      <div className="p-4 md:p-8 max-w-5xl">
         {riskNotice && (
           <Alert variant="warning" className="mb-6 flex items-center justify-between gap-4">
             <span>
@@ -78,6 +80,15 @@ export default function CaregiverDashboard() {
           </Alert>
         )}
         {error && <Alert className="mb-6">{error}</Alert>}
+        {pendingAccess > 0 && (
+          <Alert variant="warning" className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <span>
+              <strong>{pendingAccess === 1 ? 'An educator is' : `${pendingAccess} educators are`} asking to see your child&rsquo;s records.</strong>{' '}
+              Nothing is shared unless you agree.
+            </span>
+            <Link to="/caregiver/access"><Button size="sm">Review</Button></Link>
+          </Alert>
+        )}
 
         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
           My Children ({active.length})

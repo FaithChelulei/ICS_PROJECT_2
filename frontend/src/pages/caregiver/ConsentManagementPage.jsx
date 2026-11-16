@@ -83,7 +83,7 @@ export default function ConsentManagementPage() {
         title="Consent Management"
         subtitle="Control what you've consented to store for each child, and see the full history"
       />
-      <div className="p-8 max-w-4xl">
+      <div className="p-4 md:p-8 max-w-4xl">
         {error && <Alert className="mb-6">{error}</Alert>}
 
         {loadingChildren ? (

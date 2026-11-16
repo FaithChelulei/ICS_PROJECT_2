@@ -1,0 +1,2405 @@
+{
+  "_about": "Experiment: the best detector for EACH role, with and without web and",
+  "seeds": [
+    42,
+    1,
+    2,
+    3,
+    4
+  ],
+  "summary": {
+    "Caregiver": {
+      "A_current": {
+        "T1_insiders_caught": {
+          "mean": 0.15294117647058822,
+          "min": 0.0,
+          "max": 0.29411764705882354,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.025179910666525675,
+          "min": 0.013928654337228197,
+          "max": 0.04198062432723358,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.3,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7999360022962477,
+          "min": 0.7634457173612179,
+          "max": 0.823611105454575,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.02027481710624992,
+          "min": 0.011963809358874328,
+          "max": 0.03198042217388497,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.882758700765009,
+          "min": 0.8032153038942134,
+          "max": 0.9802003624185704,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.14513137555285255,
+          "min": 0.028180680048394934,
+          "max": 0.2708603099503008,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      },
+      "B_app": {
+        "T1_insiders_caught": {
+          "mean": 0.3294117647058824,
+          "min": 0.17647058823529413,
+          "max": 0.47058823529411764,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.024136775142251564,
+          "min": 0.01025360050093926,
+          "max": 0.04828540673535291,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.02,
+          "min": 0.0,
+          "max": 0.1,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.80829022972383,
+          "min": 0.7808876672305091,
+          "max": 0.8470320380934031,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.01859383524661689,
+          "min": 0.013903900391529882,
+          "max": 0.022475622279112064,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.9414031394550573,
+          "min": 0.9175164501245628,
+          "max": 0.9920848242958069,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.05699775777884212,
+          "min": 0.0328474958492556,
+          "max": 0.07409917440260595,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      },
+      "C_app": {
+        "T1_insiders_caught": {
+          "mean": 0.5647058823529412,
+          "min": 0.47058823529411764,
+          "max": 0.7058823529411765,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.01785759240230782,
+          "min": 0.012086464709072596,
+          "max": 0.029821540388227926,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.38,
+          "min": 0.1,
+          "max": 0.7,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9611608251196149,
+          "min": 0.9242403385233182,
+          "max": 0.9770258853317034,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.18954151948479075,
+          "min": 0.12317991152910719,
+          "max": 0.23039407738393958,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.8762405565416517,
+          "min": 0.8251267786057146,
+          "max": 0.9156793709769028,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.015247461783298296,
+          "min": 0.004024150847697515,
+          "max": 0.0259957955050752,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      },
+      "D_app": {
+        "T1_insiders_caught": {
+          "mean": 0.7176470588235294,
+          "min": 0.6470588235294118,
+          "max": 0.8235294117647058,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.014935535969633146,
+          "min": 0.00341429347404361,
+          "max": 0.02305966106941113,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.76,
+          "min": 0.7,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9312524341314818,
+          "min": 0.7927872377686459,
+          "max": 0.9833884508646026,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.2953100585463021,
+          "min": 0.1665525158682655,
+          "max": 0.398558155803914,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      },
+      "B_full": {
+        "T1_insiders_caught": {
+          "mean": 0.2823529411764706,
+          "min": 0.058823529411764705,
+          "max": 0.35294117647058826,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.021158529014258926,
+          "min": 0.017664833036336872,
+          "max": 0.02621866830693526,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.04,
+          "min": 0.0,
+          "max": 0.2,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8298520254461286,
+          "min": 0.8048722704905428,
+          "max": 0.868540859578743,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.02160279175643222,
+          "min": 0.01646051481221971,
+          "max": 0.02597835174310125,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.9174342762252239,
+          "min": 0.8747842318250663,
+          "max": 0.9872652307551151,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.04229517741028658,
+          "min": 0.027985332198736747,
+          "max": 0.05252155496406459,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      },
+      "C_full": {
+        "T1_insiders_caught": {
+          "mean": 0.8235294117647058,
+          "min": 0.6470588235294118,
+          "max": 0.9411764705882353,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.02250403431306961,
+          "min": 0.014470324228120406,
+          "max": 0.03951344231812195,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9726572207226065,
+          "min": 0.9351763685310157,
+          "max": 0.9925506324202684,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.7557210581464123,
+          "min": 0.6139680984057443,
+          "max": 0.8681236667403975,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.8686366959740539,
+          "min": 0.7523698606161489,
+          "max": 0.9213393788669174,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.08366860672375288,
+          "min": 0.007518057060290675,
+          "max": 0.208537689726322,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      },
+      "D_full": {
+        "T1_insiders_caught": {
+          "mean": 0.9176470588235294,
+          "min": 0.8235294117647058,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.02236536531833471,
+          "min": 0.008844708829054478,
+          "max": 0.02975549746270952,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9694709185871092,
+          "min": 0.9321886314486207,
+          "max": 0.9918967202380589,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.7415035976563694,
+          "min": 0.5840400922803956,
+          "max": 0.8714058723745249,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      },
+      "chosen_app": {
+        "per_seed": [
+          "D_app",
+          "D_app",
+          "D_app",
+          "D_app",
+          "D_app"
+        ],
+        "mean": {
+          "T1_insiders_caught": 0.7176470588235294,
+          "T2_normal_weeks_flagged": 0.014935535969633146,
+          "T3_precision_top10": 0.76
+        }
+      },
+      "chosen_full": {
+        "per_seed": [
+          "C_full",
+          "D_full",
+          "D_full",
+          "C_full",
+          "C_full"
+        ],
+        "mean": {
+          "T1_insiders_caught": 0.8352941176470589,
+          "T2_normal_weeks_flagged": 0.025604100545990233,
+          "T3_precision_top10": 1.0
+        }
+      }
+    },
+    "SecurityAuditor": {
+      "A_current": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.12202255311738071,
+          "min": 0.0,
+          "max": 0.23103448275862068,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.15000000000000002,
+          "min": 0.1,
+          "max": 0.2,
+          "n_runs": 2
+        },
+        "week_roc_auc": {
+          "mean": 0.9441391941391941,
+          "min": 0.8882783882783883,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.7579365079365079,
+          "min": 0.5158730158730158,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.9253198783437417,
+          "min": 0.9030580952380951,
+          "max": 0.9632252922422954,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.7996034226173485,
+          "min": 0.7126372004239813,
+          "max": 0.8992061875918581,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      },
+      "B_app": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.09544986405035923,
+          "min": 0.0,
+          "max": 0.27636363636363637,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.1,
+          "max": 0.1,
+          "n_runs": 2
+        },
+        "week_roc_auc": {
+          "mean": 0.9396936396936397,
+          "min": 0.9157509157509157,
+          "max": 0.9636363636363636,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.5331439393939394,
+          "min": 0.5208333333333334,
+          "max": 0.5454545454545454,
+          "n_runs": 2
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.8891899979910921,
+          "min": 0.8767914285714287,
+          "max": 0.9002555688146381,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.6813217653151574,
+          "min": 0.6451656581365184,
+          "max": 0.7357327648093183,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      },
+      "C_app": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.03863440965165103,
+          "min": 0.0,
+          "max": 0.09655172413793103,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.2,
+          "min": 0.2,
+          "max": 0.2,
+          "n_runs": 2
+        },
+        "week_roc_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.9027163815026924,
+          "min": 0.831167619047619,
+          "max": 0.981865037194474,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.7689593223265091,
+          "min": 0.6316321887535629,
+          "max": 0.9297732396413818,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      },
+      "D_app": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.037046238244514106,
+          "min": 0.0,
+          "max": 0.1103448275862069,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.2,
+          "min": 0.2,
+          "max": 0.2,
+          "n_runs": 2
+        },
+        "week_roc_auc": {
+          "mean": 0.9936363636363637,
+          "min": 0.9872727272727272,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.8055555555555556,
+          "min": 0.6111111111111112,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      },
+      "B_full": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.03783429299226937,
+          "min": 0.003663003663003663,
+          "max": 0.11636363636363636,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.1,
+          "max": 0.1,
+          "n_runs": 2
+        },
+        "week_roc_auc": {
+          "mean": 0.9462570762570763,
+          "min": 0.9218181818181819,
+          "max": 0.9706959706959707,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.538888888888889,
+          "min": 0.5222222222222223,
+          "max": 0.5555555555555556,
+          "n_runs": 2
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.8891579156414139,
+          "min": 0.8440624476812323,
+          "max": 0.9170572230998771,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.6618125049906138,
+          "min": 0.5933353526357469,
+          "max": 0.7425529687040524,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      },
+      "C_full": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.045890940477147375,
+          "min": 0.0,
+          "max": 0.18275862068965518,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.2,
+          "min": 0.2,
+          "max": 0.2,
+          "n_runs": 2
+        },
+        "week_roc_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.9369715776340509,
+          "min": 0.8800016742005694,
+          "max": 0.9726438095238095,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.8250753241736636,
+          "min": 0.6834016184256346,
+          "max": 0.9057368225033753,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      },
+      "D_full": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.02528448275862069,
+          "min": 0.0,
+          "max": 0.05517241379310345,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.2,
+          "min": 0.2,
+          "max": 0.2,
+          "n_runs": 2
+        },
+        "week_roc_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      },
+      "chosen_app": {
+        "per_seed": [
+          "D_app",
+          "A_current",
+          "D_app",
+          "D_app",
+          "D_app"
+        ],
+        "mean": {
+          "T1_insiders_caught": 1.0,
+          "T2_normal_weeks_flagged": 0.037046238244514106,
+          "T3_precision_top10": 0.15000000000000002
+        }
+      },
+      "chosen_full": {
+        "per_seed": [
+          "D_app",
+          "A_current",
+          "D_full",
+          "D_app",
+          "D_app"
+        ],
+        "mean": {
+          "T1_insiders_caught": 1.0,
+          "T2_normal_weeks_flagged": 0.037046238244514106,
+          "T3_precision_top10": 0.15000000000000002
+        }
+      }
+    },
+    "SysAdmin": {
+      "A_current": {
+        "T1_insiders_caught": {
+          "mean": 0.25,
+          "min": 0.0,
+          "max": 0.75,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.0772867753115186,
+          "min": 0.0,
+          "max": 0.2145922746781116,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.2,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8212570707787364,
+          "min": 0.7404397705544933,
+          "max": 0.8898426323319027,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.1130718624171692,
+          "min": 0.017119970822197163,
+          "max": 0.28133792012982967,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.8679618448489741,
+          "min": 0.8268307102340817,
+          "max": 0.9072307288935502,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.3223552726173216,
+          "min": 0.11850723034034243,
+          "max": 0.507947348062471,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      },
+      "B_app": {
+        "T1_insiders_caught": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.5,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.05295012838225978,
+          "min": 0.0036101083032490976,
+          "max": 0.1491395793499044,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.13999999999999999,
+          "min": 0.0,
+          "max": 0.4,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7721884093846473,
+          "min": 0.6046845124282982,
+          "max": 0.9091559370529327,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.09644358152976103,
+          "min": 0.01413707734213352,
+          "max": 0.19783594624880155,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.8439265630457102,
+          "min": 0.7481613006311416,
+          "max": 0.9043772941793392,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.10964263167077422,
+          "min": 0.0284937960286844,
+          "max": 0.1992103275198236,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      },
+      "C_app": {
+        "T1_insiders_caught": {
+          "mean": 0.35,
+          "min": 0.25,
+          "max": 0.5,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.03116025304459441,
+          "min": 0.0018050541516245488,
+          "max": 0.11281070745697896,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.18000000000000002,
+          "min": 0.0,
+          "max": 0.3,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.824216866424514,
+          "min": 0.7194206008583691,
+          "max": 0.9509174311926605,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.21194707023835985,
+          "min": 0.04068449545960667,
+          "max": 0.5362417411581811,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.902818946655759,
+          "min": 0.841516900589652,
+          "max": 0.9493198741478762,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.30274581913104737,
+          "min": 0.10109332766397079,
+          "max": 0.4411466131660771,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      },
+      "D_app": {
+        "T1_insiders_caught": {
+          "mean": 0.55,
+          "min": 0.5,
+          "max": 0.75,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.04232466869975656,
+          "min": 0.0036101083032490976,
+          "max": 0.13193116634799235,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.18000000000000002,
+          "min": 0.0,
+          "max": 0.4,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8335080776270006,
+          "min": 0.7485693848354793,
+          "max": 0.9298165137614679,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.19547317521598293,
+          "min": 0.056810897435897435,
+          "max": 0.3939470154258886,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      },
+      "B_full": {
+        "T1_insiders_caught": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.25,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.04535668734402503,
+          "min": 0.0,
+          "max": 0.14149139579349904,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.02,
+          "min": 0.0,
+          "max": 0.1,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8148223738654815,
+          "min": 0.7065009560229445,
+          "max": 0.8525409608442099,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.06528684140447148,
+          "min": 0.01582902912166809,
+          "max": 0.14183795167464097,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.9130805733198464,
+          "min": 0.8731133658224814,
+          "max": 0.9546796014682748,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.17647417645318933,
+          "min": 0.10355001420143412,
+          "max": 0.29622191850587276,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      },
+      "C_full": {
+        "T1_insiders_caught": {
+          "mean": 0.35,
+          "min": 0.0,
+          "max": 0.75,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.039540655446185694,
+          "min": 0.013445378151260505,
+          "max": 0.06883365200764818,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.2,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.785703771952757,
+          "min": 0.6677396280400573,
+          "max": 0.9568807339449541,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.16572868777193117,
+          "min": 0.02604801244507127,
+          "max": 0.5356098579782791,
+          "n_runs": 5
+        },
+        "synthetic_session_roc_auc": {
+          "mean": 0.9479818389300556,
+          "min": 0.9073963409762722,
+          "max": 0.9890450970110121,
+          "n_runs": 5
+        },
+        "synthetic_session_pr_auc": {
+          "mean": 0.628172223858898,
+          "min": 0.3388229794500462,
+          "max": 0.8799326201710268,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      },
+      "D_full": {
+        "T1_insiders_caught": {
+          "mean": 0.6,
+          "min": 0.5,
+          "max": 0.75,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.029664049175171986,
+          "min": 0.0,
+          "max": 0.0745697896749522,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.2,
+          "min": 0.1,
+          "max": 0.3,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8538388338103997,
+          "min": 0.7309080810885865,
+          "max": 0.9720183486238532,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.2331424874038457,
+          "min": 0.16517857142857142,
+          "max": 0.3500700280112045,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      },
+      "chosen_app": {
+        "per_seed": [
+          "D_app",
+          "A_current",
+          "D_app",
+          "D_app",
+          "D_app"
+        ],
+        "mean": {
+          "T1_insiders_caught": 0.6,
+          "T2_normal_weeks_flagged": 0.07708861719761065,
+          "T3_precision_top10": 0.2
+        }
+      },
+      "chosen_full": {
+        "per_seed": [
+          "D_app",
+          "A_current",
+          "D_full",
+          "D_app",
+          "D_app"
+        ],
+        "mean": {
+          "T1_insiders_caught": 0.6,
+          "T2_normal_weeks_flagged": 0.07636659553696082,
+          "T3_precision_top10": 0.18
+        }
+      }
+    }
+  },
+  "runs": {
+    "42": {
+      "Caregiver": {
+        "val_insiders": 17,
+        "A_current": {
+          "limit": 0.4107652479927839,
+          "T2_normal_weeks_flagged": 0.021524733876017534,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.11764705882352941,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8093609583903886,
+          "week_pr_auc": 0.01980128870992384,
+          "val_week_pr_auc": 0.022732705600414432,
+          "synthetic_session_roc_auc": 0.832029961650096,
+          "synthetic_session_pr_auc": 0.17248035200408943,
+          "synthetic_attack_share": 0.003766147356792247
+        },
+        "B_app": {
+          "limit": 0.9480551125336866,
+          "T2_normal_weeks_flagged": 0.01025360050093926,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.17647058823529413,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8470320380934031,
+          "week_pr_auc": 0.022475622279112064,
+          "val_week_pr_auc": 0.019492348115948955,
+          "synthetic_session_roc_auc": 0.9192564403056231,
+          "synthetic_session_pr_auc": 0.05654908072654293,
+          "synthetic_attack_share": 0.003766147356792247
+        },
+        "C_app": {
+          "limit": 0.9364673429297343,
+          "T2_normal_weeks_flagged": 0.029821540388227926,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7058823529411765,
+          "T3_precision_top10": 0.7,
+          "week_roc_auc": 0.9746365093891707,
+          "week_pr_auc": 0.23039407738393958,
+          "val_week_pr_auc": 0.12998034867927216,
+          "synthetic_session_roc_auc": 0.9019461001129916,
+          "synthetic_session_pr_auc": 0.0259957955050752,
+          "synthetic_attack_share": 0.003766147356792247
+        },
+        "D_app": {
+          "limit": 0.8456446848076501,
+          "T2_normal_weeks_flagged": 0.017532874139010644,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.8235294117647058,
+          "T3_precision_top10": 0.7,
+          "week_roc_auc": 0.9766995293372878,
+          "week_pr_auc": 0.25102769198847386,
+          "val_week_pr_auc": 0.13560965118833562
+        },
+        "B_full": {
+          "limit": 0.9506479401782513,
+          "T2_normal_weeks_flagged": 0.022698810269254854,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.058823529411764705,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.868540859578743,
+          "week_pr_auc": 0.02418633500690354,
+          "val_week_pr_auc": 0.02063005518251647,
+          "synthetic_session_roc_auc": 0.8904038081076655,
+          "synthetic_session_pr_auc": 0.04381870548830177,
+          "synthetic_attack_share": 0.003766147356792247
+        },
+        "C_full": {
+          "limit": 0.4042501162423575,
+          "T2_normal_weeks_flagged": 0.017219787100814028,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.9411764705882353,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.99219432727573,
+          "week_pr_auc": 0.8681236667403975,
+          "val_week_pr_auc": 0.5673678592261872,
+          "synthetic_session_roc_auc": 0.9067706272498541,
+          "synthetic_session_pr_auc": 0.208537689726322,
+          "synthetic_attack_share": 0.003766147356792247
+        },
+        "D_full": {
+          "limit": 0.13648928952879455,
+          "T2_normal_weeks_flagged": 0.008844708829054478,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9908452145850393,
+          "week_pr_auc": 0.8714058723745249,
+          "val_week_pr_auc": 0.5459046046663141
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "C_full"
+      },
+      "SecurityAuditor": {
+        "val_insiders": 0,
+        "A_current": {
+          "limit": 0.20356563627742658,
+          "T2_normal_weeks_flagged": 0.23103448275862068,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9182060940900719,
+          "synthetic_session_pr_auc": 0.7126372004239813,
+          "synthetic_attack_share": 0.13094718463553034
+        },
+        "B_app": {
+          "limit": 0.9626187651186962,
+          "T2_normal_weeks_flagged": 0.05862068965517241,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.8890465427758244,
+          "synthetic_session_pr_auc": 0.6451656581365184,
+          "synthetic_attack_share": 0.13094718463553034
+        },
+        "C_app": {
+          "limit": 0.06186057934624032,
+          "T2_normal_weeks_flagged": 0.09655172413793103,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9115025950108824,
+          "synthetic_session_pr_auc": 0.6699840944174064,
+          "synthetic_attack_share": 0.13094718463553034
+        },
+        "D_app": {
+          "limit": 0.11943112751247598,
+          "T2_normal_weeks_flagged": 0.1103448275862069,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": null
+        },
+        "B_full": {
+          "limit": 0.9831871453142389,
+          "T2_normal_weeks_flagged": 0.03103448275862069,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.8440624476812323,
+          "synthetic_session_pr_auc": 0.5947109314079196,
+          "synthetic_attack_share": 0.13094718463553034
+        },
+        "C_full": {
+          "limit": 0.004823363094670059,
+          "T2_normal_weeks_flagged": 0.18275862068965518,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.8800016742005694,
+          "synthetic_session_pr_auc": 0.6834016184256346,
+          "synthetic_attack_share": 0.13094718463553034
+        },
+        "D_full": {
+          "limit": 0.03055276280286954,
+          "T2_normal_weeks_flagged": 0.05517241379310345,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": null
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_app"
+      },
+      "SysAdmin": {
+        "val_insiders": 3,
+        "A_current": {
+          "limit": 0.8095395340962135,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8068807339449542,
+          "week_pr_auc": 0.06556832298136646,
+          "val_week_pr_auc": 0.05496999835574093,
+          "synthetic_session_roc_auc": 0.863344211379186,
+          "synthetic_session_pr_auc": 0.35682513200763966,
+          "synthetic_attack_share": 0.017686593562079942
+        },
+        "B_app": {
+          "limit": 0.9988414962795361,
+          "T2_normal_weeks_flagged": 0.003669724770642202,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.6330275229357798,
+          "week_pr_auc": 0.01798849316768728,
+          "val_week_pr_auc": 0.04769823510449173,
+          "synthetic_session_roc_auc": 0.8853864332012964,
+          "synthetic_session_pr_auc": 0.10523270296095275,
+          "synthetic_attack_share": 0.017686593562079942
+        },
+        "C_app": {
+          "limit": 0.7709061667967861,
+          "T2_normal_weeks_flagged": 0.003669724770642202,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9509174311926605,
+          "week_pr_auc": 0.5362417411581811,
+          "val_week_pr_auc": 0.05604550035148184,
+          "synthetic_session_roc_auc": 0.9258210298883688,
+          "synthetic_session_pr_auc": 0.4411466131660771,
+          "synthetic_attack_share": 0.017686593562079942
+        },
+        "D_app": {
+          "limit": 0.44067692567352135,
+          "T2_normal_weeks_flagged": 0.02018348623853211,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9298165137614679,
+          "week_pr_auc": 0.3939470154258886,
+          "val_week_pr_auc": 0.20486026557645332
+        },
+        "B_full": {
+          "limit": 0.9996642108845415,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8399082568807339,
+          "week_pr_auc": 0.026537782628614545,
+          "val_week_pr_auc": 0.04215589681510064,
+          "synthetic_session_roc_auc": 0.9211788800864241,
+          "synthetic_session_pr_auc": 0.13908907835510817,
+          "synthetic_attack_share": 0.017686593562079942
+        },
+        "C_full": {
+          "limit": 0.3592723961563143,
+          "T2_normal_weeks_flagged": 0.045871559633027525,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9568807339449541,
+          "week_pr_auc": 0.5356098579782791,
+          "val_week_pr_auc": 0.06647742183057836,
+          "synthetic_session_roc_auc": 0.9308624414836154,
+          "synthetic_session_pr_auc": 0.6588145345440222,
+          "synthetic_attack_share": 0.017686593562079942
+        },
+        "D_full": {
+          "limit": 0.19865068021159257,
+          "T2_normal_weeks_flagged": 0.031192660550458717,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9720183486238532,
+          "week_pr_auc": 0.16517857142857142,
+          "val_week_pr_auc": 0.08872179781491571
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_app"
+      },
+      "seconds": 274.5
+    },
+    "1": {
+      "Caregiver": {
+        "val_insiders": 17,
+        "A_current": {
+          "limit": 0.3684816914981335,
+          "T2_normal_weeks_flagged": 0.04198062432723358,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.17647058823529413,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7634457173612179,
+          "week_pr_auc": 0.011963809358874328,
+          "val_week_pr_auc": 0.024763551222447673,
+          "synthetic_session_roc_auc": 0.8581274042131684,
+          "synthetic_session_pr_auc": 0.028180680048394934,
+          "synthetic_attack_share": 0.003340273679756828
+        },
+        "B_app": {
+          "limit": 0.9144673755365128,
+          "T2_normal_weeks_flagged": 0.04828540673535291,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.47058823529411764,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7808876672305091,
+          "week_pr_auc": 0.013903900391529882,
+          "val_week_pr_auc": 0.02822584370657442,
+          "synthetic_session_roc_auc": 0.9175164501245628,
+          "synthetic_session_pr_auc": 0.0328474958492556,
+          "synthetic_attack_share": 0.003340273679756828
+        },
+        "C_app": {
+          "limit": 0.9318692389959772,
+          "T2_normal_weeks_flagged": 0.016146393972012917,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.6470588235294118,
+          "T3_precision_top10": 0.5,
+          "week_roc_auc": 0.9739408734430263,
+          "week_pr_auc": 0.22363515338936857,
+          "val_week_pr_auc": 0.1871233806585128,
+          "synthetic_session_roc_auc": 0.8251267786057146,
+          "synthetic_session_pr_auc": 0.019834549049163788,
+          "synthetic_attack_share": 0.003340273679756828
+        },
+        "D_app": {
+          "limit": 0.8373565581962198,
+          "T2_normal_weeks_flagged": 0.021528525296017224,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.6470588235294118,
+          "T3_precision_top10": 0.7,
+          "week_roc_auc": 0.9392266069506382,
+          "week_pr_auc": 0.300856417991354,
+          "val_week_pr_auc": 0.23819867250398055
+        },
+        "B_full": {
+          "limit": 0.9296022514842898,
+          "T2_normal_weeks_flagged": 0.02621866830693526,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.29411764705882354,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8048722704905428,
+          "week_pr_auc": 0.01646051481221971,
+          "val_week_pr_auc": 0.03396965909969183,
+          "synthetic_session_roc_auc": 0.8885619779622327,
+          "synthetic_session_pr_auc": 0.027985332198736747,
+          "synthetic_attack_share": 0.003340273679756828
+        },
+        "C_full": {
+          "limit": 0.5287066058545464,
+          "T2_normal_weeks_flagged": 0.021451637705674303,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.9411764705882353,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9808501845302168,
+          "week_pr_auc": 0.8155406189886105,
+          "val_week_pr_auc": 0.668724096462673,
+          "synthetic_session_roc_auc": 0.7523698606161489,
+          "synthetic_session_pr_auc": 0.018138650290118862,
+          "synthetic_attack_share": 0.003340273679756828
+        },
+        "D_full": {
+          "limit": 0.14609748170594702,
+          "T2_normal_weeks_flagged": 0.02975549746270952,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.9411764705882353,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9583797862524988,
+          "week_pr_auc": 0.7567398293013695,
+          "val_week_pr_auc": 0.6713385484830131
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_full"
+      },
+      "SecurityAuditor": {
+        "val_insiders": 0,
+        "A_current": {
+          "limit": 0.8109182324466571,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8882783882783883,
+          "week_pr_auc": 0.5158730158730158,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9196489657915672,
+          "synthetic_session_pr_auc": 0.8001945721156672,
+          "synthetic_attack_share": 0.15182186234817813
+        },
+        "B_app": {
+          "limit": 0.9914436680275771,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9157509157509157,
+          "week_pr_auc": 0.5208333333333334,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9002555688146381,
+          "synthetic_session_pr_auc": 0.7357327648093183,
+          "synthetic_attack_share": 0.15182186234817813
+        },
+        "C_app": {
+          "limit": 0.28222303014707073,
+          "T2_normal_weeks_flagged": 0.01098901098901099,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9089518695306285,
+          "synthetic_session_pr_auc": 0.7949287929668368,
+          "synthetic_attack_share": 0.15182186234817813
+        },
+        "D_app": {
+          "limit": 0.28035540805385883,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null
+        },
+        "B_full": {
+          "limit": 0.984343622414644,
+          "T2_normal_weeks_flagged": 0.003663003663003663,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9706959706959707,
+          "week_pr_auc": 0.5555555555555556,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9146569212410501,
+          "synthetic_session_pr_auc": 0.7090618883957877,
+          "synthetic_attack_share": 0.15182186234817813
+        },
+        "C_full": {
+          "limit": 0.3352974221061842,
+          "T2_normal_weeks_flagged": 0.01098901098901099,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9427824184566428,
+          "synthetic_session_pr_auc": 0.8126633284102749,
+          "synthetic_attack_share": 0.15182186234817813
+        },
+        "D_full": {
+          "limit": 0.16929064750814582,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null
+        },
+        "chosen_app": "A_current",
+        "chosen_full": "A_current"
+      },
+      "SysAdmin": {
+        "val_insiders": 3,
+        "A_current": {
+          "limit": 0.22806643990869502,
+          "T2_normal_weeks_flagged": 0.2145922746781116,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.75,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.8898426323319027,
+          "week_pr_auc": 0.15393659342345656,
+          "val_week_pr_auc": 0.5404411764705882,
+          "synthetic_session_roc_auc": 0.9072307288935502,
+          "synthetic_session_pr_auc": 0.507947348062471,
+          "synthetic_attack_share": 0.02054442732408834
+        },
+        "B_app": {
+          "limit": 0.9884191753779892,
+          "T2_normal_weeks_flagged": 0.09656652360515021,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.3,
+          "week_roc_auc": 0.9091559370529327,
+          "week_pr_auc": 0.18802036625465737,
+          "val_week_pr_auc": 0.09238477501092181,
+          "synthetic_session_roc_auc": 0.9043772941793392,
+          "synthetic_session_pr_auc": 0.1992103275198236,
+          "synthetic_attack_share": 0.02054442732408834
+        },
+        "C_app": {
+          "limit": 0.6138200909785801,
+          "T2_normal_weeks_flagged": 0.02575107296137339,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.7194206008583691,
+          "week_pr_auc": 0.14660335794725374,
+          "val_week_pr_auc": 0.21843434343434343,
+          "synthetic_session_roc_auc": 0.9493198741478762,
+          "synthetic_session_pr_auc": 0.42761583909663137,
+          "synthetic_attack_share": 0.02054442732408834
+        },
+        "D_app": {
+          "limit": 0.22009954866844023,
+          "T2_normal_weeks_flagged": 0.0407725321888412,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.7485693848354793,
+          "week_pr_auc": 0.07119667247062228,
+          "val_week_pr_auc": 0.08301657310879444
+        },
+        "B_full": {
+          "limit": 0.9911462305771158,
+          "T2_normal_weeks_flagged": 0.06437768240343347,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.846030042918455,
+          "week_pr_auc": 0.08170088007049056,
+          "val_week_pr_auc": 0.045192042000552636,
+          "synthetic_session_roc_auc": 0.9546796014682748,
+          "synthetic_session_pr_auc": 0.29622191850587276,
+          "synthetic_attack_share": 0.02054442732408834
+        },
+        "C_full": {
+          "limit": 0.22069198162214385,
+          "T2_normal_weeks_flagged": 0.05150214592274678,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.75,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.6677396280400573,
+          "week_pr_auc": 0.08522037510727827,
+          "val_week_pr_auc": 0.15005375059722886,
+          "synthetic_session_roc_auc": 0.9890450970110121,
+          "synthetic_session_pr_auc": 0.8799326201710268,
+          "synthetic_attack_share": 0.02054442732408834
+        },
+        "D_full": {
+          "limit": 0.13842899843740433,
+          "T2_normal_weeks_flagged": 0.02575107296137339,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.8059728183118742,
+          "week_pr_auc": 0.1735928652536362,
+          "val_week_pr_auc": 0.270839277985284
+        },
+        "chosen_app": "A_current",
+        "chosen_full": "A_current"
+      },
+      "seconds": 89.0
+    },
+    "2": {
+      "Caregiver": {
+        "val_insiders": 17,
+        "A_current": {
+          "limit": 0.39441641243353714,
+          "T2_normal_weeks_flagged": 0.013928654337228197,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.17647058823529413,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.823611105454575,
+          "week_pr_auc": 0.022519442857746052,
+          "val_week_pr_auc": 0.017640137908840718,
+          "synthetic_session_roc_auc": 0.9402204716489966,
+          "synthetic_session_pr_auc": 0.13013736863882863,
+          "synthetic_attack_share": 0.0023609405987345356
+        },
+        "B_app": {
+          "limit": 0.9302244687975291,
+          "T2_normal_weeks_flagged": 0.017178673682581445,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.35294117647058826,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8090723597665526,
+          "week_pr_auc": 0.01997486670707506,
+          "val_week_pr_auc": 0.016207689756711552,
+          "synthetic_session_roc_auc": 0.9369440434494509,
+          "synthetic_session_pr_auc": 0.07299860908030198,
+          "synthetic_attack_share": 0.0023609405987345356
+        },
+        "C_app": {
+          "limit": 0.9596989672477025,
+          "T2_normal_weeks_flagged": 0.013696510098274394,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.47058823529411764,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9242403385233182,
+          "week_pr_auc": 0.12317991152910719,
+          "val_week_pr_auc": 0.16637859893166992,
+          "synthetic_session_roc_auc": 0.9156793709769028,
+          "synthetic_session_pr_auc": 0.01331837027463311,
+          "synthetic_attack_share": 0.0023609405987345356
+        },
+        "D_app": {
+          "limit": 0.771110877029069,
+          "T2_normal_weeks_flagged": 0.02305966106941113,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7647058823529411,
+          "T3_precision_top10": 0.7,
+          "week_roc_auc": 0.7927872377686459,
+          "week_pr_auc": 0.1665525158682655,
+          "val_week_pr_auc": 0.37292316829549726
+        },
+        "B_full": {
+          "limit": 0.9347822963097463,
+          "T2_normal_weeks_flagged": 0.019345353246150276,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.35294117647058826,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.8259622785975229,
+          "week_pr_auc": 0.02597835174310125,
+          "val_week_pr_auc": 0.019245707630610478,
+          "synthetic_session_roc_auc": 0.8747842318250663,
+          "synthetic_session_pr_auc": 0.042236313725207135,
+          "synthetic_attack_share": 0.0023609405987345356
+        },
+        "C_full": {
+          "limit": 0.3627607054689852,
+          "T2_normal_weeks_flagged": 0.014470324228120406,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7647058823529411,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9351763685310157,
+          "week_pr_auc": 0.6139680984057443,
+          "val_week_pr_auc": 0.8341653871044445,
+          "synthetic_session_roc_auc": 0.8633613569670578,
+          "synthetic_session_pr_auc": 0.011519572931019555,
+          "synthetic_attack_share": 0.0023609405987345356
+        },
+        "D_full": {
+          "limit": 0.002953412520287616,
+          "T2_normal_weeks_flagged": 0.021666795635688307,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.8235294117647058,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9321886314486207,
+          "week_pr_auc": 0.5840400922803956,
+          "val_week_pr_auc": 0.8512836997725197
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_full"
+      },
+      "SecurityAuditor": {
+        "val_insiders": 1,
+        "A_current": {
+          "limit": 0.1732119166403628,
+          "T2_normal_weeks_flagged": 0.21180555555555555,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.5125,
+          "synthetic_session_roc_auc": 0.9030580952380951,
+          "synthetic_session_pr_auc": 0.7351654502168407,
+          "synthetic_attack_share": 0.14634146341463414
+        },
+        "B_app": {
+          "limit": 0.9244641898369151,
+          "T2_normal_weeks_flagged": 0.11458333333333333,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.625,
+          "synthetic_session_roc_auc": 0.8767914285714287,
+          "synthetic_session_pr_auc": 0.7032392991909068,
+          "synthetic_attack_share": 0.14634146341463414
+        },
+        "C_app": {
+          "limit": 0.10821598790457808,
+          "T2_normal_weeks_flagged": 0.034722222222222224,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 1.0,
+          "synthetic_session_roc_auc": 0.831167619047619,
+          "synthetic_session_pr_auc": 0.6316321887535629,
+          "synthetic_attack_share": 0.14634146341463414
+        },
+        "D_app": {
+          "limit": 0.024692799176426253,
+          "T2_normal_weeks_flagged": 0.03125,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 1.0
+        },
+        "B_full": {
+          "limit": 0.9453874073336496,
+          "T2_normal_weeks_flagged": 0.013888888888888888,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.625,
+          "synthetic_session_roc_auc": 0.9099200000000001,
+          "synthetic_session_pr_auc": 0.7425529687040524,
+          "synthetic_attack_share": 0.14634146341463414
+        },
+        "C_full": {
+          "limit": 0.06686939225097552,
+          "T2_normal_weeks_flagged": 0.013888888888888888,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 1.0,
+          "synthetic_session_roc_auc": 0.9726438095238095,
+          "synthetic_session_pr_auc": 0.9057368225033753,
+          "synthetic_attack_share": 0.14634146341463414
+        },
+        "D_full": {
+          "limit": 0.000173410552983596,
+          "T2_normal_weeks_flagged": 0.03125,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 1.0
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_full"
+      },
+      "SysAdmin": {
+        "val_insiders": 3,
+        "A_current": {
+          "limit": 0.5159442019758168,
+          "T2_normal_weeks_flagged": 0.009025270758122744,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.8785059705637324,
+          "week_pr_auc": 0.28133792012982967,
+          "val_week_pr_auc": 0.023052038604024584,
+          "synthetic_session_roc_auc": 0.8877906735320986,
+          "synthetic_session_pr_auc": 0.45961396642732777,
+          "synthetic_attack_share": 0.016338534433461317
+        },
+        "B_app": {
+          "limit": 0.9973008295798215,
+          "T2_normal_weeks_flagged": 0.0036101083032490976,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.4,
+          "week_roc_auc": 0.8711469036378784,
+          "week_pr_auc": 0.19783594624880155,
+          "val_week_pr_auc": 0.02611909268806136,
+          "synthetic_session_roc_auc": 0.8455223818619716,
+          "synthetic_session_pr_auc": 0.15864133223992402,
+          "synthetic_attack_share": 0.016338534433461317
+        },
+        "C_app": {
+          "limit": 0.7241336296273155,
+          "T2_normal_weeks_flagged": 0.0018050541516245488,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.861843932241044,
+          "week_pr_auc": 0.15575706306569012,
+          "val_week_pr_auc": 0.10212302987532346,
+          "synthetic_session_roc_auc": 0.841516900589652,
+          "synthetic_session_pr_auc": 0.295493286756287,
+          "synthetic_attack_share": 0.016338534433461317
+        },
+        "D_app": {
+          "limit": 0.5349933582646945,
+          "T2_normal_weeks_flagged": 0.0036101083032490976,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.4,
+          "week_roc_auc": 0.810122188281033,
+          "week_pr_auc": 0.2369358604572661,
+          "val_week_pr_auc": 0.55
+        },
+        "B_full": {
+          "limit": 0.9958804108655628,
+          "T2_normal_weeks_flagged": 0.010830324909747292,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8525409608442099,
+          "week_pr_auc": 0.14183795167464097,
+          "val_week_pr_auc": 0.025894180564797503,
+          "synthetic_session_roc_auc": 0.9148667054231376,
+          "synthetic_session_pr_auc": 0.21476936733036808,
+          "synthetic_attack_share": 0.016338534433461317
+        },
+        "C_full": {
+          "limit": 0.3962352727471395,
+          "T2_normal_weeks_flagged": 0.018050541516245487,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.7148014440433212,
+          "week_pr_auc": 0.1142713935494964,
+          "val_week_pr_auc": 0.4666666666666667,
+          "synthetic_session_roc_auc": 0.9430537330786479,
+          "synthetic_session_pr_auc": 0.6492873331930967,
+          "synthetic_attack_share": 0.016338534433461317
+        },
+        "D_full": {
+          "limit": 0.0165192766581585,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.3,
+          "week_roc_auc": 0.7309080810885865,
+          "week_pr_auc": 0.24778301002651948,
+          "val_week_pr_auc": 1.0
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_full"
+      },
+      "seconds": 85.0
+    },
+    "3": {
+      "Caregiver": {
+        "val_insiders": 17,
+        "A_current": {
+          "limit": 0.3633102978541378,
+          "T2_normal_weeks_flagged": 0.027236750213393342,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7915057679413886,
+          "week_pr_auc": 0.015109122430820394,
+          "val_week_pr_auc": 0.016171877301081553,
+          "synthetic_session_roc_auc": 0.8032153038942134,
+          "synthetic_session_pr_auc": 0.12399816712264884,
+          "synthetic_attack_share": 0.0024204284158296017
+        },
+        "B_app": {
+          "limit": 0.929686524492181,
+          "T2_normal_weeks_flagged": 0.01893380926515093,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.35294117647058826,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8200717036504865,
+          "week_pr_auc": 0.020823413808377496,
+          "val_week_pr_auc": 0.03244137371977706,
+          "synthetic_session_roc_auc": 0.9412139390998423,
+          "synthetic_session_pr_auc": 0.04849442883550415,
+          "synthetic_attack_share": 0.0024204284158296017
+        },
+        "C_app": {
+          "limit": 0.9166718124511212,
+          "T2_normal_weeks_flagged": 0.017537052843951267,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.5294117647058824,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9770258853317034,
+          "week_pr_auc": 0.19682268840075207,
+          "val_week_pr_auc": 0.16282604289402597,
+          "synthetic_session_roc_auc": 0.8816660803105666,
+          "synthetic_session_pr_auc": 0.013064443239921878,
+          "synthetic_attack_share": 0.0024204284158296017
+        },
+        "D_app": {
+          "limit": 0.9096832209057623,
+          "T2_normal_weeks_flagged": 0.00341429347404361,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.6470588235294118,
+          "T3_precision_top10": 0.7,
+          "week_roc_auc": 0.9833884508646026,
+          "week_pr_auc": 0.35955551107950323,
+          "val_week_pr_auc": 0.2211399038755504
+        },
+        "B_full": {
+          "limit": 0.9333509756927492,
+          "T2_normal_weeks_flagged": 0.019864980212617366,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.35294117647058826,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8267974084152394,
+          "week_pr_auc": 0.02075185649541918,
+          "val_week_pr_auc": 0.023762670234063827,
+          "synthetic_session_roc_auc": 0.9461561324760402,
+          "synthetic_session_pr_auc": 0.05252155496406459,
+          "synthetic_attack_share": 0.0024204284158296017
+        },
+        "C_full": {
+          "limit": 0.5648886401281199,
+          "T2_normal_weeks_flagged": 0.019864980212617366,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.6470588235294118,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9925506324202684,
+          "week_pr_auc": 0.8247076872759489,
+          "val_week_pr_auc": 0.7138407876075434,
+          "synthetic_session_roc_auc": 0.9213393788669174,
+          "synthetic_session_pr_auc": 0.17262906361101335,
+          "synthetic_attack_share": 0.0024204284158296017
+        },
+        "D_full": {
+          "limit": 0.3941463731512228,
+          "T2_normal_weeks_flagged": 0.02413284705517188,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.8235294117647058,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9918967202380589,
+          "week_pr_auc": 0.8095816608329046,
+          "val_week_pr_auc": 0.6883474578577563
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "C_full"
+      },
+      "SecurityAuditor": {
+        "val_insiders": 1,
+        "A_current": {
+          "limit": 0.44637772103257284,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.045535714285714284,
+          "synthetic_session_roc_auc": 0.9224609443566791,
+          "synthetic_session_pr_auc": 0.8508137027383956,
+          "synthetic_attack_share": 0.1364256480218281
+        },
+        "B_app": {
+          "limit": 0.9611468643202697,
+          "T2_normal_weeks_flagged": 0.02768166089965398,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.5294117647058824,
+          "synthetic_session_roc_auc": 0.8846173424609443,
+          "synthetic_session_pr_auc": 0.6556898552791953,
+          "synthetic_attack_share": 0.1364256480218281
+        },
+        "C_app": {
+          "limit": 0.06647449139500153,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.19166666666666665,
+          "synthetic_session_roc_auc": 0.8800947867298579,
+          "synthetic_session_pr_auc": 0.8184782958533575,
+          "synthetic_attack_share": 0.1364256480218281
+        },
+        "D_app": {
+          "limit": 0.4759190676718447,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.625
+        },
+        "B_full": {
+          "limit": 0.9807617837645909,
+          "T2_normal_weeks_flagged": 0.02422145328719723,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.512987012987013,
+          "synthetic_session_roc_auc": 0.9170572230998771,
+          "synthetic_session_pr_auc": 0.669401383809562,
+          "synthetic_attack_share": 0.1364256480218281
+        },
+        "C_full": {
+          "limit": 0.10596243464209153,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 1.0,
+          "synthetic_session_roc_auc": 0.9199666491135687,
+          "synthetic_session_pr_auc": 0.8691128189030305,
+          "synthetic_attack_share": 0.1364256480218281
+        },
+        "D_full": {
+          "limit": 0.3178662912661175,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": null,
+          "val_week_pr_auc": 0.35
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_app"
+      },
+      "SysAdmin": {
+        "val_insiders": 3,
+        "A_current": {
+          "limit": 0.47057697235273005,
+          "T2_normal_weeks_flagged": 0.15105162523900573,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7404397705544933,
+          "week_pr_auc": 0.017119970822197163,
+          "val_week_pr_auc": 0.04639000845897398,
+          "synthetic_session_roc_auc": 0.8546129002059539,
+          "synthetic_session_pr_auc": 0.16888268624882713,
+          "synthetic_attack_share": 0.01837897445322551
+        },
+        "B_app": {
+          "limit": 0.9959763954847396,
+          "T2_normal_weeks_flagged": 0.1491395793499044,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.6046845124282982,
+          "week_pr_auc": 0.01413707734213352,
+          "val_week_pr_auc": 0.029126513466765508,
+          "synthetic_session_roc_auc": 0.8361854053548026,
+          "synthetic_session_pr_auc": 0.05663499960448631,
+          "synthetic_attack_share": 0.01837897445322551
+        },
+        "C_app": {
+          "limit": 0.4675653227446726,
+          "T2_normal_weeks_flagged": 0.11281070745697896,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7265774378585086,
+          "week_pr_auc": 0.04068449545960667,
+          "val_week_pr_auc": 0.04238044911970244,
+          "synthetic_session_roc_auc": 0.9433177307620296,
+          "synthetic_session_pr_auc": 0.24838002897227054,
+          "synthetic_attack_share": 0.01837897445322551
+        },
+        "D_app": {
+          "limit": 0.18053322544050734,
+          "T2_normal_weeks_flagged": 0.13193116634799235,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.75,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.9077437858508605,
+          "week_pr_auc": 0.056810897435897435,
+          "val_week_pr_auc": 0.6095238095238096
+        },
+        "B_full": {
+          "limit": 0.9937759272409865,
+          "T2_normal_weeks_flagged": 0.14149139579349904,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7065009560229445,
+          "week_pr_auc": 0.01582902912166809,
+          "val_week_pr_auc": 0.0779030910609858,
+          "synthetic_session_roc_auc": 0.9015643137989141,
+          "synthetic_session_pr_auc": 0.12874050387316352,
+          "synthetic_attack_share": 0.01837897445322551
+        },
+        "C_full": {
+          "limit": 0.45214428045853755,
+          "T2_normal_weeks_flagged": 0.06883365200764818,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7409177820267686,
+          "week_pr_auc": 0.02604801244507127,
+          "val_week_pr_auc": 0.022831443884075465,
+          "synthetic_session_roc_auc": 0.9695515821007302,
+          "synthetic_session_pr_auc": 0.614003651936298,
+          "synthetic_attack_share": 0.01837897445322551
+        },
+        "D_full": {
+          "limit": 0.1742791021267692,
+          "T2_normal_weeks_flagged": 0.0745697896749522,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.75,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9340344168260039,
+          "week_pr_auc": 0.3500700280112045,
+          "val_week_pr_auc": 0.5277777777777778
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_app"
+      },
+      "seconds": 90.7
+    },
+    "4": {
+      "Caregiver": {
+        "val_insiders": 17,
+        "A_current": {
+          "limit": 0.3704428183232727,
+          "T2_normal_weeks_flagged": 0.021228790578755714,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.29411764705882354,
+          "T3_precision_top10": 0.3,
+          "week_roc_auc": 0.8117564623336686,
+          "week_pr_auc": 0.03198042217388497,
+          "val_week_pr_auc": 0.03855080965674454,
+          "synthetic_session_roc_auc": 0.9802003624185704,
+          "synthetic_session_pr_auc": 0.2708603099503008,
+          "synthetic_attack_share": 0.0011455803510058195
+        },
+        "B_app": {
+          "limit": 0.9235002103654931,
+          "T2_normal_weeks_flagged": 0.026032385527233283,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.29411764705882354,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7843873798781988,
+          "week_pr_auc": 0.015791373046989958,
+          "val_week_pr_auc": 0.023758408045434658,
+          "synthetic_session_roc_auc": 0.9920848242958069,
+          "synthetic_session_pr_auc": 0.07409917440260595,
+          "synthetic_attack_share": 0.0011455803510058195
+        },
+        "C_app": {
+          "limit": 0.9471682811352137,
+          "T2_normal_weeks_flagged": 0.012086464709072596,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.47058823529411764,
+          "T3_precision_top10": 0.4,
+          "week_roc_auc": 0.955960518910856,
+          "week_pr_auc": 0.17367576672078627,
+          "val_week_pr_auc": 0.19205405784147722,
+          "synthetic_session_roc_auc": 0.8567844527020828,
+          "synthetic_session_pr_auc": 0.004024150847697515,
+          "synthetic_attack_share": 0.0011455803510058195
+        },
+        "D_app": {
+          "limit": 0.8241945048607929,
+          "T2_normal_weeks_flagged": 0.009142325869683117,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7058823529411765,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9641603457362348,
+          "week_pr_auc": 0.398558155803914,
+          "val_week_pr_auc": 0.33066950082405167
+        },
+        "B_full": {
+          "limit": 0.935800639433545,
+          "T2_normal_weeks_flagged": 0.017664833036336872,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.35294117647058826,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8230873101485946,
+          "week_pr_auc": 0.020636900724517404,
+          "val_week_pr_auc": 0.030794215152210303,
+          "synthetic_session_roc_auc": 0.9872652307551151,
+          "synthetic_session_pr_auc": 0.04491398067512263,
+          "synthetic_attack_share": 0.0011455803510058195
+        },
+        "C_full": {
+          "limit": 0.4840574383196062,
+          "T2_normal_weeks_flagged": 0.03951344231812195,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.8235294117647058,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.962514590855801,
+          "week_pr_auc": 0.65626521932136,
+          "val_week_pr_auc": 0.7904996910575305,
+          "synthetic_session_roc_auc": 0.8993422561702908,
+          "synthetic_session_pr_auc": 0.007518057060290675,
+          "synthetic_attack_share": 0.0011455803510058195
+        },
+        "D_full": {
+          "limit": 0.18776710326371995,
+          "T2_normal_weeks_flagged": 0.027426977609049354,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.974044240411328,
+          "week_pr_auc": 0.6857505334926529,
+          "val_week_pr_auc": 0.7722272254609243
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "C_full"
+      },
+      "SecurityAuditor": {
+        "val_insiders": 0,
+        "A_current": {
+          "limit": 0.09240282262492051,
+          "T2_normal_weeks_flagged": 0.16727272727272727,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9632252922422954,
+          "synthetic_session_pr_auc": 0.8992061875918581,
+          "synthetic_attack_share": 0.13748854262144822
+        },
+        "B_app": {
+          "limit": 0.8729515926703622,
+          "T2_normal_weeks_flagged": 0.27636363636363637,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9636363636363636,
+          "week_pr_auc": 0.5454545454545454,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.8952391073326248,
+          "synthetic_session_pr_auc": 0.6667812491598487,
+          "synthetic_attack_share": 0.13748854262144822
+        },
+        "C_app": {
+          "limit": 0.023304266211310733,
+          "T2_normal_weeks_flagged": 0.05090909090909091,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.981865037194474,
+          "synthetic_session_pr_auc": 0.9297732396413818,
+          "synthetic_attack_share": 0.13748854262144822
+        },
+        "D_app": {
+          "limit": 0.017461077578945796,
+          "T2_normal_weeks_flagged": 0.04363636363636364,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9872727272727272,
+          "week_pr_auc": 0.6111111111111112,
+          "val_week_pr_auc": null
+        },
+        "B_full": {
+          "limit": 0.96696732451931,
+          "T2_normal_weeks_flagged": 0.11636363636363636,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9218181818181819,
+          "week_pr_auc": 0.5222222222222223,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.8600929861849097,
+          "synthetic_session_pr_auc": 0.5933353526357469,
+          "synthetic_attack_share": 0.13748854262144822
+        },
+        "C_full": {
+          "limit": 0.0841541714324139,
+          "T2_normal_weeks_flagged": 0.02181818181818182,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null,
+          "synthetic_session_roc_auc": 0.9694633368756642,
+          "synthetic_session_pr_auc": 0.8544620326260026,
+          "synthetic_attack_share": 0.13748854262144822
+        },
+        "D_full": {
+          "limit": 0.015058355159082517,
+          "T2_normal_weeks_flagged": 0.04,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "val_week_pr_auc": null
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_app"
+      },
+      "SysAdmin": {
+        "val_insiders": 3,
+        "A_current": {
+          "limit": 0.907633510575748,
+          "T2_normal_weeks_flagged": 0.011764705882352941,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7906162464985994,
+          "week_pr_auc": 0.0473965047289961,
+          "val_week_pr_auc": 0.01170376763417083,
+          "synthetic_session_roc_auc": 0.8268307102340817,
+          "synthetic_session_pr_auc": 0.11850723034034243,
+          "synthetic_attack_share": 0.015726979633561376
+        },
+        "B_app": {
+          "limit": 0.9998113496545935,
+          "T2_normal_weeks_flagged": 0.011764705882352941,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8429271708683473,
+          "week_pr_auc": 0.06423602463552534,
+          "val_week_pr_auc": 0.009667378333407053,
+          "synthetic_session_roc_auc": 0.7481613006311416,
+          "synthetic_session_pr_auc": 0.0284937960286844,
+          "synthetic_attack_share": 0.015726979633561376
+        },
+        "C_app": {
+          "limit": 0.7335709178243804,
+          "T2_normal_weeks_flagged": 0.011764705882352941,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.3,
+          "week_roc_auc": 0.8623249299719887,
+          "week_pr_auc": 0.1804486935610676,
+          "val_week_pr_auc": 0.035930190198634866,
+          "synthetic_session_roc_auc": 0.8541191978908684,
+          "synthetic_session_pr_auc": 0.10109332766397079,
+          "synthetic_attack_share": 0.015726979633561376
+        },
+        "D_app": {
+          "limit": 0.3602823064185037,
+          "T2_normal_weeks_flagged": 0.015126050420168067,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.7712885154061625,
+          "week_pr_auc": 0.21847543029024027,
+          "val_week_pr_auc": 0.32214826896769444
+        },
+        "B_full": {
+          "limit": 0.9985078203614409,
+          "T2_normal_weeks_flagged": 0.010084033613445379,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8291316526610645,
+          "week_pr_auc": 0.06052856352694327,
+          "val_week_pr_auc": 0.01031517686548976,
+          "synthetic_session_roc_auc": 0.8731133658224814,
+          "synthetic_session_pr_auc": 0.10355001420143412,
+          "synthetic_attack_share": 0.015726979633561376
+        },
+        "C_full": {
+          "limit": 0.9033721669005249,
+          "T2_normal_weeks_flagged": 0.013445378151260505,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8481792717086835,
+          "week_pr_auc": 0.06749379977953071,
+          "val_week_pr_auc": 0.03975277482349247,
+          "synthetic_session_roc_auc": 0.9073963409762722,
+          "synthetic_session_pr_auc": 0.3388229794500462,
+          "synthetic_attack_share": 0.015726979633561376
+        },
+        "D_full": {
+          "limit": 0.5400473158721606,
+          "T2_normal_weeks_flagged": 0.01680672268907563,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.75,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.8262605042016807,
+          "week_pr_auc": 0.22908796229929684,
+          "val_week_pr_auc": 0.2391978429389956
+        },
+        "chosen_app": "D_app",
+        "chosen_full": "D_app"
+      },
+      "seconds": 180.4
+    }
+  }
+}

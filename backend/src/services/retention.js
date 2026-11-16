@@ -55,7 +55,8 @@ async function applyRetention() {
     for (const id of ids) {
       await client.query(
         `UPDATE child_identifiers
-         SET full_name_enc = $1, date_of_birth_enc = $2, family_background_enc = NULL
+         SET full_name_enc = $1, date_of_birth_enc = $2, family_background_enc = NULL,
+             name_index = NULL, name_index_key_id = NULL
          WHERE child_profile_id = $3`,
         [encryptField(ANONYMISED_NAME), encryptField(ANONYMISED_DOB), id]
       );

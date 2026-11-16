@@ -84,7 +84,9 @@ async function issueSession({ userId, role, email, fullName, mustChangePassword,
   // token so the frontend can route straight to the right dashboard (or
   // the forced change-password screen) and greet the person by name
   // without a second round trip.
-  return res.json({ token, role, email, fullName, mustChangePassword });
+  const { rows: pausedRows } = await db.query(
+    "SELECT 1 FROM account_cases WHERE user_id = $1 AND status IN ('paused', 'explained')", [userId]);
+  return res.json({ token, role, email, fullName, mustChangePassword, paused: pausedRows.length > 0 });
 }
 
 async function login(req, res) {
@@ -242,6 +244,7 @@ async function me(req, res) {
     fullName: rows[0] ? rows[0].full_name : undefined,
     mustChangePassword: rows[0] ? rows[0].must_change_password : req.user.mustChangePassword,
     lastSignInAt: previous[0] ? previous[0].issued_at : null,
+    paused: req.user.paused === true,
   });
 }
 

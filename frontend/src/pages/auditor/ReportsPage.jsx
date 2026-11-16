@@ -59,7 +59,7 @@ export default function ReportsPage() {
         subtitle="Download records as CSV (for Excel) or PDF (for printing). Every download is itself recorded in the audit log."
       />
 
-      <div className="p-8 max-w-4xl">
+      <div className="p-4 md:p-8 max-w-4xl">
         {error && <Alert className="mb-6">{error}</Alert>}
         {notice && <Alert variant="success" className="mb-6">{notice}</Alert>}
 

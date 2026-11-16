@@ -6,6 +6,7 @@
 // on the account owner's own honesty.
 const db = require('../config/db');
 const { logAction } = require('../utils/auditLog');
+const { sendBreachReportEmail } = require('../utils/mailer');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
 const { KNOWN_DEVICE_SQL, likelyReason, mainFactors } = require('../services/flagReason');
 
@@ -80,13 +81,13 @@ async function reviewFlagged(req, res) {
 }
 
 // POST /auditor/flagged-sessions/:riskScoreId/breach-decision
-// KDPA s.43: a breach with a real risk of harm must be reported to the Data
-// Commissioner within 72 hours of becoming aware of it. For a session the
-// auditor escalated, or whose owner said "This was NOT me", the auditor
-// records the decision -- notified the Commissioner, or assessed as no real
-// risk of harm -- with the reasoning. Recorded once and never changed: it is
+// KDPA s.43: a breach with a real risk of harm must be dealt with within 72
+// hours of becoming aware of it. For a session the auditor escalated, or
+// whose owner said "This was NOT me", the auditor records the decision --
+// reported to the System Administrators, or assessed as no real risk of
+// harm -- with the reasoning. Recorded once and never changed: it is
 // evidence of how the organisation handled a suspected breach.
-const BREACH_DECISIONS = ['notified_commissioner', 'no_real_risk'];
+const BREACH_DECISIONS = ['reported_to_admin', 'no_real_risk'];
 const BREACH_WINDOW_HOURS = 72;
 
 async function recordBreachDecision(req, res) {
@@ -131,6 +132,17 @@ async function recordBreachDecision(req, res) {
     detail: `risk_score_id=${riskScoreId}, decision=${decision}, hours_after_flag=${hours.toFixed(1)}, within_72h=${hours <= BREACH_WINDOW_HOURS}`,
     accessRequestId: risk.accessRequestId,
   });
+  if (decision === 'reported_to_admin') {
+    // The System Administrators are told at once. An e-mail failure must not
+    // undo the recorded decision.
+    const { rows: admins } = await db.query(
+      "SELECT u.email FROM users u JOIN roles r ON r.id = u.role_id WHERE r.name = 'SysAdmin' AND NOT u.is_locked");
+    const auditor = req.user.fullName || req.user.email || `user ${req.user.id}`;
+    for (const a of admins) {
+      sendBreachReportEmail(a.email, { decidedAt: rows[0].breach_decided_at, flaggedAt: flag.created_at, reason, auditor })
+        .catch((err) => console.error('[breach] report e-mail failed:', err.message));
+    }
+  }
   res.json({
     riskScoreId,
     breachDecision: decision,

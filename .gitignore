@@ -45,3 +45,11 @@ ml/scripts/*_err.txt
 # Editor settings (machine-specific paths)
 .vscode/
 *.code-workspace
+
+# Extra CERT data for the model experiments (13_, 14_): too large, and the
+# official files are downloadable from the CMU KiltHub page.
+ml/data/answers_dl/
+ml/data/r4.2_dl/
+ml/data/r5.2_dl/
+ml/data/processed/sessions_improved.csv
+ml/data/processed/*_experiment*.csv

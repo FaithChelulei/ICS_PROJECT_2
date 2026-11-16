@@ -42,6 +42,9 @@ jobs:
       - name: Install Python packages
         run: pip install -r requirements.txt
 
+      - name: Weekly review model checks (layer 2)
+        run: python ml/scripts/test_weekly.py
+
       - name: Frontend builds
         working-directory: frontend
         run: npm ci && npm run build

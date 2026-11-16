@@ -25,8 +25,32 @@ async function loadRiskScore(riskScoreId) {
   return rows[0] || null;
 }
 
+// The pages opened from the alert e-mail ("This was me" / "This was NOT
+// me"), in ChildGuard's own look: cream background, teal, a card. Inline
+// styles only (served by the API, outside the website).
 function htmlPage(message, extra = '') {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>ChildGuard</title></head><body style="font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 16px; text-align: center;"><p>${message}</p>${extra}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>ChildGuard</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #FBF6ED; color: #211C16;
+         font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif; padding: 24px; box-sizing: border-box; }
+  .card { width: 100%; max-width: 460px; background: #fff; border: 1px solid #EFE4D0; border-radius: 24px; padding: 36px 32px;
+          box-shadow: 0 10px 30px rgba(33, 28, 22, 0.06); text-align: center; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; color: #155242; margin-bottom: 22px; }
+  .logo { width: 36px; height: 36px; border-radius: 12px; background: #1F6D52; display: inline-flex; align-items: center; justify-content: center; }
+  .logo span { width: 7px; height: 7px; background: #fff; margin: 1px; display: inline-block; border-radius: 2px; }
+  .icon { width: 56px; height: 56px; border-radius: 18px; background: #EBF4F0; color: #1F6D52; font-size: 26px; display: flex;
+          align-items: center; justify-content: center; margin: 0 auto 16px; }
+  p { font-size: 17px; line-height: 1.55; margin: 0 0 20px; }
+  button { font: inherit; font-size: 16px; font-weight: 600; color: #fff; background: #1F6D52; border: 0; border-radius: 999px;
+           padding: 12px 26px; cursor: pointer; }
+  button:hover { background: #155242; }
+  .foot { margin-top: 18px; font-size: 13px; color: #374151; }
+</style></head><body><div class="card">
+<div class="brand"><span class="logo"><span></span><span></span></span>ChildGuard</div>
+<div class="icon">&#128274;</div>
+<p>${message}</p>${extra}
+<div class="foot">This page was opened from a ChildGuard security e-mail.</div>
+</div></body></html>`;
 }
 
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -62,7 +86,7 @@ async function showResponsePage(req, res) {
   return res.send(htmlPage(escapeHtml(question),
     `<form method="post" action="/risk-response/${riskScoreId}/${action}">`
     + `<input type="hidden" name="token" value="${escapeHtml(token)}">`
-    + `<button type="submit" style="font-size: 16px; padding: 10px 18px; cursor: pointer;">${escapeHtml(button)}</button></form>`));
+    + `<button type="submit">${escapeHtml(button)}</button></form>`));
 }
 
 // POST /risk-response/:riskScoreId/confirm -- the page's button.

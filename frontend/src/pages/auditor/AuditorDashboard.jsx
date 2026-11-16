@@ -9,7 +9,7 @@ const STATUS_COLOR = { pending: 'amber', reviewing: 'brand', confirmed: 'green',
 
 // KDPA s.43: a suspected breach -- a session the auditor escalated, or one
 // whose owner answered "This was NOT me" -- needs a recorded decision within
-// 72 hours of detection: Data Commissioner notified, or no real risk of harm.
+// 72 hours of detection: reported to the System Admin, or no real risk of harm.
 const BREACH_WINDOW_HOURS = 72;
 const isBreachCandidate = (s) => s.auditor_status === 'escalated' || s.owner_response === 'not_me';
 const hoursSince = (iso, to = Date.now()) => (new Date(to) - new Date(iso)) / 3600000;
@@ -85,7 +85,7 @@ function OverviewPanels({ overview: o }) {
 }
 
 const DECISION_LABEL = {
-  notified_commissioner: 'Data Commissioner notified',
+  reported_to_admin: 'Reported to the System Admin',
   no_real_risk: 'Assessed: no real risk of harm',
 };
 
@@ -134,7 +134,7 @@ function BreachPanel({ session: s, onRecorded, onError }) {
         className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-ink"
       >
         <option value="no_real_risk">No real risk of harm</option>
-        <option value="notified_commissioner">Data Commissioner notified</option>
+        <option value="reported_to_admin">Report to the System Admin</option>
       </select>
       <input
         required
@@ -156,6 +156,7 @@ export default function AuditorDashboard() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState(null);
   const [overview, setOverview] = useState(null);
+  const [openWhy, setOpenWhy] = useState({});
 
   async function load() {
     setLoading(true);
@@ -204,8 +205,14 @@ export default function AuditorDashboard() {
         }
       />
 
-      <div className="px-8 py-6">
+      <div className="px-4 py-6 md:px-8">
         {error && <Alert className="mb-6">{error}</Alert>}
+        {overview && overview.scoring && !overview.scoring.online && (
+          <Alert className="mb-6">
+            Risk scoring is offline since {new Date(overview.scoring.offlineSince).toLocaleString()}. Every action is still
+            recorded, but nothing is scored, so unusual activity will not sign anyone out until the scoring service is back.
+          </Alert>
+        )}
 
         {overview && <OverviewPanels overview={overview} />}
 
@@ -259,10 +266,28 @@ export default function AuditorDashboard() {
                           : `Likely reason (estimated, scored before evidence was stored): ${s.likely_reason}. Action: ${s.action_type}`
                       }
                     >
-                      <span className="block truncate text-ink">{s.likely_reason}</span>
-                      <span className="block truncate text-xs text-slate-400">
-                        {s.main_factors?.length ? s.main_factors[0].text : s.action_type}
-                      </span>
+                      {openWhy[s.risk_score_id] ? (
+                        <span className="block text-ink">
+                          <span className="block font-medium">{s.likely_reason}</span>
+                          {s.main_factors?.length ? (
+                            <span className="mt-1 block text-xs text-slate-600">
+                              What raised the score: {s.main_factors.map((f) => `${f.text} (+${f.raisedBy.toFixed(2)})`).join('; ')}.
+                            </span>
+                          ) : null}
+                          <span className="mt-1 block text-xs text-slate-600">Action: {s.action_type}</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="block truncate text-ink">{s.likely_reason}</span>
+                          <span className="block truncate text-xs text-slate-400">
+                            {s.main_factors?.length ? s.main_factors[0].text : s.action_type}
+                          </span>
+                        </>
+                      )}
+                      <button type="button" onClick={() => setOpenWhy({ ...openWhy, [s.risk_score_id]: !openWhy[s.risk_score_id] })}
+                        className="mt-0.5 text-xs font-semibold text-brand-600 hover:underline">
+                        {openWhy[s.risk_score_id] ? 'Show less' : 'Read more'}
+                      </button>
                     </span>
                     <span
                       className={`font-mono font-semibold ${

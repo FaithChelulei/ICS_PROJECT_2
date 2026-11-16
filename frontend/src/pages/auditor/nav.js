@@ -2,7 +2,7 @@
 // has to be added here).
 export const AUDITOR_NAV = [
   { to: '/', label: 'Flagged Sessions', icon: 'flag' },
+  { to: '/auditor/weekly-review', label: 'People to Review', icon: 'users' },
   { to: '/auditor/audit-log', label: 'Audit Log', icon: 'file' },
   { to: '/auditor/reports', label: 'Reports', icon: 'report' },
-  { to: '/auditor/risk-thresholds', label: 'Risk Thresholds', icon: 'shield' },
 ];

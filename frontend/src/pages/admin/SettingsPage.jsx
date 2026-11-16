@@ -44,7 +44,7 @@ export default function SettingsPage() {
   return (
     <Layout navItems={NAV} portalLabel="System Admin">
       <PageHeader title="System Settings" subtitle="Changes apply straight away and are written to the audit log" />
-      <div className="p-8 max-w-4xl space-y-5">
+      <div className="p-4 md:p-8 max-w-4xl space-y-5">
         {error && <Alert>{error}</Alert>}
         {message && <Alert variant="success">{message}</Alert>}
         {warning && <Alert variant="warning">{warning}</Alert>}

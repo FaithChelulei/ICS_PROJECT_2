@@ -7,6 +7,7 @@ const { getRetentionStatus } = require('../services/retention');
 const { wrappedKeyEntries } = require('../utils/keyVault');
 const { KNOWN_DEVICE_SQL, likelyReason } = require('../services/flagReason');
 const { TEST_ACCOUNT_LOCK_REASON } = require('./userManagementController');
+const { getScoringHealth } = require('../services/scoringHealth');
 
 const BREACH_WINDOW_HOURS = 72;
 
@@ -21,7 +22,7 @@ const ADMIN_ACTIVITY = {
 
 // GET /admin/overview
 async function adminOverview(req, res) {
-  const [pending, locked, users, activity, retention] = await Promise.all([
+  const [pending, locked, users, activity, retention, breaches] = await Promise.all([
     db.query("SELECT COUNT(*)::int AS n FROM registration_requests WHERE status = 'pending'"),
     db.query(
       "SELECT COUNT(*)::int AS n FROM users WHERE is_locked = TRUE AND COALESCE(locked_reason, '') NOT LIKE $1",
@@ -36,9 +37,26 @@ async function adminOverview(req, res) {
       [Object.keys(ADMIN_ACTIVITY)]
     ),
     getRetentionStatus(),
+    // Breaches the Security Auditors have reported to the admins (KDPA s.43),
+    // last 30 days. No child data: who decided, when, why, and the deadline.
+    db.query(
+      `SELECT rs.id, rs.created_at AS flagged_at, rs.breach_decided_at, rs.breach_decision_reason,
+              COALESCE(a.full_name, a.email) AS reported_by, fr.name AS flagged_role
+       FROM risk_scores rs
+       JOIN access_requests ar ON ar.id = rs.access_request_id
+       JOIN users fu ON fu.id = ar.user_id JOIN roles fr ON fr.id = fu.role_id
+       LEFT JOIN users a ON a.id = rs.breach_decided_by
+       WHERE rs.breach_decision = 'reported_to_admin' AND rs.breach_decided_at > now() - interval '30 days'
+       ORDER BY rs.breach_decided_at DESC LIMIT 10`
+    ),
   ]);
 
   res.json({
+    breachReports: breaches.rows.map((b) => ({
+      id: b.id, flaggedAt: b.flagged_at, reportedAt: b.breach_decided_at, reason: b.breach_decision_reason,
+      reportedBy: b.reported_by, flaggedRole: b.flagged_role,
+      deadline: new Date(new Date(b.flagged_at).getTime() + BREACH_WINDOW_HOURS * 3600000),
+    })),
     pendingRequests: pending.rows[0].n,
     lockedAccounts: locked.rows[0].n,
     activeUsers: users.rows,
@@ -46,6 +64,7 @@ async function adminOverview(req, res) {
     retentionDays: retention.retentionDays,
     keysInVault: wrappedKeyEntries().length > 0,
     recentActivity: activity.rows.map((a) => ({ label: ADMIN_ACTIVITY[a.action], at: a.created_at })),
+    scoring: getScoringHealth(),
   });
 }
 
@@ -100,6 +119,7 @@ async function auditorOverview(req, res) {
     breachHoursLeft: hoursLeft,
     flagsPerDay: perDay.rows,
     reasons: Object.entries(reasons).map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count),
+    scoring: getScoringHealth(),
   });
 }
 

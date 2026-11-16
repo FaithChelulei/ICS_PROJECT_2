@@ -12,6 +12,7 @@
 //                     events_prev_hour/day, but not scored on its own --
 //                     same reasoning as the Caregiver dashboard list.
 const { recordAndScore, logAccessRequest } = require('./riskEngine');
+const { isKnownDevice, BASELINE_ROLES } = require('./featureComputation');
 const { getPcName, getIpAddress } = require('../utils/requestMeta');
 
 const RISK_NOTICE =
@@ -23,7 +24,7 @@ const RISK_NOTICE =
 // actions already scored above the line, so SecurityAuditor was held at
 // log-only until it was calibrated at 0.65 (see docs/RISK_THRESHOLDS.md).
 // A role can be taken back to log-only by removing it from this list.
-const ROLES_SCORED_LIVE = ['Caregiver', 'SysAdmin', 'SecurityAuditor'];
+const ROLES_SCORED_LIVE = ['Caregiver', 'Educator', 'SysAdmin', 'SecurityAuditor'];
 
 function scoreAction(req, actionType, childProfileId = null) {
   if (!ROLES_SCORED_LIVE.includes(req.user.role)) {
@@ -51,9 +52,22 @@ function logOnlyAction(req, actionType, childProfileId = null) {
   });
 }
 
+// For pages that only LIST data (a caregiver's or educator's children, the
+// access page) and for sharing decisions: on a device this person has used
+// on an earlier day, logged only, as before -- ordinary browsing never signs
+// the owner out. On a device they have never used, scored like a data
+// action, so a stolen login is stopped on its first page, before any child's
+// name is shown. Roles without personal device baselines are unaffected.
+async function scoreIfNewDevice(req, actionType, childProfileId = null) {
+  if (BASELINE_ROLES.includes(req.user.role) && await isKnownDevice(req.user.id, getPcName(req))) {
+    return logOnlyAction(req, actionType, childProfileId);
+  }
+  return scoreAction(req, actionType, childProfileId);
+}
+
 // Spread into a JSON response: { ...riskFields(risk) }
 function riskFields(risk) {
   return risk && risk.flagged ? { riskNotice: RISK_NOTICE } : {};
 }
 
-module.exports = { scoreAction, logOnlyAction, riskFields, RISK_NOTICE };
+module.exports = { scoreAction, scoreIfNewDevice, logOnlyAction, riskFields, RISK_NOTICE };

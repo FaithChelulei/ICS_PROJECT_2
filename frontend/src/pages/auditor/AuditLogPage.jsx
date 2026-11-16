@@ -15,6 +15,7 @@ export default function AuditLogPage() {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [open, setOpen] = useState({});
 
   async function load(query) {
     setLoading(true);
@@ -47,7 +48,7 @@ export default function AuditLogPage() {
     <Layout navItems={NAV} portalLabel="Security Auditor" theme="dark">
       <PageHeader title="Audit Log" subtitle="A full record of access events" />
 
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {error && <Alert className="mb-6">{error}</Alert>}
 
         <div className="grid grid-cols-3 gap-4 mb-6">
@@ -94,7 +95,7 @@ export default function AuditLogPage() {
                 {entries.map((e) => (
                   <div
                     key={e.id}
-                    className="grid grid-cols-[130px_220px_190px_80px_100px_1fr] px-5 py-3.5 text-sm items-center gap-3 border-b border-[#F1E7D3] last:border-0"
+                    className="grid grid-cols-[130px_220px_190px_80px_100px_1fr] px-5 py-3.5 text-sm items-start gap-3 border-b border-[#F1E7D3] last:border-0"
                   >
                     <span className="text-slate-400 text-xs font-mono truncate">
                       {new Date(e.created_at).toLocaleString()}
@@ -110,8 +111,18 @@ export default function AuditLogPage() {
                       {e.combined_score != null ? Number(e.combined_score).toFixed(2) : '—'}
                     </span>
                     <span>{outcomeBadge(e)}</span>
-                    <span className="min-w-0 text-slate-400 truncate" title={e.detail || ''}>
-                      {e.detail || '—'}
+                    <span className="min-w-0 text-slate-600">
+                      {open[e.id] ? (
+                        <span className="whitespace-pre-wrap break-all">{e.detail || '—'}</span>
+                      ) : (
+                        <span className="block truncate">{e.detail || '—'}</span>
+                      )}
+                      {e.detail && e.detail.length > 45 && (
+                        <button type="button" onClick={() => setOpen({ ...open, [e.id]: !open[e.id] })}
+                          className="mt-0.5 text-xs font-semibold text-brand-600 hover:underline">
+                          {open[e.id] ? 'Show less' : 'Read more'}
+                        </button>
+                      )}
                     </span>
                   </div>
                 ))}

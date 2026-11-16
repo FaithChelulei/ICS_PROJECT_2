@@ -1,0 +1,61 @@
+sessions: 470591, person features in 34s
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1794543405.914949   12812 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1794543412.057710   12812 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
+WARNING:tensorflow:5 out of the last 23 calls to <function TensorFlowTrainer.make_predict_function.<locals>.one_step_on_data_distributed at 0x00000206F40BC400> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+  [42] Caregiver       insiders=17  today T1=18% T2=2.2% T3=10%  ->  layer 2 T1=82% T2=1.2% T3=50%
+  [42] SecurityAuditor insiders= 0  today T1=n/a T2=13.1% T3=n/a  ->  layer 2 T1=n/a T2=1.0% T3=n/a
+  [42] SysAdmin        insiders= 4  today T1=0% T2=0.0% T3=10%  ->  layer 2 T1=25% T2=1.8% T3=10%
+  [42] Caregiver       synthetic (model / +rules / today): unchanged=0%/0%/8%  burst=4%/4%/8%  slow_scraping=100%/100%/8%  night=4%/4%/8%  new_device=0%/0%/8%
+  [42] SecurityAuditor synthetic (model / +rules / today): unchanged=0%/8%/8%  burst=16%/20%/100%  slow_scraping=96%/96%/100%  night=4%/100%/16%  new_device=0%/100%/8%
+  [42] SysAdmin        synthetic (model / +rules / today): unchanged=0%/100%/0%  burst=56%/100%/0%  slow_scraping=92%/100%/0%  night=0%/100%/0%  new_device=0%/100%/0%
+  [42] 393s
+WARNING:tensorflow:5 out of the last 24 calls to <function TensorFlowTrainer.make_predict_function.<locals>.one_step_on_data_distributed at 0x000002068BA9DF80> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+  [1] Caregiver       insiders=17  today T1=18% T2=4.2% T3=0%  ->  layer 2 T1=88% T2=2.3% T3=80%
+  [1] SecurityAuditor insiders= 1  today T1=100% T2=0.0% T3=10%  ->  layer 2 T1=100% T2=0.4% T3=10%
+  [1] SysAdmin        insiders= 4  today T1=75% T2=21.5% T3=20%  ->  layer 2 T1=25% T2=1.3% T3=20%
+  [1] Caregiver       synthetic (model / +rules / today): unchanged=0%/0%/0%  burst=8%/8%/12%  slow_scraping=96%/96%/28%  night=0%/0%/4%  new_device=0%/0%/0%
+  [1] SecurityAuditor synthetic (model / +rules / today): unchanged=0%/40%/0%  burst=28%/60%/0%  slow_scraping=100%/100%/0%  night=8%/100%/0%  new_device=0%/100%/0%
+  [1] SysAdmin        synthetic (model / +rules / today): unchanged=0%/100%/0%  burst=40%/100%/100%  slow_scraping=96%/100%/100%  night=0%/100%/40%  new_device=0%/100%/44%
+  [1] 192s
+  [2] Caregiver       insiders=17  today T1=24% T2=1.2% T3=30%  ->  layer 2 T1=76% T2=1.4% T3=30%
+  [2] SecurityAuditor insiders= 0  today T1=n/a T2=21.2% T3=n/a  ->  layer 2 T1=n/a T2=0.0% T3=n/a
+  [2] SysAdmin        insiders= 4  today T1=50% T2=0.9% T3=20%  ->  layer 2 T1=25% T2=1.3% T3=10%
+  [2] Caregiver       synthetic (model / +rules / today): unchanged=0%/0%/0%  burst=8%/8%/28%  slow_scraping=100%/100%/40%  night=4%/4%/12%  new_device=0%/0%/72%
+  [2] SecurityAuditor synthetic (model / +rules / today): unchanged=0%/24%/24%  burst=12%/36%/100%  slow_scraping=100%/100%/100%  night=0%/100%/100%  new_device=0%/100%/100%
+  [2] SysAdmin        synthetic (model / +rules / today): unchanged=4%/100%/0%  burst=32%/100%/16%  slow_scraping=96%/100%/36%  night=4%/100%/0%  new_device=4%/100%/12%
+  [2] 169s
+  [3] Caregiver       insiders=17  today T1=0% T2=2.7% T3=0%  ->  layer 2 T1=82% T2=1.5% T3=20%
+  [3] SecurityAuditor insiders= 0  today T1=n/a T2=0.0% T3=n/a  ->  layer 2 T1=n/a T2=0.3% T3=n/a
+  [3] SysAdmin        insiders= 4  today T1=0% T2=14.5% T3=0%  ->  layer 2 T1=50% T2=17.2% T3=0%
+  [3] Caregiver       synthetic (model / +rules / today): unchanged=0%/0%/0%  burst=4%/4%/8%  slow_scraping=100%/100%/8%  night=0%/0%/0%  new_device=0%/0%/0%
+  [3] SecurityAuditor synthetic (model / +rules / today): unchanged=0%/12%/0%  burst=12%/24%/100%  slow_scraping=96%/96%/100%  night=0%/100%/0%  new_device=0%/100%/0%
+  [3] SysAdmin        synthetic (model / +rules / today): unchanged=24%/100%/28%  burst=80%/100%/68%  slow_scraping=100%/100%/72%  night=24%/100%/28%  new_device=28%/100%/40%
+  [3] 186s
+  [4] Caregiver       insiders=17  today T1=29% T2=2.1% T3=30%  ->  layer 2 T1=71% T2=1.0% T3=70%
+  [4] SecurityAuditor insiders= 1  today T1=100% T2=19.3% T3=20%  ->  layer 2 T1=100% T2=0.4% T3=10%
+  [4] SysAdmin        insiders= 4  today T1=0% T2=2.4% T3=0%  ->  layer 2 T1=0% T2=2.4% T3=0%
+  [4] Caregiver       synthetic (model / +rules / today): unchanged=0%/0%/0%  burst=0%/0%/16%  slow_scraping=96%/96%/16%  night=0%/0%/8%  new_device=0%/0%/0%
+  [4] SecurityAuditor synthetic (model / +rules / today): unchanged=0%/4%/20%  burst=4%/8%/100%  slow_scraping=100%/100%/100%  night=0%/100%/44%  new_device=0%/100%/100%
+  [4] SysAdmin        synthetic (model / +rules / today): unchanged=8%/100%/4%  burst=0%/100%/16%  slow_scraping=96%/100%/20%  night=4%/100%/4%  new_device=8%/100%/4%
+  [4] 165s
+
+=== Mean over seeds, test people ===
+  Caregiver       today   T1= 18%  T2= 2.5%  T3= 14%  prec@limit=  2%  weekROC=0.800  weekPR=0.026
+  Caregiver       layer2  T1= 80%  T2= 1.5%  T3= 50%  prec@limit= 15%  weekROC=0.923  weekPR=0.112
+  Caregiver       layer2_rules T1= 80%  T2= 1.5%  T3= 50%  prec@limit= 15%  weekROC=0.923  weekPR=0.112
+  SecurityAuditor today   T1=100%  T2=10.7%  T3= 15%  prec@limit= 26%  weekROC=0.944  weekPR=0.758
+  SecurityAuditor layer2  T1=100%  T2= 0.4%  T3= 10%  prec@limit= 25%  weekROC=0.778  weekPR=0.508
+  SecurityAuditor layer2_rules T1=100%  T2=15.4%  T3= 10%  prec@limit=  1%  weekROC=0.778  weekPR=0.508
+  SysAdmin        today   T1= 25%  T2= 7.8%  T3= 10%  prec@limit= 10%  weekROC=0.827  weekPR=0.113
+  SysAdmin        layer2  T1= 25%  T2= 4.8%  T3=  8%  prec@limit=  8%  weekROC=0.707  weekPR=0.086
+  SysAdmin        layer2_rules T1=100%  T2=100.0%  T3= 10%  prec@limit=  2%  weekROC=0.707  weekPR=0.086
+
+=== Synthetic misuse in real weeks of unseen people (share listed: model / with rules / today) ===
+  Caregiver       unchanged=0%/0%/2%  burst=5%/5%/14%  slow_scraping=98%/98%/20%  night=2%/2%/6%  new_device=0%/0%/16%  (125 person-weeks)
+  SecurityAuditor unchanged=0%/18%/10%  burst=14%/30%/80%  slow_scraping=98%/98%/80%  night=2%/100%/32%  new_device=0%/100%/42%  (125 person-weeks)
+  SysAdmin        unchanged=7%/100%/6%  burst=42%/100%/40%  slow_scraping=96%/100%/46%  night=6%/100%/14%  new_device=8%/100%/20%  (125 person-weeks)
+charts: ['weekly_pr_Caregiver.png', 'weekly_pr_SecurityAuditor.png', 'weekly_pr_SysAdmin.png', 'weekly_targets.png']
+final model saved to C:\Users\OmniBook\Downloads\ICS_PROJECT_2\ml\models\weekly in 30s; limits: Caregiver=0.807, SecurityAuditor=0.861, SysAdmin=0.861

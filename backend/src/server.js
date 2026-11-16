@@ -5,6 +5,10 @@ const https = require('https');
 const path = require('path');
 const app = require('./app');
 const { unlockKeys } = require('./utils/keyVault');
+const { startWeeklySchedule } = require('./services/weeklyReview');
+const { startHealthChecks } = require('./services/scoringHealth');
+const { startMonitoringRetention } = require('./services/monitoringRetention');
+const { backfillNameIndex } = require('./services/nameIndex');
 
 const PORT = process.env.PORT || 4000;
 
@@ -42,11 +46,17 @@ if (certFile && keyFile) {
 unlockKeys()
   .then((count) => {
     if (count) console.log(`Unlocked ${count} encryption key(s) via Azure Key Vault (held in memory only).`);
+    return backfillNameIndex().then((n) => { if (n) console.log(`Indexed ${n} child name(s) for educator requests.`); });
+  })
+  .then(() => {
     server.listen(PORT, () => {
       console.log(`Backend listening on ${scheme}://localhost:${PORT}`);
+      startHealthChecks();     // DPIA G5: notice when risk scoring stops answering
+      startWeeklySchedule();   // layer 2: re-score every person's week each hour
+      startMonitoringRetention(); // DPIA G1: clear old device, network and evidence details nightly
     });
   })
   .catch((err) => {
-    console.error(`Encryption keys could not be unlocked -- not starting. ${err.message}`);
+    console.error(`Start-up failed (encryption keys or the child name index) -- not starting. ${err.message}`);
     process.exit(1);
   });

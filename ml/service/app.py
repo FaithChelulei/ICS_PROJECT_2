@@ -34,6 +34,14 @@ BASE = Path(__file__).resolve().parent.parent
 MODELS = BASE / "models"
 
 ROLES = ["Caregiver", "SecurityAuditor", "SysAdmin"]
+# Roles scored with another role's trained models. CERT r4.2 has no teacher:
+# an Educator is ordinary staff reading records, which is the group the
+# "Caregiver" models were trained on (every CERT employee who is not an IT
+# administrator or in the security department). An Educator keeps their own
+# name, limit and "normal session" everywhere; only the fitted models are
+# shared. Recorded in risk_tiers.json ("uses_models_of").
+MODEL_OF = {"Educator": "Caregiver"}
+ALL_ROLES = ROLES + list(MODEL_OF)
 
 # A normal working session in THIS app, per role (docs/RISK_THRESHOLDS.md,
 # "Normal working session"). Used only to explain a score: each feature in
@@ -48,6 +56,9 @@ NORMAL_SESSION = {
                         "unique_pcs_used_that_day": 1, "session_duration_minutes": 30, "is_after_hours": 0, "is_own_pc": 1},
     "SysAdmin": {"files_accessed_per_session": 2, "events_prev_hour": 3, "events_prev_day": 6,
                  "unique_pcs_used_that_day": 1, "session_duration_minutes": 30, "is_after_hours": 0, "is_own_pc": 1},
+    # A teacher's ordinary sitting: a handful of the children they teach.
+    "Educator": {"files_accessed_per_session": 5, "events_prev_hour": 8, "events_prev_day": 10,
+                 "unique_pcs_used_that_day": 1, "session_duration_minutes": 20, "is_after_hours": 0, "is_own_pc": 1},
 }
 
 app = Flask(__name__)
@@ -86,6 +97,14 @@ def load_registry():
             # deployment_threshold (live app) if set, else the research
             # review_threshold. See risk_tiers.json "_deployment_thresholds".
             "threshold": tiers[role].get("deployment_threshold", tiers[role]["review_threshold"]),
+        }
+
+    for role, source in MODEL_OF.items():
+        _registry[role] = {
+            **_registry[source],
+            # Traceable to the exact files AND to the fact they are shared.
+            "model_version": f"{role}-as-{_registry[source]['model_version']}",
+            "threshold": tiers[role].get("deployment_threshold", _registry[source]["threshold"]),
         }
 
     print(f"[ml-service] loaded models for roles: {', '.join(_registry.keys())}", flush=True)
@@ -150,7 +169,85 @@ def score_one(role, features_dict):
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "roles_loaded": list(_registry.keys())})
+    return jsonify({"status": "ok", "roles_loaded": list(_registry.keys()),
+                    "weekly_review": _weekly["model"].version if _weekly.get("model") else None})
+
+
+# ---------------------------------------------------------------- layer 2
+# The weekly review (ml/service/weekly.py, trained by
+# ml/scripts/16_train_weekly.py). Ranks each person's week for a human to
+# review; it never signs anyone out. Optional: if its files are missing the
+# service still runs layer 1 and /score_week answers 503.
+_weekly = {}
+WEEKLY_DIR = MODELS / "weekly"
+MAX_WEEKLY_SESSIONS = 200_000
+
+
+def load_weekly():
+    if not (WEEKLY_DIR / "layer2_meta.json").exists():
+        print("[ml-service] weekly review model not found (run ml/scripts/16_train_weekly.py)", flush=True)
+        return
+    import weekly
+    _weekly["module"] = weekly
+    _weekly["model"] = weekly.Layer2.load(WEEKLY_DIR)
+    print(f"[ml-service] loaded weekly review model {_weekly['model'].version}", flush=True)
+
+
+@app.route("/score_week", methods=["POST"])
+def score_week():
+    """Body: {"date": "YYYY-MM-DD" (any day of the week to review),
+              "sessions": [{"user": id, "role": "Caregiver", "start":
+                "YYYY-MM-DDTHH:MM:SS" (local time), "pc": "...",
+                <the 7 features>}, ...]}
+    The sessions must cover that week and the 30 days before it."""
+    if not _weekly.get("model"):
+        return jsonify({"error": "weekly review model not loaded"}), 503
+    import pandas as pd
+    weekly = _weekly["module"]
+    body = request.get_json(silent=True) or {}
+    rows = body.get("sessions")
+    if not isinstance(rows, list) or len(rows) > MAX_WEEKLY_SESSIONS:
+        return jsonify({"error": f"sessions must be a list of at most {MAX_WEEKLY_SESSIONS}"}), 400
+    try:
+        day = pd.Timestamp(str(body.get("date")))
+    except (TypeError, ValueError):
+        return jsonify({"error": "date must be YYYY-MM-DD"}), 400
+    week = str(day.to_period("W"))
+    if not rows:
+        return jsonify({"week": week, "people": [], "limits": _weekly["model"].limits}), 200
+    try:
+        s = pd.DataFrame(rows)
+        missing = [c for c in ["user", "role", "start", "pc"] + weekly.BASE_FEATURES if c not in s]
+        if missing:
+            raise ValueError(f"missing fields: {', '.join(missing)}")
+        if not s["role"].isin(ALL_ROLES).all():
+            raise ValueError(f"role must be one of {ALL_ROLES}")
+        s["start"] = pd.to_datetime(s["start"], format="%Y-%m-%dT%H:%M:%S")
+        s["pc"] = s["pc"].fillna("unknown").astype(str)
+        s["user"] = s["user"].astype(str)
+        for f in weekly.BASE_FEATURES:
+            s[f] = pd.to_numeric(s[f], errors="raise").astype(float)
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": f"bad sessions: {e}"}), 400
+    # The weekly model knows its three training roles; a shared-model role
+    # is scored as its source role and reported under its own name.
+    own_role = s.drop_duplicates("user", keep="last").set_index("user")["role"].to_dict()
+    s["role"] = s["role"].replace(MODEL_OF)
+    # Optional lines from the deployment's own calibration, keyed by the
+    # model's roles ({"Caregiver": {"learned": .., "change": ..}}). They can
+    # only raise a line, never lower it (weekly.Layer2.lines).
+    local = body.get("local_lines")
+    if local is not None and not isinstance(local, dict):
+        return jsonify({"error": "local_lines must be an object"}), 400
+    people = _weekly["model"].score_people(s, week, local=local)
+    for p in people:
+        p["role"] = own_role.get(p["user"], p["role"])
+    learned, change = _weekly["model"].lines(local)
+    limits = dict(learned)
+    for role, source in MODEL_OF.items():
+        limits[role] = limits[source]
+    return jsonify({"week": week, "people": people, "limits": limits,
+                    "lines": {r: {"learned": learned[r], "change": change[r]} for r in learned}}), 200
 
 
 @app.route("/score", methods=["POST"])
@@ -159,8 +256,8 @@ def score():
     role = body.get("role")
     features = body.get("features")
 
-    if role not in ROLES:
-        return jsonify({"error": f"role must be one of {ROLES}"}), 400
+    if role not in ALL_ROLES:
+        return jsonify({"error": f"role must be one of {ALL_ROLES}"}), 400
     if not isinstance(features, dict):
         return jsonify({"error": "features must be an object of feature_name -> number"}), 400
 
@@ -174,5 +271,6 @@ def score():
 
 if __name__ == "__main__":
     load_registry()
+    load_weekly()
     port = int(os.environ.get("ML_SERVICE_PORT", "5001"))
     app.run(host="127.0.0.1", port=port)

@@ -58,7 +58,7 @@ export default function ChildRegistrationPage() {
         <Toast message="Child profile created successfully" onDone={() => setShowToast(false)} />
       )}
 
-      <div className="px-8 py-6 max-w-4xl">
+      <div className="px-4 py-6 md:px-8 max-w-4xl">
         {riskNotice ? (
           <Alert variant="warning">Profile created. {riskNotice}</Alert>
         ) : (

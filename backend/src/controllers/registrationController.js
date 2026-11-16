@@ -33,21 +33,36 @@ async function generateUsername(client, fullName) {
   }
 }
 
-// Only these two roles can be self-requested. A SysAdmin account is
+// Only these roles can be self-requested. A SysAdmin account is
 // created by another SysAdmin directly (out of scope for this public
 // form) — letting anyone request SysAdmin access would defeat the point
 // of reviewing requests at all.
-const REQUESTABLE_ROLES = ['Caregiver', 'SecurityAuditor'];
+const REQUESTABLE_ROLES = ['Caregiver', 'Educator', 'SecurityAuditor'];
+// Kenyan numbers as people write them: 0712 345 678, +254 712 345 678, 020 123 4567.
+const PHONE_RE = /^\+?[0-9][0-9 ()-]{6,18}[0-9]$/;
+const MIN_VERIFICATION_NOTE = 15;
 
 // POST /auth/register — public, no auth required.
 async function submitRequest(req, res) {
   const { fullName, email, requestedRole, reason } = req.body;
+  const ecdCentre = typeof req.body.ecdCentre === 'string' ? req.body.ecdCentre.trim() : '';
+  const centrePhone = typeof req.body.centrePhone === 'string' ? req.body.centrePhone.trim() : '';
 
   if (!fullName || !email || !requestedRole) {
     return res.status(400).json({ error: 'fullName, email and requestedRole are required' });
   }
   if (!REQUESTABLE_ROLES.includes(requestedRole)) {
     return res.status(400).json({ error: `requestedRole must be one of: ${REQUESTABLE_ROLES.join(', ')}` });
+  }
+  // An educator is verified with their ECD centre before approval, so the
+  // request must say which centre and how to reach it.
+  if (requestedRole === 'Educator') {
+    if (ecdCentre.length < 3 || ecdCentre.length > 200) {
+      return res.status(400).json({ error: 'Enter the ECD centre where you work.', code: 'ECD_CENTRE_REQUIRED' });
+    }
+    if (!PHONE_RE.test(centrePhone)) {
+      return res.status(400).json({ error: 'Enter the ECD centre’s phone number, e.g. 0712 345 678.', code: 'CENTRE_PHONE_REQUIRED' });
+    }
   }
   const noticeError = checkPrivacyNotice(req.body);
   if (noticeError) {
@@ -72,9 +87,10 @@ async function submitRequest(req, res) {
   const { rows: roleRows } = await db.query('SELECT id FROM roles WHERE name = $1', [requestedRole]);
   const { rows } = await db.query(
     `INSERT INTO registration_requests
-       (full_name, email, requested_role_id, reason, privacy_notice_version, privacy_notice_accepted_at)
-     VALUES ($1, $2, $3, $4, $5, now()) RETURNING id, created_at`,
-    [fullName, email, roleRows[0].id, reason || null, req.body.privacyNoticeVersion]
+       (full_name, email, requested_role_id, reason, privacy_notice_version, privacy_notice_accepted_at, ecd_centre, centre_phone)
+     VALUES ($1, $2, $3, $4, $5, now(), $6, $7) RETURNING id, created_at`,
+    [fullName, email, roleRows[0].id, reason || null, req.body.privacyNoticeVersion,
+      requestedRole === 'Educator' ? ecdCentre : null, requestedRole === 'Educator' ? centrePhone : null]
   );
 
   res.status(201).json({
@@ -92,6 +108,7 @@ async function listRequests(req, res) {
   }
   const { rows } = await db.query(
     `SELECT rr.id, rr.full_name, rr.email, r.name AS requested_role, rr.reason,
+            rr.ecd_centre, rr.centre_phone, rr.verification_note,
             rr.status, rr.created_at, rr.reviewed_at, rr.rejection_reason
      FROM registration_requests rr
      JOIN roles r ON r.id = rr.requested_role_id
@@ -113,7 +130,8 @@ async function approveRequest(req, res) {
   const requestId = Number(req.params.id);
 
   const { rows: reqRows } = await db.query(
-    `SELECT rr.id, rr.full_name, rr.email, rr.requested_role_id, rr.status, r.name AS requested_role
+    `SELECT rr.id, rr.full_name, rr.email, rr.requested_role_id, rr.status, r.name AS requested_role,
+            rr.ecd_centre, rr.centre_phone
      FROM registration_requests rr JOIN roles r ON r.id = rr.requested_role_id
      WHERE rr.id = $1`,
     [requestId]
@@ -122,6 +140,16 @@ async function approveRequest(req, res) {
   if (!request) return res.status(404).json({ error: 'Request not found' });
   if (request.status !== 'pending') {
     return res.status(409).json({ error: `Request is already ${request.status}` });
+  }
+  // An educator is approved only after the admin has confirmed with the ECD
+  // centre that this person works there, and has written down how.
+  const verificationNote = typeof (req.body || {}).verificationNote === 'string' ? req.body.verificationNote.trim() : '';
+  const isEducator = request.requested_role === 'Educator';
+  if (isEducator && verificationNote.length < MIN_VERIFICATION_NOTE) {
+    return res.status(400).json({
+      error: `Confirm with the ECD centre that this person works there, then say how you checked (at least ${MIN_VERIFICATION_NOTE} characters).`,
+      code: 'VERIFICATION_NOTE_REQUIRED',
+    });
   }
 
   const tempPassword = generateTempPassword();
@@ -141,16 +169,19 @@ async function approveRequest(req, res) {
     username = await generateUsername(client, request.full_name);
 
     await client.query(
-      `INSERT INTO users (email, full_name, username, password_hash, role_id, mfa_required, must_change_password)
-       VALUES ($1, $2, $3, $4, $5, $6, TRUE)`,
-      [request.email, request.full_name, username, passwordHash, request.requested_role_id, mfaRequired]
+      `INSERT INTO users (email, full_name, username, password_hash, role_id, mfa_required, must_change_password,
+                          ecd_centre, centre_phone, verification_note, verified_by, verified_at)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7, $8, $9, $10, $11)`,
+      [request.email, request.full_name, username, passwordHash, request.requested_role_id, mfaRequired,
+        isEducator ? request.ecd_centre : null, isEducator ? request.centre_phone : null,
+        isEducator ? verificationNote : null, isEducator ? req.user.id : null, isEducator ? new Date() : null]
     );
 
     await client.query(
       `UPDATE registration_requests
-       SET status = 'approved', reviewed_by = $1, reviewed_at = now()
+       SET status = 'approved', reviewed_by = $1, reviewed_at = now(), verification_note = $3
        WHERE id = $2`,
-      [req.user.id, requestId]
+      [req.user.id, requestId, isEducator ? verificationNote : null]
     );
 
     await client.query('COMMIT');
@@ -175,7 +206,7 @@ async function approveRequest(req, res) {
   await logAction({
     userId: req.user.id,
     action: 'approve_registration_request',
-    detail: `request_id=${requestId}, new user email=${request.email}, role=${request.requested_role}`,
+    detail: `request_id=${requestId}, new user email=${request.email}, role=${request.requested_role}${isEducator ? ', verified with the ECD centre' : ''}`,
     accessRequestId: risk.accessRequestId,
   });
   res.json({

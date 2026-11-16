@@ -20,15 +20,17 @@ import {
   Avatar,
   StatCard,
   firstNameOf,
+  inputClass,
 } from '../../components/ui.jsx';
 import Icon from '../../components/Icon.jsx';
 import { ADMIN_NAV as NAV } from './nav.js';
+import CasesBox from './CasesBox.jsx';
 const TABS = [
   { id: 'requests', label: 'Access Requests' },
   { id: 'locked', label: 'Locked Accounts' },
 ];
 
-const ROLE_LABEL = { Caregiver: 'caregiver', SecurityAuditor: 'auditor', SysAdmin: 'admin' };
+const ROLE_LABEL = { Caregiver: 'caregiver', Educator: 'educator', SecurityAuditor: 'auditor', SysAdmin: 'admin' };
 
 function greeting() {
   const hour = new Date().getHours();
@@ -64,7 +66,37 @@ export default function AdminPanel() {
         title={`${greeting()}, ${firstNameOf(user?.fullName, user?.email)}`}
         subtitle={attention ? `${attention} item${attention === 1 ? ' needs' : 's need'} your attention` : 'Everything is running normally'}
       />
-      <div className="px-8 py-6 space-y-5">
+      <div className="px-4 py-6 md:px-8 space-y-5">
+        {overview && overview.scoring && !overview.scoring.online && (
+          <Alert>
+            Risk scoring is offline since {new Date(overview.scoring.offlineSince).toLocaleString()}. Every action is still
+            recorded, but nothing is scored, so unusual activity will not sign anyone out until the scoring service is back.
+          </Alert>
+        )}
+        {overview && overview.breachReports && overview.breachReports.length > 0 && (
+          <Card>
+            <h2 className="text-[17px] font-semibold text-ink">Breaches reported by the Security Auditors</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              An auditor decided each of these is a breach with a real risk of harm. Under the Kenya Data Protection Act
+              (section 43) it must be acted on within 72 hours of the flag.
+            </p>
+            <ul className="mt-3 divide-y divide-[#F1E7D3] text-sm">
+              {overview.breachReports.map((b) => (
+                <li key={b.id} className="py-3">
+                  <div className="font-medium text-ink">
+                    {{ SecurityAuditor: 'Security Auditor', SysAdmin: 'System Admin', Educator: 'Educator' }[b.flaggedRole] || 'Caregiver'} session,
+                    reported by {b.reportedBy} on {new Date(b.reportedAt).toLocaleString()}
+                  </div>
+                  <div className="text-slate-500">&ldquo;{b.reason}&rdquo;</div>
+                  <div className={`mt-1 text-xs font-semibold ${new Date(b.deadline) < new Date() ? 'text-red-700' : 'text-amber-700'}`}>
+                    Act on it by {new Date(b.deadline).toLocaleString()} (72 hours from the flag)
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+        <CasesBox onChanged={loadOverview} />
         {overview && (
           <>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -127,6 +159,7 @@ export default function AdminPanel() {
 
 function RequestsTab({ onChanged }) {
   const [requests, setRequests] = useState([]);
+  const [notes, setNotes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -152,8 +185,9 @@ function RequestsTab({ onChanged }) {
   async function handleApprove(id) {
     setBusyId(id);
     setMessage('');
+    setError('');
     try {
-      const data = await approveRequest(id);
+      const data = await approveRequest(id, (notes[id] || '').trim());
       setMessage(data.message);
       await load();
       onChanged();
@@ -211,7 +245,7 @@ function RequestsTab({ onChanged }) {
               <Badge color="brand">{r.requested_role}</Badge>
               <span className="text-slate-400 truncate">{r.reason || '—'}</span>
               <div className="flex gap-2">
-                <Button size="sm" disabled={busyId === r.id} onClick={() => handleApprove(r.id)}>
+                <Button size="sm" disabled={busyId === r.id || (r.requested_role === 'Educator' && (notes[r.id] || '').trim().length < 15)} onClick={() => handleApprove(r.id)}>
                   Approve
                 </Button>
                 <Button
@@ -223,6 +257,22 @@ function RequestsTab({ onChanged }) {
                   Reject
                 </Button>
               </div>
+              {r.requested_role === 'Educator' && (
+                <div className="col-span-full rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm">
+                  <div className="text-slate-700">
+                    <strong className="text-ink">Verify before approving.</strong> Works at <strong className="text-ink">{r.ecd_centre || '—'}</strong>,
+                    centre phone <strong className="text-ink select-all">{r.centre_phone || '—'}</strong>. Call the centre and confirm this person works there.
+                  </div>
+                  <input
+                    aria-label="How you verified this educator"
+                    value={notes[r.id] || ''}
+                    onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
+                    placeholder="How you checked, e.g. Called the centre, the head confirmed she teaches PP1"
+                    className={`${inputClass} mt-2`}
+                    maxLength={500}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </Card>

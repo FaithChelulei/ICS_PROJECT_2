@@ -1,0 +1,2616 @@
+{
+ "_about": "Experiment: can the weekly review (layer 2) be made more precise, and can\nthe privileged roles (Security Auditor, System Administrator) be measured\nand listed better?\n\nUses EXACTLY the same people splits, model and targets as\n16_train_weekly.py (seeds 42, 1, 2, 3, 4), so every number here is directly\ncomparable with the deployed model's report. Nothing the website uses is\nchanged. Output: models/weekly_improvement_results.json\n\nWhy: on CERT r4.2\n  * \"Security Auditor\" is the Security department -- 20 people, mostly\n    security guards, with ONE insider. Its line (98th/99th percentile of 20\n    people's normal weeks) and its test both rest on very little.\n  * The always-review rule for privileged staff (any night work or any new\n    device) lists EVERY normal administrator week in CERT (T2 = 100%):\n    CERT administrators routinely work late on many computers.\n\nVariants (all on the same trained model per seed):\n  base           the deployed design: listed when the review index > 1.0;\n                 the list is ordered by the learned score\n  base_rank_idx  same, ordered by the review index instead\n  q995           stricter lines: 99.5th percentile instead of 99th\n  rule_any       base + the deployed always-review rule for privileged\n                 staff (any after-hours session or any non-own computer)\n  rule_person    base + a PERSON-SPECIFIC rule for privileged staff: a\n                 computer THIS person has not used in 30 days, or an\n                 after-hours session at an hour THIS person does not\n                 normally work\n  priv_pooled    the Security Auditor and System Administrator lines are\n                 set together from both roles' normal calibration weeks\n  priv_pooled_rule_person   both of the above\n  priv_pooled_rule_night    pooled lines + only the night part of the\n                 person-specific rule (CERT administrators use new\n                 computers almost every week, so the device part fires\n                 constantly there)\n\nReported per role and for \"Privileged\" (Security Auditor + System\nAdministrator together, 13 insiders in CERT instead of 1 and 12).\n\nRun from the repo root:\n  .venv\\Scripts\\python.exe ml\\scripts\\17_improve_weekly.py --seeds 42,1,2,3,4\n",
+ "seeds": [
+  42,
+  1,
+  2,
+  3,
+  4
+ ],
+ "summary": {
+  "base": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.8,
+     "min": 0.7058823529411765,
+     "max": 0.8823529411764706,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.014695561411945798,
+     "min": 0.009684667234833811,
+     "max": 0.02275872674150392,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.5,
+     "min": 0.2,
+     "max": 0.8,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.15106634176348796,
+     "min": 0.10574018126888217,
+     "max": 0.1987179487179487,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 1.707355003381117,
+     "min": 1.2001846437913526,
+     "max": 2.5294207550053494,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.06402450407909184,
+     "min": 0.0,
+     "max": 0.25517241379310346,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.2125,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 6.539503246767078,
+     "min": 0.34602076124567477,
+     "max": 25.517241379310345,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 0.2,
+     "min": 0.0,
+     "max": 0.5,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.05344168137656624,
+     "min": 0.007220216606498195,
+     "max": 0.16443594646271512,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.08,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.07290322580645162,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 5.430983105042634,
+     "min": 0.8818342151675485,
+     "max": 16.318785578747626,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 0.26,
+     "min": 0.0,
+     "max": 0.6,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.05632955937661066,
+     "min": 0.007125890736342043,
+     "max": 0.10714285714285714,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.05739468864468864,
+     "min": 0.0,
+     "max": 0.14285714285714285,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 5.736648314516641,
+     "min": 0.8187134502923977,
+     "max": 10.661764705882353,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  },
+  "base_rank_idx": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.8,
+     "min": 0.7058823529411765,
+     "max": 0.8823529411764706,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.014695561411945798,
+     "min": 0.009684667234833811,
+     "max": 0.02275872674150392,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.15106634176348796,
+     "min": 0.10574018126888217,
+     "max": 0.1987179487179487,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 1.707355003381117,
+     "min": 1.2001846437913526,
+     "max": 2.5294207550053494,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.06402450407909184,
+     "min": 0.0,
+     "max": 0.25517241379310346,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.2125,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 6.539503246767078,
+     "min": 0.34602076124567477,
+     "max": 25.517241379310345,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 0.2,
+     "min": 0.0,
+     "max": 0.5,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.05344168137656624,
+     "min": 0.007220216606498195,
+     "max": 0.16443594646271512,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.08,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.07290322580645162,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 5.430983105042634,
+     "min": 0.8818342151675485,
+     "max": 16.318785578747626,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 0.26,
+     "min": 0.0,
+     "max": 0.6,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.05632955937661066,
+     "min": 0.007125890736342043,
+     "max": 0.10714285714285714,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.08,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.05739468864468864,
+     "min": 0.0,
+     "max": 0.14285714285714285,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 5.736648314516641,
+     "min": 0.8187134502923977,
+     "max": 10.661764705882353,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  },
+  "q995": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.6705882352941177,
+     "min": 0.5294117647058824,
+     "max": 0.7647058823529411,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.006288108022479785,
+     "min": 0.004648640272720229,
+     "max": 0.00968783638320775,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.5199999999999999,
+     "min": 0.2,
+     "max": 0.8,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.1902953451865837,
+     "min": 0.14285714285714285,
+     "max": 0.27710843373493976,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 0.7691374164373633,
+     "min": 0.593403205918619,
+     "max": 1.1615466911202812,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.060531435040055724,
+     "min": 0.0,
+     "max": 0.2482758620689655,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.26666666666666666,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 4
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 6.190721449525756,
+     "min": 0.0,
+     "max": 24.82758620689655,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 0.2,
+     "min": 0.0,
+     "max": 0.5,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.030546166396114106,
+     "min": 0.0036101083032490976,
+     "max": 0.08986615678776291,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.08,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.1162907268170426,
+     "min": 0.0,
+     "max": 0.3333333333333333,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 3.1701320113260065,
+     "min": 0.5291005291005291,
+     "max": 8.918406072106261,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 0.26,
+     "min": 0.0,
+     "max": 0.6,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.04039997659885639,
+     "min": 0.0035629453681710215,
+     "max": 0.09341317365269461,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.09162255466052935,
+     "min": 0.0,
+     "max": 0.25,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 4.1576683705762445,
+     "min": 0.46783625730994155,
+     "max": 9.415971394517282,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  },
+  "rule_any": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.8,
+     "min": 0.7058823529411765,
+     "max": 0.8823529411764706,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.014695561411945798,
+     "min": 0.009684667234833811,
+     "max": 0.02275872674150392,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.5,
+     "min": 0.2,
+     "max": 0.8,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.15106634176348796,
+     "min": 0.10574018126888217,
+     "max": 0.1987179487179487,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 1.707355003381117,
+     "min": 1.2001846437913526,
+     "max": 2.5294207550053494,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.18783550555358813,
+     "min": 0.10726643598615918,
+     "max": 0.25517241379310346,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.008488964346349746,
+     "min": 0.0,
+     "max": 0.02631578947368421,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 18.87655021514548,
+     "min": 10.726643598615917,
+     "max": 25.517241379310345,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "T2": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.01653555138542232,
+     "min": 0.007285974499089253,
+     "max": 0.02510460251046025,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 100.0,
+     "min": 100.0,
+     "max": 100.0,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.7191850199711058,
+     "min": 0.6822660098522167,
+     "max": 0.7413173652694611,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.12000000000000002,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.015690607599287015,
+     "min": 0.006420545746388443,
+     "max": 0.024074074074074074,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 72.19971546741188,
+     "min": 68.38235294117648,
+     "max": 74.25506555423122,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  },
+  "rule_person": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.8,
+     "min": 0.7058823529411765,
+     "max": 0.8823529411764706,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.014695561411945798,
+     "min": 0.009684667234833811,
+     "max": 0.02275872674150392,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.5,
+     "min": 0.2,
+     "max": 0.8,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.15106634176348796,
+     "min": 0.10574018126888217,
+     "max": 0.1987179487179487,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 1.707355003381117,
+     "min": 1.2001846437913526,
+     "max": 2.5294207550053494,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.10078574975383232,
+     "min": 0.0,
+     "max": 0.25517241379310346,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.20526315789473687,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 10.204075467670728,
+     "min": 0.36363636363636365,
+     "max": 25.517241379310345,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.9987746584242234,
+     "min": 0.9957081545064378,
+     "max": 1.0,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.01655930680483365,
+     "min": 0.0072992700729927005,
+     "max": 0.025210084033613446,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 99.87988811913635,
+     "min": 99.581589958159,
+     "max": 100.0,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.6874061201901279,
+     "min": 0.6278755074424899,
+     "max": 0.7401197604790419,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.12000000000000002,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.016771026929420833,
+     "min": 0.006430868167202572,
+     "max": 0.027253668763102725,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 69.0756702074436,
+     "min": 63.34661354581673,
+     "max": 74.13587604290822,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  },
+  "priv_pooled": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.8,
+     "min": 0.7058823529411765,
+     "max": 0.8823529411764706,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.014695561411945798,
+     "min": 0.009684667234833811,
+     "max": 0.02275872674150392,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.5,
+     "min": 0.2,
+     "max": 0.8,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.15106634176348796,
+     "min": 0.10574018126888217,
+     "max": 0.1987179487179487,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 1.707355003381117,
+     "min": 1.2001846437913526,
+     "max": 2.5294207550053494,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.004220880499606189,
+     "min": 0.0,
+     "max": 0.010344827586206896,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.25,
+     "min": 0.0,
+     "max": 0.5,
+     "n": 4
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 0.5659595815577823,
+     "min": 0.0,
+     "max": 1.0344827586206897,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 0.25,
+     "min": 0.0,
+     "max": 0.5,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.04789461623581918,
+     "min": 0.01263537906137184,
+     "max": 0.17208413001912046,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.08,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.07610107284020326,
+     "min": 0.0,
+     "max": 0.14285714285714285,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 4.928548684398719,
+     "min": 1.4109347442680775,
+     "max": 17.4573055028463,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 0.31999999999999995,
+     "min": 0.2,
+     "max": 0.5,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.03253300122119783,
+     "min": 0.00831353919239905,
+     "max": 0.11206896551724138,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.12,
+     "min": 0.0,
+     "max": 0.3,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.10053123399897593,
+     "min": 0.021505376344086023,
+     "max": 0.2222222222222222,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 3.4013116742617084,
+     "min": 0.9356725146198831,
+     "max": 11.397058823529411,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  },
+  "priv_pooled_rule_person": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.8,
+     "min": 0.7058823529411765,
+     "max": 0.8823529411764706,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.014695561411945798,
+     "min": 0.009684667234833811,
+     "max": 0.02275872674150392,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.5,
+     "min": 0.2,
+     "max": 0.8,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.15106634176348796,
+     "min": 0.10574018126888217,
+     "max": 0.1987179487179487,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 1.707355003381117,
+     "min": 1.2001846437913526,
+     "max": 2.5294207550053494,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.04886927350976987,
+     "min": 0.0,
+     "max": 0.11272727272727273,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.1328125,
+     "min": 0.0,
+     "max": 0.5,
+     "n": 4
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 5.015045682705427,
+     "min": 0.0,
+     "max": 11.552346570397113,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.9987746584242234,
+     "min": 0.9957081545064378,
+     "max": 1.0,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.01655930680483365,
+     "min": 0.0072992700729927005,
+     "max": 0.025210084033613446,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 99.87988811913635,
+     "min": 99.581589958159,
+     "max": 100.0,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.6695349613077644,
+     "min": 0.6292286874154263,
+     "max": 0.7195402298850575,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.12000000000000002,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.016971461130360698,
+     "min": 0.007168458781362007,
+     "max": 0.027196652719665274,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 67.29872304635171,
+     "min": 63.47941567065073,
+     "max": 72.28506787330316,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  },
+  "priv_pooled_rule_night": {
+   "Caregiver": {
+    "T1": {
+     "mean": 0.8,
+     "min": 0.7058823529411765,
+     "max": 0.8823529411764706,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.014695561411945798,
+     "min": 0.009684667234833811,
+     "max": 0.02275872674150392,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.5,
+     "min": 0.2,
+     "max": 0.8,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.15106634176348796,
+     "min": 0.10574018126888217,
+     "max": 0.1987179487179487,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 1.707355003381117,
+     "min": 1.2001846437913526,
+     "max": 2.5294207550053494,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 17.0,
+     "min": 17.0,
+     "max": 17.0,
+     "n": 5
+    }
+   },
+   "SecurityAuditor": {
+    "T1": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0,
+     "n": 2
+    },
+    "T2": {
+     "mean": 0.046800307992528496,
+     "min": 0.0,
+     "max": 0.11272727272727273,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.1,
+     "max": 0.1,
+     "n": 2
+    },
+    "precision_at_line": {
+     "mean": 0.1328125,
+     "min": 0.0,
+     "max": 0.5,
+     "n": 4
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 4.808149130981289,
+     "min": 0.0,
+     "max": 11.552346570397113,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 0.4,
+     "min": 0.0,
+     "max": 1.0,
+     "n": 5
+    }
+   },
+   "SysAdmin": {
+    "T1": {
+     "mean": 0.45,
+     "min": 0.25,
+     "max": 0.75,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.2333451818660322,
+     "min": 0.20504201680672268,
+     "max": 0.32887189292543023,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.06000000000000001,
+     "min": 0.0,
+     "max": 0.1,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.01927586125614341,
+     "min": 0.008695652173913044,
+     "max": 0.029411764705882353,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 23.4170554362832,
+     "min": 20.42833607907743,
+     "max": 33.206831119544596,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.0,
+     "min": 4.0,
+     "max": 4.0,
+     "n": 5
+    }
+   },
+   "Privileged": {
+    "T1": {
+     "mean": 0.5,
+     "min": 0.25,
+     "max": 0.75,
+     "n": 5
+    },
+    "T2": {
+     "mean": 0.1680509392193738,
+     "min": 0.13531799729364005,
+     "max": 0.25,
+     "n": 5
+    },
+    "T3": {
+     "mean": 0.1,
+     "min": 0.0,
+     "max": 0.2,
+     "n": 5
+    },
+    "precision_at_line": {
+     "mean": 0.021145998151922127,
+     "min": 0.00847457627118644,
+     "max": 0.038461538461538464,
+     "n": 5
+    },
+    "flagged_per_100_people_weeks": {
+     "mean": 16.960605580178697,
+     "min": 13.811420982735722,
+     "max": 25.245098039215684,
+     "n": 5
+    },
+    "insiders": {
+     "mean": 4.4,
+     "min": 4.0,
+     "max": 5.0,
+     "n": 5
+    }
+   }
+  }
+ },
+ "runs": {
+  "42": {
+   "base": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.011819035691922355,
+     "T3": 0.5,
+     "precision_at_line": 0.12716763005780346,
+     "flagged_per_100_people_weeks": 1.3445247532447346
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.25517241379310346,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 25.517241379310345
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.01651376146788991,
+     "T3": 0.1,
+     "precision_at_line": 0.1,
+     "flagged_per_100_people_weeks": 1.8214936247723135
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.09940119760479042,
+     "T3": 0.1,
+     "precision_at_line": 0.011904761904761904,
+     "flagged_per_100_people_weeks": 10.011918951132301
+    }
+   },
+   "base_rank_idx": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.011819035691922355,
+     "T3": 0.2,
+     "precision_at_line": 0.12716763005780346,
+     "flagged_per_100_people_weeks": 1.3445247532447346
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.25517241379310346,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 25.517241379310345
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.01651376146788991,
+     "T3": 0.1,
+     "precision_at_line": 0.1,
+     "flagged_per_100_people_weeks": 1.8214936247723135
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.09940119760479042,
+     "T3": 0.0,
+     "precision_at_line": 0.011904761904761904,
+     "flagged_per_100_people_weeks": 10.011918951132301
+    }
+   },
+   "q995": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.6470588235294118,
+     "T2": 0.0057921102066374455,
+     "T3": 0.6,
+     "precision_at_line": 0.16853932584269662,
+     "flagged_per_100_people_weeks": 0.6916919250796612
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.2482758620689655,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 24.82758620689655
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.011009174311926606,
+     "T3": 0.1,
+     "precision_at_line": 0.14285714285714285,
+     "flagged_per_100_people_weeks": 1.2750455373406193
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.09341317365269461,
+     "T3": 0.1,
+     "precision_at_line": 0.012658227848101266,
+     "flagged_per_100_people_weeks": 9.415971394517282
+    }
+   },
+   "rule_any": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.011819035691922355,
+     "T3": 0.5,
+     "precision_at_line": 0.12716763005780346,
+     "flagged_per_100_people_weeks": 1.3445247532447346
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.25517241379310346,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 25.517241379310345
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.1,
+     "precision_at_line": 0.007285974499089253,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.7413173652694611,
+     "T3": 0.1,
+     "precision_at_line": 0.006420545746388443,
+     "flagged_per_100_people_weeks": 74.25506555423122
+    }
+   },
+   "rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.011819035691922355,
+     "T3": 0.5,
+     "precision_at_line": 0.12716763005780346,
+     "flagged_per_100_people_weeks": 1.3445247532447346
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.25517241379310346,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 25.517241379310345
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.998165137614679,
+     "T3": 0.1,
+     "precision_at_line": 0.0072992700729927005,
+     "flagged_per_100_people_weeks": 99.81785063752277
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.7401197604790419,
+     "T3": 0.1,
+     "precision_at_line": 0.006430868167202572,
+     "flagged_per_100_people_weeks": 74.13587604290822
+    }
+   },
+   "priv_pooled": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.011819035691922355,
+     "T3": 0.5,
+     "precision_at_line": 0.12716763005780346,
+     "flagged_per_100_people_weeks": 1.3445247532447346
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.010344827586206896,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 1.0344827586206897
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.01834862385321101,
+     "T3": 0.1,
+     "precision_at_line": 0.09090909090909091,
+     "flagged_per_100_people_weeks": 2.0036429872495445
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.015568862275449102,
+     "T3": 0.1,
+     "precision_at_line": 0.07142857142857142,
+     "flagged_per_100_people_weeks": 1.66865315852205
+    }
+   },
+   "priv_pooled_rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.011819035691922355,
+     "T3": 0.5,
+     "precision_at_line": 0.12716763005780346,
+     "flagged_per_100_people_weeks": 1.3445247532447346
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.020689655172413793,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 2.0689655172413794
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.998165137614679,
+     "T3": 0.1,
+     "precision_at_line": 0.0072992700729927005,
+     "flagged_per_100_people_weeks": 99.81785063752277
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.6586826347305389,
+     "T3": 0.1,
+     "precision_at_line": 0.007220216606498195,
+     "flagged_per_100_people_weeks": 66.03098927294398
+    }
+   },
+   "priv_pooled_rule_night": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.011819035691922355,
+     "T3": 0.5,
+     "precision_at_line": 0.12716763005780346,
+     "flagged_per_100_people_weeks": 1.3445247532447346
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.010344827586206896,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 1.0344827586206897
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.20917431192660552,
+     "T3": 0.1,
+     "precision_at_line": 0.008695652173913044,
+     "flagged_per_100_people_weeks": 20.9471766848816
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.14011976047904193,
+     "T3": 0.1,
+     "precision_at_line": 0.00847457627118644,
+     "flagged_per_100_people_weeks": 14.064362336114423
+    }
+   }
+  },
+  "1": {
+   "base": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8823529411764706,
+     "T2": 0.02275872674150392,
+     "T3": 0.8,
+     "precision_at_line": 0.10574018126888217,
+     "flagged_per_100_people_weeks": 2.5294207550053494
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.0,
+     "T3": 0.1,
+     "precision_at_line": 1.0,
+     "flagged_per_100_people_weeks": 0.36363636363636365
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.06223175965665236,
+     "T3": 0.2,
+     "precision_at_line": 0.06451612903225806,
+     "flagged_per_100_people_weeks": 6.485355648535565
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.6,
+     "T2": 0.03924221921515562,
+     "T3": 0.2,
+     "precision_at_line": 0.09375,
+     "flagged_per_100_people_weeks": 4.249667994687915
+    }
+   },
+   "base_rank_idx": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8823529411764706,
+     "T2": 0.02275872674150392,
+     "T3": 0.0,
+     "precision_at_line": 0.10574018126888217,
+     "flagged_per_100_people_weeks": 2.5294207550053494
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.0,
+     "T3": 0.1,
+     "precision_at_line": 1.0,
+     "flagged_per_100_people_weeks": 0.36363636363636365
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.06223175965665236,
+     "T3": 0.2,
+     "precision_at_line": 0.06451612903225806,
+     "flagged_per_100_people_weeks": 6.485355648535565
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.6,
+     "T2": 0.03924221921515562,
+     "T3": 0.2,
+     "precision_at_line": 0.09375,
+     "flagged_per_100_people_weeks": 4.249667994687915
+    }
+   },
+   "q995": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.00968783638320775,
+     "T3": 0.8,
+     "precision_at_line": 0.17105263157894737,
+     "flagged_per_100_people_weeks": 1.1615466911202812
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.0,
+     "T3": 0.1,
+     "precision_at_line": 1.0,
+     "flagged_per_100_people_weeks": 0.36363636363636365
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.03648068669527897,
+     "T3": 0.2,
+     "precision_at_line": 0.10526315789473684,
+     "flagged_per_100_people_weeks": 3.9748953974895396
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.6,
+     "T2": 0.023004059539918808,
+     "T3": 0.2,
+     "precision_at_line": 0.15,
+     "flagged_per_100_people_weeks": 2.6560424966799467
+    }
+   },
+   "rule_any": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8823529411764706,
+     "T2": 0.02275872674150392,
+     "T3": 0.8,
+     "precision_at_line": 0.10574018126888217,
+     "flagged_per_100_people_weeks": 2.5294207550053494
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.22344322344322345,
+     "T3": 0.1,
+     "precision_at_line": 0.016129032258064516,
+     "flagged_per_100_people_weeks": 22.545454545454547
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.2,
+     "precision_at_line": 0.02510460251046025,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 1.0,
+     "T2": 0.713125845737483,
+     "T3": 0.2,
+     "precision_at_line": 0.024074074074074074,
+     "flagged_per_100_people_weeks": 71.71314741035857
+    }
+   },
+   "rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8823529411764706,
+     "T2": 0.02275872674150392,
+     "T3": 0.8,
+     "precision_at_line": 0.10574018126888217,
+     "flagged_per_100_people_weeks": 2.5294207550053494
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.0,
+     "T3": 0.1,
+     "precision_at_line": 1.0,
+     "flagged_per_100_people_weeks": 0.36363636363636365
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.9957081545064378,
+     "T3": 0.2,
+     "precision_at_line": 0.025210084033613446,
+     "flagged_per_100_people_weeks": 99.581589958159
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 1.0,
+     "T2": 0.6278755074424899,
+     "T3": 0.2,
+     "precision_at_line": 0.027253668763102725,
+     "flagged_per_100_people_weeks": 63.34661354581673
+    }
+   },
+   "priv_pooled": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8823529411764706,
+     "T2": 0.02275872674150392,
+     "T3": 0.8,
+     "precision_at_line": 0.10574018126888217,
+     "flagged_per_100_people_weeks": 2.5294207550053494
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.003663003663003663,
+     "T3": 0.1,
+     "precision_at_line": 0.5,
+     "flagged_per_100_people_weeks": 0.7272727272727273
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.012875536480686695,
+     "T3": 0.2,
+     "precision_at_line": 0.14285714285714285,
+     "flagged_per_100_people_weeks": 1.4644351464435146
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.4,
+     "T2": 0.009472259810554804,
+     "T3": 0.3,
+     "precision_at_line": 0.2222222222222222,
+     "flagged_per_100_people_weeks": 1.1952191235059761
+    }
+   },
+   "priv_pooled_rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8823529411764706,
+     "T2": 0.02275872674150392,
+     "T3": 0.8,
+     "precision_at_line": 0.10574018126888217,
+     "flagged_per_100_people_weeks": 2.5294207550053494
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.003663003663003663,
+     "T3": 0.1,
+     "precision_at_line": 0.5,
+     "flagged_per_100_people_weeks": 0.7272727272727273
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.9957081545064378,
+     "T3": 0.2,
+     "precision_at_line": 0.025210084033613446,
+     "flagged_per_100_people_weeks": 99.581589958159
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 1.0,
+     "T2": 0.6292286874154263,
+     "T3": 0.2,
+     "precision_at_line": 0.027196652719665274,
+     "flagged_per_100_people_weeks": 63.47941567065073
+    }
+   },
+   "priv_pooled_rule_night": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8823529411764706,
+     "T2": 0.02275872674150392,
+     "T3": 0.8,
+     "precision_at_line": 0.10574018126888217,
+     "flagged_per_100_people_weeks": 2.5294207550053494
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.003663003663003663,
+     "T3": 0.1,
+     "precision_at_line": 0.5,
+     "flagged_per_100_people_weeks": 0.7272727272727273
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.21244635193133046,
+     "T3": 0.1,
+     "precision_at_line": 0.029411764705882353,
+     "flagged_per_100_people_weeks": 21.338912133891213
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.6,
+     "T2": 0.13531799729364005,
+     "T3": 0.2,
+     "precision_at_line": 0.038461538461538464,
+     "flagged_per_100_people_weeks": 13.811420982735722
+    }
+   }
+  },
+  "2": {
+   "base": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.013928654337228197,
+     "T3": 0.3,
+     "precision_at_line": 0.15492957746478872,
+     "flagged_per_100_people_weeks": 1.6361960362574894
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.006944444444444444,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 0.6944444444444444
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.007220216606498195,
+     "T3": 0.1,
+     "precision_at_line": 0.2,
+     "flagged_per_100_people_weeks": 0.8818342151675485
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.007125890736342043,
+     "T3": 0.1,
+     "precision_at_line": 0.14285714285714285,
+     "flagged_per_100_people_weeks": 0.8187134502923977
+    }
+   },
+   "base_rank_idx": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.013928654337228197,
+     "T3": 0.1,
+     "precision_at_line": 0.15492957746478872,
+     "flagged_per_100_people_weeks": 1.6361960362574894
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.006944444444444444,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 0.6944444444444444
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.007220216606498195,
+     "T3": 0.1,
+     "precision_at_line": 0.2,
+     "flagged_per_100_people_weeks": 0.8818342151675485
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.007125890736342043,
+     "T3": 0.1,
+     "precision_at_line": 0.14285714285714285,
+     "flagged_per_100_people_weeks": 0.8187134502923977
+    }
+   },
+   "q995": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.006190513038768088,
+     "T3": 0.3,
+     "precision_at_line": 0.1919191919191919,
+     "flagged_per_100_people_weeks": 0.760485481640805
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.003472222222222222,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 0.3472222222222222
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.0036101083032490976,
+     "T3": 0.1,
+     "precision_at_line": 0.3333333333333333,
+     "flagged_per_100_people_weeks": 0.5291005291005291
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.0035629453681710215,
+     "T3": 0.1,
+     "precision_at_line": 0.25,
+     "flagged_per_100_people_weeks": 0.46783625730994155
+    }
+   },
+   "rule_any": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.013928654337228197,
+     "T3": 0.3,
+     "precision_at_line": 0.15492957746478872,
+     "flagged_per_100_people_weeks": 1.6361960362574894
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.21875,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 21.875
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.1,
+     "precision_at_line": 0.02292768959435626,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.7327790973871734,
+     "T3": 0.1,
+     "precision_at_line": 0.020634920634920634,
+     "flagged_per_100_people_weeks": 73.68421052631578
+    }
+   },
+   "rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.013928654337228197,
+     "T3": 0.3,
+     "precision_at_line": 0.15492957746478872,
+     "flagged_per_100_people_weeks": 1.6361960362574894
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.006944444444444444,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 0.6944444444444444
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.1,
+     "precision_at_line": 0.02292768959435626,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.6603325415676959,
+     "T3": 0.1,
+     "precision_at_line": 0.022847100175746926,
+     "flagged_per_100_people_weeks": 66.54970760233918
+    }
+   },
+   "priv_pooled": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.013928654337228197,
+     "T3": 0.3,
+     "precision_at_line": 0.15492957746478872,
+     "flagged_per_100_people_weeks": 1.6361960362574894
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.0,
+     "T3": null,
+     "precision_at_line": null,
+     "flagged_per_100_people_weeks": 0.0
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.01263537906137184,
+     "T3": 0.1,
+     "precision_at_line": 0.125,
+     "flagged_per_100_people_weeks": 1.4109347442680775
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.00831353919239905,
+     "T3": 0.1,
+     "precision_at_line": 0.125,
+     "flagged_per_100_people_weeks": 0.9356725146198831
+    }
+   },
+   "priv_pooled_rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.013928654337228197,
+     "T3": 0.3,
+     "precision_at_line": 0.15492957746478872,
+     "flagged_per_100_people_weeks": 1.6361960362574894
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.0,
+     "T3": null,
+     "precision_at_line": null,
+     "flagged_per_100_people_weeks": 0.0
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.1,
+     "precision_at_line": 0.02292768959435626,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.6579572446555819,
+     "T3": 0.1,
+     "precision_at_line": 0.02292768959435626,
+     "flagged_per_100_people_weeks": 66.3157894736842
+    }
+   },
+   "priv_pooled_rule_night": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7647058823529411,
+     "T2": 0.013928654337228197,
+     "T3": 0.3,
+     "precision_at_line": 0.15492957746478872,
+     "flagged_per_100_people_weeks": 1.6361960362574894
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.0,
+     "T3": null,
+     "precision_at_line": null,
+     "flagged_per_100_people_weeks": 0.0
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.2111913357400722,
+     "T3": 0.1,
+     "precision_at_line": 0.025,
+     "flagged_per_100_people_weeks": 21.164021164021165
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.13895486935866982,
+     "T3": 0.1,
+     "precision_at_line": 0.025,
+     "flagged_per_100_people_weeks": 14.035087719298245
+    }
+   }
+  },
+  "3": {
+   "base": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.015286723054240708,
+     "T3": 0.2,
+     "precision_at_line": 0.16877637130801687,
+     "flagged_per_100_people_weeks": 1.8264488286066587
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.0034602076124567475,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 0.34602076124567477
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.16443594646271512,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 16.318785578747626
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.10714285714285714,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 10.661764705882353
+    }
+   },
+   "base_rank_idx": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.015286723054240708,
+     "T3": 0.2,
+     "precision_at_line": 0.16877637130801687,
+     "flagged_per_100_people_weeks": 1.8264488286066587
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.0034602076124567475,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 0.34602076124567477
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.16443594646271512,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 16.318785578747626
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.10714285714285714,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 10.661764705882353
+    }
+   },
+   "q995": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.5294117647058824,
+     "T2": 0.005121440211065415,
+     "T3": 0.2,
+     "precision_at_line": 0.14285714285714285,
+     "flagged_per_100_people_weeks": 0.593403205918619
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.0,
+     "T3": null,
+     "precision_at_line": null,
+     "flagged_per_100_people_weeks": 0.0
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.08986615678776291,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 8.918406072106261
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.05788177339901478,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 5.759803921568627
+    }
+   },
+   "rule_any": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.015286723054240708,
+     "T3": 0.2,
+     "precision_at_line": 0.16877637130801687,
+     "flagged_per_100_people_weeks": 1.8264488286066587
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.10726643598615918,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 10.726643598615917
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.0,
+     "precision_at_line": 0.007590132827324478,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.6822660098522167,
+     "T3": 0.0,
+     "precision_at_line": 0.007168458781362007,
+     "flagged_per_100_people_weeks": 68.38235294117648
+    }
+   },
+   "rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.015286723054240708,
+     "T3": 0.2,
+     "precision_at_line": 0.16877637130801687,
+     "flagged_per_100_people_weeks": 1.8264488286066587
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.10726643598615918,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 10.726643598615917
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.0,
+     "precision_at_line": 0.007590132827324478,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.6822660098522167,
+     "T3": 0.0,
+     "precision_at_line": 0.007168458781362007,
+     "flagged_per_100_people_weeks": 68.38235294117648
+    }
+   },
+   "priv_pooled": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.015286723054240708,
+     "T3": 0.2,
+     "precision_at_line": 0.16877637130801687,
+     "flagged_per_100_people_weeks": 1.8264488286066587
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.0034602076124567475,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 0.34602076124567477
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.17208413001912046,
+     "T3": 0.0,
+     "precision_at_line": 0.021739130434782608,
+     "flagged_per_100_people_weeks": 17.4573055028463
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.5,
+     "T2": 0.11206896551724138,
+     "T3": 0.0,
+     "precision_at_line": 0.021505376344086023,
+     "flagged_per_100_people_weeks": 11.397058823529411
+    }
+   },
+   "priv_pooled_rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.015286723054240708,
+     "T3": 0.2,
+     "precision_at_line": 0.16877637130801687,
+     "flagged_per_100_people_weeks": 1.8264488286066587
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.10726643598615918,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 10.726643598615917
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.0,
+     "precision_at_line": 0.007590132827324478,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 0.6822660098522167,
+     "T3": 0.0,
+     "precision_at_line": 0.007168458781362007,
+     "flagged_per_100_people_weeks": 68.38235294117648
+    }
+   },
+   "priv_pooled_rule_night": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.8235294117647058,
+     "T2": 0.015286723054240708,
+     "T3": 0.2,
+     "precision_at_line": 0.16877637130801687,
+     "flagged_per_100_people_weeks": 1.8264488286066587
+    },
+    "SecurityAuditor": {
+     "insiders": 0,
+     "T1": null,
+     "T2": 0.10726643598615918,
+     "T3": null,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 10.726643598615917
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.75,
+     "T2": 0.32887189292543023,
+     "T3": 0.0,
+     "precision_at_line": 0.017142857142857144,
+     "flagged_per_100_people_weeks": 33.206831119544596
+    },
+    "Privileged": {
+     "insiders": 4,
+     "T1": 0.75,
+     "T2": 0.25,
+     "T3": 0.0,
+     "precision_at_line": 0.014563106796116505,
+     "flagged_per_100_people_weeks": 25.245098039215684
+    }
+   }
+  },
+  "4": {
+   "base": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.009684667234833811,
+     "T3": 0.7,
+     "precision_at_line": 0.1987179487179487,
+     "flagged_per_100_people_weeks": 1.2001846437913526
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.05454545454545454,
+     "T3": 0.1,
+     "precision_at_line": 0.0625,
+     "flagged_per_100_people_weeks": 5.776173285198556
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.01680672268907563,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 1.6474464579901154
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.2,
+     "T2": 0.028735632183908046,
+     "T3": 0.1,
+     "precision_at_line": 0.038461538461538464,
+     "flagged_per_100_people_weeks": 2.941176470588235
+    }
+   },
+   "base_rank_idx": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.009684667234833811,
+     "T3": 0.0,
+     "precision_at_line": 0.1987179487179487,
+     "flagged_per_100_people_weeks": 1.2001846437913526
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.05454545454545454,
+     "T3": 0.1,
+     "precision_at_line": 0.0625,
+     "flagged_per_100_people_weeks": 5.776173285198556
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.01680672268907563,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 1.6474464579901154
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.2,
+     "T2": 0.028735632183908046,
+     "T3": 0.1,
+     "precision_at_line": 0.038461538461538464,
+     "flagged_per_100_people_weeks": 2.941176470588235
+    }
+   },
+   "q995": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.004648640272720229,
+     "T3": 0.7,
+     "precision_at_line": 0.27710843373493976,
+     "flagged_per_100_people_weeks": 0.6385597784274504
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.05090909090909091,
+     "T3": 0.1,
+     "precision_at_line": 0.06666666666666667,
+     "flagged_per_100_people_weeks": 5.415162454873646
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.011764705882352941,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 1.1532125205930808
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.2,
+     "T2": 0.02413793103448276,
+     "T3": 0.1,
+     "precision_at_line": 0.045454545454545456,
+     "flagged_per_100_people_weeks": 2.48868778280543
+    }
+   },
+   "rule_any": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.009684667234833811,
+     "T3": 0.7,
+     "precision_at_line": 0.1987179487179487,
+     "flagged_per_100_people_weeks": 1.2001846437913526
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.13454545454545455,
+     "T3": 0.1,
+     "precision_at_line": 0.02631578947368421,
+     "flagged_per_100_people_weeks": 13.718411552346572
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.1,
+     "precision_at_line": 0.019769357495881382,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 1.0,
+     "T2": 0.7264367816091954,
+     "T3": 0.2,
+     "precision_at_line": 0.020155038759689922,
+     "flagged_per_100_people_weeks": 72.96380090497738
+    }
+   },
+   "rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.009684667234833811,
+     "T3": 0.7,
+     "precision_at_line": 0.1987179487179487,
+     "flagged_per_100_people_weeks": 1.2001846437913526
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.13454545454545455,
+     "T3": 0.1,
+     "precision_at_line": 0.02631578947368421,
+     "flagged_per_100_people_weeks": 13.718411552346572
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.1,
+     "precision_at_line": 0.019769357495881382,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 1.0,
+     "T2": 0.7264367816091954,
+     "T3": 0.2,
+     "precision_at_line": 0.020155038759689922,
+     "flagged_per_100_people_weeks": 72.96380090497738
+    }
+   },
+   "priv_pooled": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.009684667234833811,
+     "T3": 0.7,
+     "precision_at_line": 0.1987179487179487,
+     "flagged_per_100_people_weeks": 1.2001846437913526
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.0036363636363636364,
+     "T3": 0.1,
+     "precision_at_line": 0.5,
+     "flagged_per_100_people_weeks": 0.7220216606498195
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.0,
+     "T2": 0.023529411764705882,
+     "T3": 0.0,
+     "precision_at_line": 0.0,
+     "flagged_per_100_people_weeks": 2.3064250411861615
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.2,
+     "T2": 0.017241379310344827,
+     "T3": 0.1,
+     "precision_at_line": 0.0625,
+     "flagged_per_100_people_weeks": 1.809954751131222
+    }
+   },
+   "priv_pooled_rule_person": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.009684667234833811,
+     "T3": 0.7,
+     "precision_at_line": 0.1987179487179487,
+     "flagged_per_100_people_weeks": 1.2001846437913526
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.11272727272727273,
+     "T3": 0.1,
+     "precision_at_line": 0.03125,
+     "flagged_per_100_people_weeks": 11.552346570397113
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 1.0,
+     "T2": 1.0,
+     "T3": 0.1,
+     "precision_at_line": 0.019769357495881382,
+     "flagged_per_100_people_weeks": 100.0
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 1.0,
+     "T2": 0.7195402298850575,
+     "T3": 0.2,
+     "precision_at_line": 0.02034428794992175,
+     "flagged_per_100_people_weeks": 72.28506787330316
+    }
+   },
+   "priv_pooled_rule_night": {
+    "Caregiver": {
+     "insiders": 17,
+     "T1": 0.7058823529411765,
+     "T2": 0.009684667234833811,
+     "T3": 0.7,
+     "precision_at_line": 0.1987179487179487,
+     "flagged_per_100_people_weeks": 1.2001846437913526
+    },
+    "SecurityAuditor": {
+     "insiders": 1,
+     "T1": 1.0,
+     "T2": 0.11272727272727273,
+     "T3": 0.1,
+     "precision_at_line": 0.03125,
+     "flagged_per_100_people_weeks": 11.552346570397113
+    },
+    "SysAdmin": {
+     "insiders": 4,
+     "T1": 0.25,
+     "T2": 0.20504201680672268,
+     "T3": 0.0,
+     "precision_at_line": 0.016129032258064516,
+     "flagged_per_100_people_weeks": 20.42833607907743
+    },
+    "Privileged": {
+     "insiders": 5,
+     "T1": 0.4,
+     "T2": 0.17586206896551723,
+     "T3": 0.1,
+     "precision_at_line": 0.019230769230769232,
+     "flagged_per_100_people_weeks": 17.647058823529413
+    }
+   }
+  }
+ }
+}
