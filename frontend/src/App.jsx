@@ -1,3 +1,4 @@
+import PausedPage from './pages/PausedPage.jsx';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -15,8 +16,12 @@ import EncryptionKeysPage from './pages/admin/EncryptionKeysPage.jsx';
 import RetentionPage from './pages/admin/RetentionPage.jsx';
 import UsersPage from './pages/admin/UsersPage.jsx';
 import SettingsPage from './pages/admin/SettingsPage.jsx';
-import RiskThresholdsPage from './pages/auditor/RiskThresholdsPage.jsx';
 import ConsentManagementPage from './pages/caregiver/ConsentManagementPage.jsx';
+import WeeklyReviewPage from './pages/WeeklyReviewPage.jsx';
+import ApprovalsPage from './pages/admin/ApprovalsPage.jsx';
+import ChildAccessPage from './pages/caregiver/ChildAccessPage.jsx';
+import EducatorDashboard from './pages/educator/EducatorDashboard.jsx';
+import EducatorChildPage from './pages/educator/EducatorChildPage.jsx';
 
 // "/" renders a different dashboard per role rather than redirecting to
 // three separate paths -- the role comes from the server (via /auth/me),
@@ -24,6 +29,7 @@ import ConsentManagementPage from './pages/caregiver/ConsentManagementPage.jsx';
 function RoleHome() {
   const { user } = useAuth();
   if (user.role === 'Caregiver') return <CaregiverDashboard />;
+  if (user.role === 'Educator') return <EducatorDashboard />;
   if (user.role === 'SecurityAuditor') return <AuditorDashboard />;
   if (user.role === 'SysAdmin') return <AdminPanel />;
   return null;
@@ -34,6 +40,14 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/paused"
+        element={
+          <ProtectedRoute>
+            <PausedPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/change-password"
         element={
@@ -74,6 +88,8 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/caregiver/access" element={<ProtectedRoute allowedRoles={['Caregiver']}><ChildAccessPage /></ProtectedRoute>} />
+      <Route path="/educator/children/:childProfileId" element={<ProtectedRoute allowedRoles={['Educator']}><EducatorChildPage /></ProtectedRoute>} />
       <Route
         path="/auditor/audit-log"
         element={
@@ -91,10 +107,26 @@ export default function App() {
         }
       />
       <Route
-        path="/auditor/risk-thresholds"
+        path="/auditor/weekly-review"
         element={
           <ProtectedRoute allowedRoles={['SecurityAuditor']}>
-            <RiskThresholdsPage />
+            <WeeklyReviewPage scope="auditor" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/auditor-reviews"
+        element={
+          <ProtectedRoute allowedRoles={['SysAdmin']}>
+            <WeeklyReviewPage scope="admin" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/approvals"
+        element={
+          <ProtectedRoute allowedRoles={['SysAdmin']}>
+            <ApprovalsPage />
           </ProtectedRoute>
         }
       />

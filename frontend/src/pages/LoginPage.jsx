@@ -4,6 +4,17 @@ import { login as apiLogin, verifyMfa as apiVerifyMfa } from '../api/auth';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Field, inputClass, Button, Alert } from '../components/ui.jsx';
 
+// After sign-in, go back to the page that was open only if THIS account may
+// see it. With several people sharing one browser, the remembered page can
+// belong to the previous account (e.g. a caregiver page, then an auditor
+// signs in); sending the new account there only produced a refusal.
+const AREA_ROLE = { '/caregiver': 'Caregiver', '/educator': 'Educator', '/auditor': 'SecurityAuditor', '/admin': 'SysAdmin' };
+function destinationFor(role, from) {
+  if (!from || from === '/login' || from === '/paused') return '/';
+  const area = Object.keys(AREA_ROLE).find((a) => from === a || from.startsWith(`${a}/`));
+  return !area || AREA_ROLE[area] === role ? from : '/';
+}
+
 
 
 function Stepper({ step }) {
@@ -124,7 +135,7 @@ export default function LoginPage() {
         setStep('mfa');
       } else {
         completeLogin(data);
-        navigate(location.state?.from?.pathname || '/', { replace: true });
+        navigate(destinationFor(data.role, location.state?.from?.pathname), { replace: true });
       }
     } catch (err) {
       setError(err.message);
@@ -140,7 +151,7 @@ export default function LoginPage() {
     try {
       const data = await apiVerifyMfa(challengeId, code);
       completeLogin(data);
-      navigate(location.state?.from?.pathname || '/', { replace: true });
+      navigate(destinationFor(data.role, location.state?.from?.pathname), { replace: true });
     } catch (err) {
       // After too many wrong codes the code is cancelled: back to step one.
       if (err.code === 'MFA_CODE_CANCELLED') {
@@ -175,8 +186,8 @@ export default function LoginPage() {
         </div>
         <div />
       </div>
-      <div className="flex-1 flex items-center justify-center p-8 bg-cream">
-        <div className="w-full max-w-[420px] bg-white rounded-3xl shadow-card p-10">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-cream">
+        <div className="w-full max-w-[420px] bg-white rounded-3xl shadow-card p-6 sm:p-10">
           <Stepper step={step} />
 
           <h2 className="font-display text-[1.75rem] font-bold text-ink mb-2">

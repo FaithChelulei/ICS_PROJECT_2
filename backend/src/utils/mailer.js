@@ -155,7 +155,87 @@ A higher limit flags fewer sessions. If this change was not expected, review it 
   });
 }
 
+// Two-person approval (db/009_weekly_review.sql): tells the other System
+// Administrators that a powerful action is waiting for a second person.
+async function sendApprovalRequestEmail(toEmail, { action, reason, requestedBy }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] ${requestedBy} asked for approval to ${action}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'An action is waiting for your approval',
+    text: `${requestedBy} has asked to ${action}.
+
+Reason given: ${reason}
+
+This action needs a second System Administrator. Sign in to ChildGuard and open Approvals to approve or reject it. The request expires after 24 hours.`,
+  });
+}
+
+// Layer 1 health (DPIA gap G5): the risk scoring service stopped answering,
+// so actions are logged but not scored until it is back.
+async function sendScoringOfflineEmail(toEmail, { since }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] risk scoring offline since ${since}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'ChildGuard risk scoring is offline',
+    text: `The risk scoring service has not answered since ${since}.
+
+Until it is back, every action is still recorded but not scored, so unusual activity will not sign anyone out. Restart the scoring service (ml/service/app.py). The home page shows when it is back.`,
+  });
+}
+
+// A Security Auditor has decided a flagged session is a breach that must be
+// reported (KDPA s.43): the System Administrators are told, with the clock.
+async function sendBreachReportEmail(toEmail, { decidedAt, flaggedAt, reason, auditor }) {
+  const deadline = new Date(new Date(flaggedAt).getTime() + 72 * 60 * 60 * 1000).toISOString();
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] breach reported to ${toEmail} by ${auditor}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'ChildGuard: a breach has been reported to you',
+    text: `A Security Auditor (${auditor}) has decided that a flagged session is a breach with a real risk of harm.
+
+Decided: ${decidedAt}
+Their reasoning: ${reason}
+
+Under the Kenya Data Protection Act (section 43) it must be acted on within 72 hours of the flag, that is by ${deadline}. It is listed on your ChildGuard home page.`,
+  });
+}
+
+// The weekly review: a Security Auditor (or, for an auditor's week, an
+// admin) marked a person's week "Action needed". No child data in it.
+async function sendWeeklyActionEmail(toEmail, { person, role, week, note, decidedBy }) {
+  if (!transporter) {
+    console.log(`[DEV — no SMTP configured] weekly review action needed for ${person}, sent to ${toEmail}`);
+    return;
+  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'ChildGuard: action needed on a person’s activity this week',
+    text: `${decidedBy} reviewed ${person} (${role}) for the week ${week} and marked it "Action needed".
+
+Their note: ${note}
+
+Please follow it up: speak to the person or their centre, and if their access should be limited, lock the account under Locked Accounts or change their role under Users. The decision is in the audit log.`,
+  });
+}
+
 module.exports = {
+  sendWeeklyActionEmail,
+  sendBreachReportEmail,
+  sendApprovalRequestEmail,
+  sendScoringOfflineEmail,
   sendMfaCodeEmail,
   sendRiskAlertEmail,
   sendAccountApprovedEmail,

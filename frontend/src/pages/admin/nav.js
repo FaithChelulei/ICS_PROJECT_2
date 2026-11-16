@@ -6,4 +6,6 @@ export const ADMIN_NAV = [
   { to: '/admin/encryption-keys', label: 'Encryption Keys', icon: 'key' },
   { to: '/admin/retention', label: 'Data Retention', icon: 'clock' },
   { to: '/admin/settings', label: 'System Settings', icon: 'sliders' },
+  { to: '/admin/approvals', label: 'Approvals', icon: 'check' },
+  { to: '/admin/auditor-reviews', label: 'Auditor Reviews', icon: 'shield' },
 ];

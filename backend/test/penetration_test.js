@@ -112,8 +112,10 @@ async function main() {
 
   // Fixtures: one child of the OTHER caregiver (the victim), with records
   // consent, and one of our own WITHOUT records consent.
+  // Four years old (ECD age) whenever the test runs.
+  const VICTIM_DOB = new Date(Date.now() - 4 * 365.25 * 86400000).toISOString().slice(0, 10);
   const victim = (await api('/children', {
-    method: 'POST', token: cg2Token, body: { fullName: 'Victim Child', dateOfBirth: '2020-05-05', developmentalRecordsConsent: true, ...NOTICE },
+    method: 'POST', token: cg2Token, body: { fullName: 'Victim Child', dateOfBirth: VICTIM_DOB, developmentalRecordsConsent: true, ...NOTICE },
   })).json.childProfileId;
   await api(`/children/${victim}/records`, {
     method: 'POST', token: cg2Token, body: { milestone: 'Private milestone', healthIndicator: 'Private', assessmentScore: 5 },
@@ -298,6 +300,115 @@ async function main() {
     check('Email-link checks (SKIPPED: run npm run test:anomaly first to create test alerts)', true);
   }
   check('Forged email-link token', isRefused(await api('/risk-response/1/confirm', { method: 'POST', body: { token: 'forged' } })));
+
+  // ------------------------------------------------------------- 8
+  section('8. Weekly review and two-person approval');
+  check('Caregiver reads the weekly review', isRefused(await asCg('/auditor/weekly-review'), 403));
+  check('Caregiver re-scores the week', isRefused(await asCg('/auditor/weekly-review/refresh', { method: 'POST' }), 403));
+  check('Caregiver records a weekly decision', isRefused(await asCg('/auditor/weekly-review/1/decision', {
+    method: 'POST', body: { status: 'no_concern', note: 'clearing my own week' } }), 403));
+  check("Admin uses the auditors' weekly review", isRefused(await api('/auditor/weekly-review', { token: adToken }), 403));
+  check("Auditor uses the admins' review of auditors", isRefused(await api('/admin/weekly-review', { token: auToken }), 403));
+  check('Tampered weekly review number ("1 OR 1=1")', isRefused(await api(`/auditor/weekly-review/${encodeURIComponent('1 OR 1=1')}`, { token: auToken }), 400));
+  check('Injected decision status', isRefused(await api('/auditor/weekly-review/1/decision', {
+    method: 'POST', token: auToken, body: { status: "escalated'; DROP TABLE users;--", note: 'injection attempt here' } }), 400));
+  check('Auditor asks for a powerful-action approval', isRefused(await api('/admin/approvals', {
+    method: 'POST', token: auToken, body: { action: 'reencrypt_data', reason: 'auditor trying an admin action', password: PASS } }), 403));
+  const asked = await api('/admin/approvals', { method: 'POST', token: adToken,
+    body: { action: 'reencrypt_data', reason: 'Penetration test request (left pending)', password: PASS } });
+  check('One admin approves their own request', isRefused(await api(`/admin/approvals/${asked.json && asked.json.id}/approve`, {
+    method: 'POST', token: adToken, body: { reason: 'approving my own request', password: PASS } }), 403));
+  check('Re-encryption with a request nobody approved', isRefused(await api('/admin/encryption/reencrypt', {
+    method: 'POST', token: adToken, body: { password: PASS, approvalId: asked.json && asked.json.id } }), 409));
+  check('Re-encryption with a forged approval number', isRefused(await api('/admin/encryption/reencrypt', {
+    method: 'POST', token: adToken, body: { password: PASS, approvalId: '1; UPDATE pending_approvals SET status=approved' } }), 409));
+  await db.query("UPDATE pending_approvals SET status = 'rejected', decided_at = now(), decision_reason = 'closed by the penetration test' WHERE requested_by = $1 AND status = 'pending'", [ad.id]).catch(() => {});
+
+  section('9. Educator access');
+  {
+    const ed = await ensure('educator', 'Educator', 'test.educator');
+    const ed2 = await ensure('educator2', 'Educator', 'test.educator2');
+    const edToken = (await api('/auth/login', { method: 'POST', headers: { 'X-Device-Name': 'test-device-educator' },
+      body: { identifier: ed.email, password: PASS } })).json.token;
+    // Each educator works from the device the API test gave that account.
+    const ed2Device = { 'X-Device-Name': 'test-device-educator2' };
+    const ed2Token = (await api('/auth/login', { method: 'POST', headers: ed2Device,
+      body: { identifier: ed2.email, password: PASS } })).json.token;
+    await db.query("UPDATE educator_access SET status = CASE WHEN status = 'granted' THEN 'revoked' ELSE 'refused' END, ended_at = now(), decided_by = $2 WHERE educator_id = ANY($1) AND status IN ('pending', 'granted')", [[ed.id, ed2.id], cg2.id]);
+    // The educator works from the device the API test gave this account; a
+    // device it has never used would (correctly) be signed out on first read.
+    const edDevice = { 'X-Device-Name': 'test-device-educator' };
+    const asEd = (p, opts = {}) => api(p, { token: edToken, ...opts, headers: { ...edDevice, ...(opts.headers || {}) } });
+    const r0 = await asEd(`/educator/children/${victim}/records`);
+    check('Educator reads a child nobody shared with them', isRefused(r0, 403) && !r0.text.includes('Private milestone'));
+    check('Educator reads the child through the parent\'s address', isRefused(await asEd(`/children/${victim}/records`), 403));
+    check('Educator adds a record to a child', isRefused(await asEd(`/children/${victim}/records`, {
+      method: 'POST', body: { milestone: 'x', healthIndicator: 'x', assessmentScore: 1 } }), 403));
+    check('Educator lists the parent\'s access requests', isRefused(await asEd('/children/access'), 403));
+
+    // Educator 1 asks for the victim child by name; the parent decides.
+    await asEd('/educator/access-requests', { method: 'POST', body: { childName: 'Victim Child', reason: 'Penetration test: class educator' } });
+    const inbox = await api('/children/access', { token: cg2Token });
+    const reqRow = inbox.json && inbox.json.requests.find((r) => r.status === 'pending' && r.childProfileId === victim);
+    if (!reqRow) throw new Error('setup: the request by name did not reach the parent');
+    check('Educator approves their own request', isRefused(await asEd(`/children/access/${reqRow.id}/decision`, { method: 'POST', body: { decision: 'grant' } }), 403));
+    check('Another parent approves the request', isRefused(await asCg(`/children/access/${reqRow.id}/decision`, { method: 'POST', body: { decision: 'grant' } }), 404));
+    check('Auditor approves the request', isRefused(await api(`/children/access/${reqRow.id}/decision`, { method: 'POST', token: auToken, body: { decision: 'grant' } }), 403));
+    check('Access granted "for ever" (days = 100000)', isRefused(await api(`/children/access/${reqRow.id}/decision`, {
+      method: 'POST', token: cg2Token, body: { decision: 'grant', days: 100000 } }), 400));
+    check('Injected access-request number', isRefused(await api(`/children/access/${encodeURIComponent('1 OR 1=1')}/decision`, {
+      method: 'POST', token: cg2Token, body: { decision: 'grant' } }), 404));
+    await api(`/children/access/${reqRow.id}/decision`, { method: 'POST', token: cg2Token, body: { decision: 'grant', days: 30 } });
+    const ok = await asEd(`/educator/children/${victim}/records`);
+    if (ok.status !== 200) throw new Error(`setup: the granted educator could not read the child (${ok.status})`);
+    check('Granted educator still cannot change the record or consent', isRefused(await asEd(`/children/${victim}/consent`, {
+      method: 'POST', body: { scope: 'developmental_records', consentGiven: false } }), 403));
+    const r2 = await api(`/educator/children/${victim}/records`, { token: ed2Token });
+    check('A second educator reads the child shared with the first', isRefused(r2, 403) && !r2.text.includes('Private milestone'));
+    const forged = await api(`/educator/children/${victim}/records`, { token: ed2Token, headers: { 'X-Educator-Id': String(ed.id) } });
+    check('Second educator pretends to be the first (forged header)', isRefused(forged, 403));
+    const kids = await asEd('/educator/children');
+    check('The educator never receives the birth date or family background', kids.status === 200
+      && !kids.text.includes(VICTIM_DOB) && !/dateOfBirth|familyBackground/.test(kids.text) && !/dateOfBirth|familyBackground/.test(ok.text));
+
+    // Probing which children are registered: the reply is the same for a
+    // real child and an invented one, and asking is capped at 30 a day.
+    const probeReal = await api('/educator/access-requests', { method: 'POST', token: ed2Token, headers: ed2Device,
+      body: { childName: 'Victim Child', reason: 'probing for registered children' } });
+    const probeFake = await api('/educator/access-requests', { method: 'POST', token: ed2Token, headers: ed2Device,
+      body: { childName: 'Invented Nobody Child', reason: 'probing for registered children' } });
+    check('Educator finds out which children are on ChildGuard', probeReal.status === 201 && probeFake.status === 201
+      && probeReal.json.message === probeFake.json.message && Object.keys(probeReal.json).sort().join() === Object.keys(probeFake.json).sort().join());
+    let limited = false;
+    for (let i = 0; i < 32 && !limited; i++) {
+      const g = await api('/educator/access-requests', { method: 'POST', token: ed2Token, headers: ed2Device,
+        body: { childName: `Guessed ${'abcdefghijklmnopqrstuvwxyzabcdef'[i]}name Child`, reason: 'sweeping through children by name' } });
+      limited = g.status === 429;
+    }
+    check('Sweeping through names is stopped after 30 requests a day', limited);
+    const inj = await api('/educator/access-requests', { method: 'POST', token: edToken,
+      body: { childName: "x' OR 1=1 --", reason: 'injection in the child name' } });
+    check('Injected child name', isRefused(inj, 400, 429) || (inj.status === 201 && !inj.text.includes('Victim')));
+    const { rows: [spill] } = await db.query("SELECT COUNT(*)::int AS n FROM educator_access WHERE educator_id = $1 AND status = 'pending'", [ed.id]);
+    check('The injected name reached no parent', spill.n === 0);
+
+    await api(`/children/access/${reqRow.id}/revoke`, { method: 'POST', token: cg2Token });
+    const after = await asEd(`/educator/children/${victim}/records`);
+    check('Educator reads the child after the parent took access back', isRefused(after, 403) && !after.text.includes('Private milestone'));
+
+    // A stolen login on a device this educator has never used: stopped on
+    // the very first page, before the list of shared children is returned.
+    await api(`/children/access/${reqRow.id}/decision`, { method: 'POST', token: cg2Token, body: { decision: 'grant' } }).catch(() => {});
+    await asEd('/educator/access-requests', { method: 'POST', body: { childName: 'Victim Child', reason: 'Penetration test: stolen login setup' } });
+    const again = (await api('/children/access', { token: cg2Token })).json.requests.find((r) => r.status === 'pending' && r.childProfileId === victim);
+    if (again) await api(`/children/access/${again.id}/decision`, { method: 'POST', token: cg2Token, body: { decision: 'grant', days: 7 } });
+    const thiefDevice = { 'X-Device-Name': `thief-laptop-${Date.now()}` };
+    const thief = await api('/auth/login', { method: 'POST', headers: thiefDevice, body: { identifier: ed.email, password: PASS } });
+    const stolenList = await api('/educator/children', { token: thief.json && thief.json.token, headers: thiefDevice });
+    if (!thief.json || !thief.json.token) throw new Error(`setup: the stolen-password sign-in did not work (${thief.status})`);
+    check('Stolen educator login on a new device opens the children list', isRefused(stolenList, 401)
+      && stolenList.json && stolenList.json.code === 'SESSION_REVOKED_RISK' && !stolenList.text.includes('Victim'));
+  }
 
   const blocked = results.filter((r) => r.pass).length;
   console.log('\n=== SUMMARY ===');

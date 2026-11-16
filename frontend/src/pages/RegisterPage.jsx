@@ -5,7 +5,7 @@ import { Field, inputClass, Button, Alert, Card } from '../components/ui.jsx';
 import PrivacyNotice, { PRIVACY_NOTICE_VERSION } from '../components/PrivacyNotice.jsx';
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ fullName: '', email: '', requestedRole: 'Caregiver', reason: '' });
+  const [form, setForm] = useState({ fullName: '', email: '', requestedRole: '', reason: '', ecdCentre: '', centrePhone: '' });
   const [done, setDone] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -64,14 +64,42 @@ export default function RegisterPage() {
               </div>
               <Field label="Role">
                 <select
+                  required
                   value={form.requestedRole}
                   onChange={(e) => update('requestedRole', e.target.value)}
                   className={inputClass}
                 >
-                  <option value="Caregiver">Caregiver</option>
+                  <option value="" disabled>Choose your role…</option>
+                  <option value="Caregiver">Caregiver (parent or guardian)</option>
+                  <option value="Educator">Educator (ECD centre)</option>
                   <option value="SecurityAuditor">Security Auditor</option>
                 </select>
               </Field>
+              {form.requestedRole === 'Educator' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="ECD centre where you work">
+                    <input
+                      required
+                      maxLength={200}
+                      value={form.ecdCentre}
+                      onChange={(e) => update('ecdCentre', e.target.value)}
+                      placeholder="e.g. Sunrise ECD Centre, Kiambu"
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Centre phone number">
+                    <input
+                      required
+                      type="tel"
+                      maxLength={20}
+                      value={form.centrePhone}
+                      onChange={(e) => update('centrePhone', e.target.value)}
+                      placeholder="e.g. 0712 345 678"
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
+              )}
               <Field label="Reason (optional)">
                 <textarea
                   value={form.reason}

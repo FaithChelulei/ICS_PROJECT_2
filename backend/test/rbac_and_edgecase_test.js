@@ -42,10 +42,20 @@ const ACCOUNTS = {
   cg2: { tag: 'caregiver2', role: 'Caregiver', username: 'test.caregiver2', name: 'Test Caregiver Two' },
   au: { tag: 'auditor', role: 'SecurityAuditor', username: 'test.auditor', name: 'Test Auditor' },
   ad: { tag: 'admin', role: 'SysAdmin', username: 'test.admin', name: 'Test Admin' },
+  // A second admin and a second auditor: two-person approval and "nobody
+  // reviews their own week" need a different person of the same role.
+  ad2: { tag: 'admin2', role: 'SysAdmin', username: 'test.admin2', name: 'Test Admin Two' },
+  au2: { tag: 'auditor2', role: 'SecurityAuditor', username: 'test.auditor2', name: 'Test Auditor Two' },
   // Has no children and exists only to have its role changed and put back.
   rc: { tag: 'rolechange', role: 'Caregiver', username: 'test.rolechange', name: 'Test Role Change' },
   // Signs in with an emailed code (the others skip it so the suite can run unattended).
   mf: { tag: 'mfa', role: 'Caregiver', username: 'test.mfa', name: 'Test Sign-in Code' },
+  // Educator access: a caregiver who shares a child, and two teachers.
+  sh: { tag: 'sharing', role: 'Caregiver', username: 'test.sharing', name: 'Test Sharing Caregiver' },
+  ed: { tag: 'educator', role: 'Educator', username: 'test.educator', name: 'Test Educator' },
+  ed2: { tag: 'educator2', role: 'Educator', username: 'test.educator2', name: 'Test Educator Two' },
+  // The "Take action" case flow (pause until verified, then access removed).
+  ce: { tag: 'caseeducator', role: 'Educator', username: 'test.case.educator', name: 'Test Case Educator' },
 };
 
 const results = [];
@@ -144,6 +154,16 @@ async function main() {
   const au = await login(auAcct.email); // by EMAIL
   record('Login with email works', Boolean(au.token));
   const ad = await login(adAcct.email);
+  const ad2Acct = await ensureTestAccount(ACCOUNTS.ad2);
+  await ageTestActivity([ad2Acct.id]);
+  const ad2 = await login(ad2Acct.email);
+  // Two-person approval: test.admin asks, test.admin2 approves. Returns the id.
+  async function approved(action) {
+    const asked = await api('/admin/approvals', { method: 'POST', token: ad.token, body: { action, reason: 'Automated test run of two-person approval', password: PASS } });
+    if (asked.status !== 201) return null;
+    const ok = await api(`/admin/approvals/${asked.json.id}/approve`, { method: 'POST', token: ad2.token, body: { reason: 'Second admin approves for the test', password: PASS } });
+    return ok.status === 200 ? asked.json.id : null;
+  }
 
   console.log('\n=== Sign-in code (MFA) ===');
   const mfAcct = await ensureTestAccount(ACCOUNTS.mf);
@@ -433,7 +453,7 @@ async function main() {
   if (dueOwners[0].other > 0) {
     record('Retention apply (SKIPPED: real profiles are due -- not anonymising them from a test run)', true);
   } else {
-    const applied = await api('/admin/retention/apply', { method: 'POST', token: ad.token, body: { password: PASS } });
+    const applied = await api('/admin/retention/apply', { method: 'POST', token: ad.token, body: { password: PASS, approvalId: await approved('apply_retention') } });
     record('SysAdmin applies retention (200) and this child is anonymised',
       applied.status === 200 && applied.json.childProfileIds.includes(kidId), applied.json && `anonymised=${applied.json.anonymised}`);
     const afterRet = await as2('/children');
@@ -471,7 +491,16 @@ async function main() {
     const after = await api('/children', { token: cg2.token, device: deviceB });
     record('Flagged session is revoked (next call 401)', after.status === 401, `status=${after.status}`);
     record('401 explains it was a risk sign-out', after.json && after.json.code === 'SESSION_REVOKED_RISK', after.json && after.json.code);
+    // Device A is the owner's usual device: in real use it was used on
+    // earlier days (here the whole test runs on one fresh day). Its pages
+    // must keep working while the thief's device B is shut out.
+    await ageTestActivity([cgAcct.id]);
     const firstSession = await api('/children', { token: cg.token, device: deviceA });
+    const { isKnownDevice } = require('../src/services/featureComputation');
+    const [knownA, knownB] = await db.runAs({ userId: cgAcct.id, role: 'Caregiver' },
+      () => Promise.all([isKnownDevice(cgAcct.id, deviceA), isKnownDevice(cgAcct.id, deviceB)]));
+    record('The usual device is trusted; a device that was flagged never becomes trusted the next day', knownA === true && knownB === false,
+      `deviceA=${knownA} deviceB=${knownB}`);
     record('The other (device A) session is unaffected', firstSession.status === 200, `status=${firstSession.status}`);
 
     const { rows } = await db.query(
@@ -537,7 +566,7 @@ async function main() {
     const decided = await decide(valid);
     record('Auditor records the decision on an escalated session (200, within 72 h)',
       decided.status === 200 && decided.json.withinWindow === true, decided.json && `${decided.json.hoursAfterFlag} h after flag`);
-    record('The decision cannot be changed afterwards (409)', (await decide({ ...valid, decision: 'notified_commissioner' })).status === 409);
+    record('The decision cannot be changed afterwards (409)', (await decide({ ...valid, decision: 'reported_to_admin' })).status === 409);
     const { rows: brLog } = await db.query(
       "SELECT detail FROM audit_log WHERE user_id = $1 AND action = 'breach_decision_recorded' ORDER BY id DESC LIMIT 1", [auAcct.id]);
     record('Breach decision is in the audit log with its timing',
@@ -559,7 +588,9 @@ async function main() {
   const { rows: stepLog } = await db.query(
     "SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = $1 AND action = 'step_up_failed'", [adAcct.id]);
   record('Failed step-up attempts are in the audit log', stepLog[0].n > 0, `${stepLog[0].n} entries`);
-  const re = await api('/admin/encryption/reencrypt', { method: 'POST', token: ad.token, body: { password: PASS } });
+  const unapproved = await api('/admin/encryption/reencrypt', { method: 'POST', token: ad.token, body: { password: PASS } });
+  record("Re-encrypt without a second admin's approval is refused (409)", unapproved.status === 409 && unapproved.json.code === 'APPROVAL_REQUIRED', `status=${unapproved.status}`);
+  const re = await api('/admin/encryption/reencrypt', { method: 'POST', token: ad.token, body: { password: PASS, approvalId: await approved('reencrypt_data') } });
   record('Re-encrypt runs (200) and leaves nothing behind', re.status === 200 && re.json.status.needsReencryption === 0,
     re.json ? `updated ${re.json.updatedValues} value(s)` : `status=${re.status}`);
   const relist = await api('/children', { token: cg.token, device: deviceA });
@@ -602,7 +633,7 @@ async function main() {
     const limits = await api('/auditor/risk-thresholds', { token: au.token });
     const cgLimit = limits.json && limits.json.thresholds.find((t) => t.role === 'Caregiver');
     const ownLimit = limits.json && limits.json.thresholds.find((t) => t.role === 'SecurityAuditor');
-    record('Auditor sees the limits for all three roles', limits.status === 200 && limits.json.thresholds.length === 3);
+    record('Auditor sees the limits for all four roles', limits.status === 200 && limits.json.thresholds.length === 4);
     record('Auditor\'s own role is marked not editable', ownLimit && ownLimit.editable === false && cgLimit.editable === true);
     await expectStatus('Caregiver cannot read risk limits (403)', '/auditor/risk-thresholds', { token: cg.token, device: deviceA }, 403);
     await expectStatus('Admin cannot read risk limits (403)', '/auditor/risk-thresholds', { token: ad.token }, 403);
@@ -700,7 +731,7 @@ async function main() {
   });
   try {
     const settings = await api('/admin/settings', { token: ad.token });
-    record('Admin sees the two settings', settings.status === 200 && settings.json.settings.length === 2);
+    record('Admin sees the three settings', settings.status === 200 && settings.json.settings.length === 3);
     const settingsText = JSON.stringify(settings.json);
     record('Settings show no keys or passwords', !/ENCRYPTION|JWT|SMTP|DATABASE|password/i.test(settingsText));
     await expectStatus('Caregiver cannot read settings (403)', '/admin/settings', { token: rcBack.token }, 403);
@@ -720,6 +751,478 @@ async function main() {
     record('Setting changes are in the audit log', settingLog[0].n >= 2);
   } finally {
     await clearSettings();
+  }
+
+  console.log('\n=== Two-person approval (re-encryption, anonymising) ===');
+  {
+    const adA = await login(adAcct.email);
+    const adB = await login(ad2Acct.email);
+    const ask = (token, body) => api('/admin/approvals', { method: 'POST', token, body });
+    const decide = (id, verb, token, body) => api(`/admin/approvals/${id}/${verb}`, { method: 'POST', token, body });
+    const run = (approvalId, token = adA.token) => api('/admin/encryption/reencrypt', { method: 'POST', token, body: { password: PASS, approvalId } });
+    const auNow = await login(auAcct.email);
+    record('An auditor cannot ask for an approval (403)', (await ask(auNow.token, { action: 'reencrypt_data', reason: 'Not my role to ask', password: PASS })).status === 403);
+    record('Asking without the password is refused (step-up)', [403, 429].includes((await ask(adA.token, { action: 'reencrypt_data', reason: 'Missing the password here' })).status));
+    record('Asking with no real reason is refused (400)', (await ask(adA.token, { action: 'reencrypt_data', reason: 'short', password: PASS })).status === 400);
+    record('An unknown action is refused (400)', (await ask(adA.token, { action: 'drop_database', reason: 'Trying an action that does not exist', password: PASS })).status === 400);
+    const asked = await ask(adA.token, { action: 'reencrypt_data', reason: 'Key rotation after a staff change', password: PASS });
+    record('A System Administrator asks for approval (201)', asked.status === 201 && asked.json.status === 'pending', `status=${asked.status}`);
+    const id = asked.json && asked.json.id;
+    const own = await decide(id, 'approve', adA.token, { reason: 'Approving my own request', password: PASS });
+    record('The person who asked cannot approve it (403)', own.status === 403 && own.json.code === 'OWN_REQUEST', `status=${own.status}`);
+    let dbRefused = false;
+    try {
+      await db.query("UPDATE pending_approvals SET decided_by = requested_by, status = 'approved', decided_at = now() WHERE id = $1", [id]);
+    } catch { dbRefused = true; }
+    record('The database also refuses one person deciding their own request', dbRefused);
+    record('A pending request cannot be used (409)', (await run(id)).status === 409);
+    const okd = await decide(id, 'approve', adB.token, { reason: 'Checked with the requester in person', password: PASS });
+    record('A second System Administrator approves (200)', okd.status === 200, `status=${okd.status}`);
+    record('An approval for re-encryption cannot anonymise (409)',
+      (await api('/admin/retention/apply', { method: 'POST', token: adA.token, body: { password: PASS, approvalId: id } })).status === 409);
+    const first = await run(id);
+    record('The approved re-encryption runs once (200)', first.status === 200, `status=${first.status}`);
+    record('The same approval cannot be used twice (409)', (await run(id)).status === 409);
+    const asked2 = await ask(adA.token, { action: 'reencrypt_data', reason: 'Second request, to be rejected', password: PASS });
+    await decide(asked2.json.id, 'reject', adB.token, { reason: 'Not needed this week', password: PASS });
+    record('A rejected request cannot be used (409)', (await run(asked2.json.id)).status === 409);
+    record('A decided request cannot be decided again (409)', (await decide(asked2.json.id, 'approve', adB.token, { reason: 'Changing my mind later', password: PASS })).status === 409);
+    const asked3 = await ask(adA.token, { action: 'reencrypt_data', reason: 'Third request, left to expire', password: PASS });
+    await decide(asked3.json.id, 'approve', adB.token, { reason: 'Approved, then left unused', password: PASS });
+    await db.query("UPDATE pending_approvals SET decided_at = now() - interval '25 hours' WHERE id = $1", [asked3.json.id]);
+    record('An approval older than 24 hours cannot be used (409)', (await run(asked3.json.id)).status === 409);
+    const list = await api('/admin/approvals', { token: adB.token });
+    record('Admins see the approval history', list.status === 200 && list.json.approvals.some((a) => a.id === id && a.status === 'used'));
+    const { rows: apLog } = await db.query(
+      "SELECT array_agg(DISTINCT action) AS a FROM audit_log WHERE action LIKE 'approval_%' AND detail LIKE $1", [`approval_id=${id},%`]);
+    record('Asking and approving are in the audit log', Boolean(apLog[0].a && apLog[0].a.includes('approval_requested') && apLog[0].a.includes('approval_approved')), String(apLog[0].a));
+  }
+
+  console.log('\n=== Weekly review (layer 2: People to review) ===');
+  {
+    const au2Acct = await ensureTestAccount(ACCOUNTS.au2);
+    await ageTestActivity([au2Acct.id]);
+    const auW = await login(auAcct.email);
+    const au2 = await login(au2Acct.email);
+    const adW = await login(ad2Acct.email);
+    const cgW = await login(ACCOUNTS.cg.username, deviceA);
+    await expectStatus('A caregiver cannot see the weekly review (403)', '/auditor/weekly-review', { token: cgW.token, device: deviceA }, 403);
+    await expectStatus("An admin cannot use the auditors' weekly review (403)", '/auditor/weekly-review', { token: adW.token }, 403);
+    await expectStatus("An auditor cannot use the admins' page (403)", '/admin/weekly-review', { token: auW.token }, 403);
+    const refreshed = await api('/auditor/weekly-review/refresh', { method: 'POST', token: au2.token });
+    record('An auditor re-scores the week (200)', refreshed.status === 200 && refreshed.json.lastRefresh.ok === true && refreshed.json.lastRefresh.people >= 1,
+      refreshed.json ? JSON.stringify(refreshed.json.lastRefresh) : `status=${refreshed.status}`);
+    const list = await api('/auditor/weekly-review', { token: au2.token });
+    record('The weekly list loads with people in it (200)', list.status === 200 && list.json.people.length >= 1, list.json && `${list.json.people.length} people`);
+    record('An auditor never sees their own week', Boolean(list.json) && !list.json.people.some((p) => p.user_id === au2Acct.id));
+    record('Every row has a score, the line (1.00) and both parts',
+      Boolean(list.json) && list.json.people.every((p) => Number(p.score_limit) === 1 && p.parts && 'learned' in p.parts && 'change' in p.parts));
+    await expectStatus('A bad week is refused (400)', '/auditor/weekly-review?week=last-tuesday', { token: au2.token }, 400);
+    await expectStatus('An unknown role filter is refused (400)', '/auditor/weekly-review?role=Superuser', { token: au2.token }, 400);
+    const cgOnly = await api('/auditor/weekly-review?role=Caregiver', { token: au2.token });
+    record('The role filter works', cgOnly.status === 200 && cgOnly.json.people.every((p) => p.role === 'Caregiver'));
+    const meNow = await api('/auth/me', { token: cgW.token, device: deviceA });
+    record('Scoring the week signs nobody out', meNow.status === 200);
+    const auRow = list.json && list.json.people.find((p) => p.user_id === auAcct.id);
+    if (!auRow) {
+      record("The test auditor's week is listed for a second auditor", false, 'no row');
+    } else {
+      const ownOpen = await api(`/auditor/weekly-review/${auRow.id}`, { token: auW.token });
+      record('Nobody can open their own week (403)', ownOpen.status === 403 && ownOpen.json.code === 'OWN_WEEK', `status=${ownOpen.status}`);
+      const ownDecide = await api(`/auditor/weekly-review/${auRow.id}/decision`, { method: 'POST', token: auW.token, body: { status: 'no_concern', note: 'Reviewing my own week' } });
+      record('Nobody can decide on their own week (403)', ownDecide.status === 403);
+      let dbRefused = false;
+      try { await db.query('UPDATE weekly_reviews SET reviewed_by = user_id WHERE id = $1', [auRow.id]); } catch { dbRefused = true; }
+      record("The database also refuses a review of one's own week", dbRefused);
+      const detail = await api(`/auditor/weekly-review/${auRow.id}`, { token: au2.token });
+      record('Another auditor opens the week with its day-by-day activity (200)', detail.status === 200 && Array.isArray(detail.json.days) && detail.json.days.length >= 1);
+      record('A decision needs a note (400)', (await api(`/auditor/weekly-review/${auRow.id}/decision`, { method: 'POST', token: au2.token, body: { status: 'escalated', note: 'short' } })).status === 400);
+      record('An unknown decision is refused (400)', (await api(`/auditor/weekly-review/${auRow.id}/decision`, { method: 'POST', token: au2.token, body: { status: 'deleted', note: 'Trying an unknown status' } })).status === 400);
+      const dec = await api(`/auditor/weekly-review/${auRow.id}/decision`, { method: 'POST', token: au2.token, body: { status: 'escalated', note: 'Escalated by the automated test' } });
+      record('Another auditor records a decision (200)', dec.status === 200, `status=${dec.status}`);
+      const again = await api('/auditor/weekly-review/refresh', { method: 'POST', token: au2.token });
+      const kept = await api('/auditor/weekly-review', { token: au2.token });
+      record('Re-scoring keeps the decision', [200, 429].includes(again.status) && kept.json.people.find((p) => p.id === auRow.id).status === 'escalated');
+      const { rows: wlog } = await db.query("SELECT COUNT(*)::int AS n FROM audit_log WHERE action = 'weekly_review_decision' AND detail LIKE $1", [`weekly_review_id=${auRow.id},%`]);
+      record('The decision is in the audit log', wlog[0].n >= 1);
+      const adminList = await api('/admin/weekly-review', { token: adW.token });
+      record("Admins see the Security Auditors' weeks only", adminList.status === 200 && adminList.json.people.length >= 1 && adminList.json.people.every((p) => p.role === 'SecurityAuditor'));
+      const adminDecide = await api(`/admin/weekly-review/${auRow.id}/decision`, { method: 'POST', token: adW.token, body: { status: 'no_concern', note: 'Admin checked the auditor week' } });
+      record("An admin can decide on an auditor's week (200)", adminDecide.status === 200);
+      const cgRow = list.json.people.find((p) => p.role === 'Caregiver');
+      if (cgRow) record("An admin cannot open a caregiver's week (404)", (await api(`/admin/weekly-review/${cgRow.id}`, { token: adW.token })).status === 404);
+    }
+    const ov = await api('/auditor/overview', { token: au2.token });
+    record('The home page reports risk scoring as online', ov.status === 200 && Boolean(ov.json.scoring) && ov.json.scoring.online === true);
+  }
+
+  // Fresh sessions for the section below (earlier sections end some on purpose).
+  await ageTestActivity([cgAcct.id]);
+  const cgS = await login(ACCOUNTS.cg.username, deviceA);
+  const auE0 = await login(auAcct.email);
+  console.log('\n=== Educator: caregiver-approved, read-only access to a child (SOFIA 3.1) ===');
+  {
+    const shAcct = await ensureTestAccount(ACCOUNTS.sh);
+    const edAcct = await ensureTestAccount(ACCOUNTS.ed);
+    const ed2Acct = await ensureTestAccount(ACCOUNTS.ed2);
+    await db.query("UPDATE users SET ecd_centre = 'Test ECD Centre' WHERE id = ANY($1)", [[edAcct.id, ed2Acct.id]]);
+    await ageTestActivity([shAcct.id, edAcct.id, ed2Acct.id]);
+    // Close anything an earlier, interrupted run left open.
+    await db.query("UPDATE educator_access SET status = CASE WHEN status = 'granted' THEN 'revoked' ELSE 'refused' END, ended_at = now(), decided_by = $2 WHERE educator_id = ANY($1) AND status IN ('pending', 'granted')", [[edAcct.id, ed2Acct.id], shAcct.id]);
+    const devS = 'test-device-sharing';
+    const devE = 'test-device-educator';
+    const devE2 = 'test-device-educator2';
+    const sh = await login(ACCOUNTS.sh.username, devS);
+    const ed = await login(ACCOUNTS.ed.username, devE);
+    const ed2 = await login(ACCOUNTS.ed2.username, devE2);
+    const asEd = (path, opts = {}) => api(path, { token: ed.token, device: devE, ...opts });
+    const asSh = (path, opts = {}) => api(path, { token: sh.token, device: devS, ...opts });
+
+    await expectStatus('Educator -> caregiver children list (403)', '/children', { token: ed.token, device: devE }, 403);
+    await expectStatus('Educator -> audit log (403)', '/auditor/audit-log', { token: ed.token, device: devE }, 403);
+    await expectStatus('Educator -> admin users (403)', '/admin/users', { token: ed.token, device: devE }, 403);
+    await expectStatus('Caregiver -> educator pages (403)', '/educator/children', { token: sh.token, device: devS }, 403);
+    await expectStatus('Auditor -> educator pages (403)', '/educator/children', { token: auE0.token }, 403);
+
+    // Names unique to this run (letters only: the name index ignores digits).
+    const word = () => Array.from({ length: 7 }, () => 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]).join('');
+    const KID = `Shared ${word()} Child`;
+    const SIB = `Sibling ${word()} Child`;
+    const BABY = `Baby ${word()} Child`;
+    const OLD = `Older ${word()} Child`;
+    const addKid = async (fullName, dateOfBirth, extra = {}) => {
+      const r = await asSh('/children', { method: 'POST', body: { fullName, dateOfBirth, developmentalRecordsConsent: true, ...extra, ...NOTICE } });
+      return r.json && r.json.childProfileId;
+    };
+    // Birth dates relative to today, so the ages hold whenever this runs.
+    const daysAgo = (d) => new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
+    const KID_DOB = daysAgo(4 * 365 + 20);         // 4 years old
+    const SIB_DOB = daysAgo(7 * 365 - 40);         // 6, turning 7 in about 6 weeks
+    const kidId = await addKid(KID, KID_DOB, { familyBackground: 'Private family note' });
+    const sibId = await addKid(SIB, SIB_DOB);
+    await addKid(BABY, daysAgo(400));               // 1 year old
+    await addKid(OLD, daysAgo(8 * 365));            // 8 years old
+    await asSh(`/children/${kidId}/records`, { method: 'POST', body: { milestone: 'Counts to ten', healthIndicator: 'Healthy', assessmentScore: 7, progressNotes: 'Shared note' } });
+    const { rows: idx } = await db.runAsSystem(() => db.query('SELECT name_index, name_index_key_id FROM child_identifiers WHERE child_profile_id = $1', [kidId]));
+    record('A new child gets a blind index of the name (64 hex characters, no name)', Boolean(idx[0]) && /^[0-9a-f]{64}$/.test(idx[0].name_index) && idx[0].name_index_key_id > 0);
+
+    const before = await asEd(`/educator/children/${kidId}/records`);
+    record('Educator with no permission is refused (403 NO_ACCESS_GRANT)', before.status === 403 && before.json.code === 'NO_ACCESS_GRANT', `status=${before.status}`);
+    const missing = await asEd('/educator/children/2147483000/records');
+    record('...with the same answer for a child that does not exist', missing.status === 403 && missing.json.error === before.json.error);
+
+    const ask = (childName, reason = 'Class educator, PP1 Blue', who = ed, dev = devE) =>
+      api('/educator/access-requests', { method: 'POST', token: who.token, device: dev, body: { childName, reason } });
+    const pendingFor = async () => (await asSh('/children/access')).json.requests.filter((r) => r.status === 'pending' && r.educatorName === ACCOUNTS.ed.name);
+    record('A single word is not a full name (400)', (await ask('Amani')).status === 400);
+    record('A request with no real reason is refused (400)', (await ask(KID, 'pls')).status === 400);
+    await expectStatus('A caregiver cannot ask for access as an educator (403)', '/educator/access-requests',
+      { method: 'POST', token: cgS.token, device: deviceA, body: { childName: KID, reason: 'Class educator, PP1 Blue' } }, 403);
+
+    const nobody = await ask(`Nobody ${word()} Here`);
+    const asked = await ask(KID.toLowerCase().split(' ').reverse().join('  '));
+    record('Educator asks by the child’s name (201), case and name order ignored', asked.status === 201, `status=${asked.status}`);
+    record('The reply is the same whether or not a child matched: no way to find out who is registered',
+      nobody.status === 201 && nobody.json.message === asked.json.message && Object.keys(nobody.json).sort().join() === Object.keys(asked.json).sort().join());
+    record('The reply tells the educator nothing about the child', !JSON.stringify(asked.json).includes(KID) && !('childProfileId' in asked.json));
+    let waiting = await pendingFor();
+    record('The request reaches that child’s parent only, naming the child', waiting.length === 1 && waiting[0].childProfileId === kidId && waiting[0].childName === KID
+      && waiting[0].ecdCentre === 'Test ECD Centre' && waiting[0].reason === 'Class educator, PP1 Blue');
+    await ask(KID);
+    record('Asking again for the same child adds no second request', (await pendingFor()).length === 1);
+    await ask(BABY);
+    await ask(OLD);
+    record('Children under 3 or aged 7+ are never matched (ECD age only)', (await pendingFor()).length === 1);
+    const { rows: unmatched } = await db.query('SELECT COUNT(*)::int AS n FROM educator_access WHERE ask_id = $1', [nobody.json.id]);
+    record('A name that matches nobody reaches nobody', unmatched[0].n === 0);
+    const { rows: trailName } = await db.query("SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = $1 AND detail LIKE $2", [edAcct.id, `%${KID.split(' ')[1]}%`]);
+    record('The audit log records profile numbers, not the name typed', trailName[0].n === 0);
+
+    const pendingList = await asEd('/educator/children');
+    record('The educator’s list shows what they typed, and no child yet', pendingList.status === 200 && pendingList.json.children.length === 0
+      && pendingList.json.asks.some((a) => a.id === asked.json.id) && !JSON.stringify(pendingList.json).includes('waiting') && !JSON.stringify(pendingList.json).includes('pending'));
+    record('Still refused while the parent has not decided (403)', (await asEd(`/educator/children/${kidId}/records`)).status === 403);
+
+    const decide = (who, id, body) => api(`/children/access/${id}/decision`, { method: 'POST', token: who.token, device: who === sh ? devS : deviceA, body });
+    const reqId = waiting[0].id;
+    record('Another caregiver cannot decide the request (404)', (await decide(cgS, reqId, { decision: 'grant' })).status === 404);
+    record('The educator cannot approve their own request (403)', (await asEd(`/children/access/${reqId}/decision`, { method: 'POST', body: { decision: 'grant' } })).status === 403);
+    record('An open-ended or odd period is refused (400)', (await decide(sh, reqId, { decision: 'grant', days: 9999 })).status === 400);
+    record('A decision that is neither grant nor refuse is refused (400)', (await decide(sh, reqId, { decision: 'maybe' })).status === 400);
+    const granted = await decide(sh, reqId, { decision: 'grant', days: 30 });
+    record('Caregiver grants access for 30 days (200)', granted.status === 200 && granted.json.status === 'granted' && Boolean(granted.json.expiresAt), `status=${granted.status}`);
+    record('A request cannot be decided twice (409)', (await decide(sh, reqId, { decision: 'refuse' })).status === 409);
+    const long = await ask(SIB, 'Class educator, PP2 Green');
+    const sibReq = (await pendingFor()).find((r) => r.childProfileId === sibId);
+    const sibGrant = sibReq && await decide(sh, sibReq.id, { decision: 'grant', days: 90 });
+    const sd = new Date(SIB_DOB);
+    const seventh = new Date(Date.UTC(sd.getUTCFullYear() + 7, sd.getUTCMonth(), sd.getUTCDate()));
+    record('Access never runs past the 7th birthday, whatever period is chosen', long.status === 201 && Boolean(sibGrant) && sibGrant.status === 200
+      && new Date(sibGrant.json.expiresAt).getTime() === seventh.getTime(), sibGrant && sibGrant.json && sibGrant.json.expiresAt);
+    if (sibGrant && sibGrant.status === 200) await asSh(`/children/access/${sibReq.id}/revoke`, { method: 'POST' });
+
+    const mine = await asEd('/educator/children');
+    const shared = mine.json && mine.json.children.find((c) => c.childProfileId === kidId);
+    const statusOf = (list, id) => (list.json.asks.find((a) => a.id === id) || {}).status;
+    record('The educator’s request shows Approved once granted; an unmatched one stays Requested',
+      statusOf(mine, asked.json.id) === 'approved' && statusOf(mine, nobody.json.id) === 'requested');
+    record('Educator now sees the child: name and age only', Boolean(shared) && shared.fullName === KID && /year/.test(shared.age));
+    record('...and nothing about the parent’s other children', !JSON.stringify(mine.json.children).includes(SIB) && !JSON.stringify(mine.json.children).includes(BABY)
+      && (await asEd(`/educator/children/${sibId}/records`)).status === 403);
+    const view = await asEd(`/educator/children/${kidId}/records`);
+    record('Educator reads the shared child’s records (200)', view.status === 200 && view.json.records.length === 1 && view.json.records[0].milestone === 'Counts to ten', `status=${view.status}`);
+    const sent = JSON.stringify([mine.json, view.json]);
+    record('No birth date, family background or parent contact reaches the educator',
+      !sent.includes(KID_DOB) && !sent.includes('Private family note') && !sent.includes(shAcct.email) && !sent.includes('dateOfBirth') && !sent.includes('familyBackground'));
+    const { rows: scored } = await db.query(
+      `SELECT rs.model_version FROM risk_scores rs JOIN access_requests ar ON ar.id = rs.access_request_id
+       WHERE ar.user_id = $1 AND ar.action_type = 'view_shared_child_records' ORDER BY rs.id DESC LIMIT 1`, [edAcct.id]);
+    record('The read was risk-scored under the Educator label', Boolean(scored[0]) && String(scored[0].model_version).startsWith('Educator-as-Caregiver-'), scored[0] && scored[0].model_version);
+    record('Educator cannot add a record: read-only (403)', (await asEd(`/children/${kidId}/records`, { method: 'POST', body: { milestone: 'x', healthIndicator: 'x', assessmentScore: 1 } })).status === 403);
+    record('Educator cannot change the child’s consent (403)', (await asEd(`/children/${kidId}/consent`, { method: 'POST', body: { scope: 'developmental_records', consentGiven: true } })).status === 403);
+    record('A different educator is refused the same child (403)', (await api(`/educator/children/${kidId}/records`, { token: ed2.token, device: devE2 })).status === 403);
+
+    const asRole = (id, sql, params) => db.runAs({ userId: id, role: 'Educator' }, () => db.query(sql, params));
+    record('Database: the educator can read exactly the one shared child',
+      (await asRole(edAcct.id, 'SELECT COUNT(*)::int AS n FROM child_identifiers')).rows[0].n === 1
+      && (await asRole(edAcct.id, 'SELECT COUNT(*)::int AS n FROM developmental_records WHERE child_profile_id = $1', [kidId])).rows[0].n === 1);
+    record('Database: another educator reads no child at all',
+      (await asRole(ed2Acct.id, 'SELECT COUNT(*)::int AS n FROM child_identifiers')).rows[0].n === 0);
+    record('Database: the educator cannot change or delete a record',
+      (await asRole(edAcct.id, 'UPDATE developmental_records SET created_at = created_at WHERE child_profile_id = $1', [kidId])).rowCount === 0
+      && (await asRole(edAcct.id, 'DELETE FROM developmental_records WHERE child_profile_id = $1', [kidId])).rowCount === 0);
+    const selfApprove = await db.query('UPDATE educator_access SET decided_by = educator_id WHERE id = $1', [reqId])
+      .then(() => 'allowed', (e) => e.constraint || e.message);
+    record('Database: an educator approving their own request is refused by a CHECK', selfApprove === 'not_self_decided', selfApprove);
+
+    const inbox2 = await asSh('/children/access');
+    record('Caregiver sees that the educator opened the records, and when',
+      inbox2.json && inbox2.json.views.some((v) => v.viewer === ACCOUNTS.ed.name && v.childName === KID && v.viewerRole === 'Educator' && v.stopped === false));
+
+    const consent = (given) => asSh(`/children/${kidId}/consent`, { method: 'POST', body: { scope: 'developmental_records', consentGiven: given } });
+    await consent(false);
+    const noConsentEd = await asEd(`/educator/children/${kidId}/records`);
+    record('Records consent withdrawn: the educator is refused too (403 CONSENT_REQUIRED)', noConsentEd.status === 403 && noConsentEd.json.code === 'CONSENT_REQUIRED', `status=${noConsentEd.status}`);
+    await consent(true);
+
+    record('Another caregiver cannot revoke it (404)', (await api(`/children/access/${reqId}/revoke`, { method: 'POST', token: cgS.token, device: deviceA })).status === 404);
+    const revoked = await asSh(`/children/access/${reqId}/revoke`, { method: 'POST' });
+    record('Caregiver revokes the access (200)', revoked.status === 200 && revoked.json.status === 'revoked', `status=${revoked.status}`);
+    const afterRevoke = await asEd(`/educator/children/${kidId}/records`);
+    record('The educator is refused on the very next request (403)', afterRevoke.status === 403 && afterRevoke.json.code === 'NO_ACCESS_GRANT', `status=${afterRevoke.status}`);
+    record('Database: the revoked educator reads no child', (await asRole(edAcct.id, 'SELECT COUNT(*)::int AS n FROM child_identifiers')).rows[0].n === 0);
+    const afterList = await asEd('/educator/children');
+    record('The educator’s list no longer names the child', afterList.json.children.length === 0 && !JSON.stringify(afterList.json.children).includes(KID));
+    record('Revoking twice is refused (409)', (await asSh(`/children/access/${reqId}/revoke`, { method: 'POST' })).status === 409);
+
+    await ask(KID, 'Asking again for the new term');
+    const again = (await pendingFor()).find((r) => r.childProfileId === kidId);
+    await decide(sh, again.id, { decision: 'grant', days: 30 });
+    await db.query("UPDATE educator_access SET expires_at = now() - interval '1 minute' WHERE id = $1", [again.id]);
+    const expired = await asEd(`/educator/children/${kidId}/records`);
+    record('Access ends by itself when its period runs out (403)', expired.status === 403 && (await asEd('/educator/children')).json.children.length === 0, `status=${expired.status}`);
+
+    await ask(KID, 'Second educator asking for access', ed2, devE2);
+    const fromEd2 = (await asSh('/children/access')).json.requests.find((r) => r.status === 'pending' && r.educatorName === ACCOUNTS.ed2.name && r.childProfileId === kidId);
+    const refused = fromEd2 && await decide(sh, fromEd2.id, { decision: 'refuse' });
+    record('Caregiver refuses a request; that educator stays locked out', Boolean(refused) && refused.status === 200 && refused.json.status === 'refused'
+      && (await api(`/educator/children/${kidId}/records`, { token: ed2.token, device: devE2 })).status === 403);
+    const ed2List = await api('/educator/children', { token: ed2.token, device: devE2 });
+    record('A refusal looks the same to the educator as a name that matched nobody (Requested)',
+      ed2List.json.asks.length > 0 && ed2List.json.asks.every((a) => a.status === 'requested'));
+    record('After access is taken back or runs out, the educator’s request shows Access ended',
+      statusOf(await asEd('/educator/children'), asked.json.id) === 'ended');
+
+    // An archived child is not findable.
+    await ask(SIB, 'Class educator, PP2 Green');
+    const sibPending = (await pendingFor()).find((r) => r.childProfileId === sibId);
+    if (sibPending) await decide(sh, sibPending.id, { decision: 'refuse' });
+    await asSh(`/children/${sibId}/archive`, { method: 'POST', body: { reason: 'Test: archived child' } });
+    await ask(SIB, 'Class educator, PP2 Green');
+    record('An archived child is never matched', !(await pendingFor()).some((r) => r.childProfileId === sibId));
+
+    const wanted = ['child_access_requested', 'child_access_granted', 'child_access_refused', 'child_access_revoked', 'access_denied_no_grant', 'view_shared_child_records'];
+    const { rows: trail } = await db.query(
+      `SELECT action, COUNT(*)::int AS n FROM audit_log WHERE user_id = ANY($1) AND created_at > now() - interval '10 minutes'
+       AND action = ANY($2) GROUP BY action`, [[shAcct.id, edAcct.id, ed2Acct.id], wanted]);
+    record('Every request, decision, read and refusal is in the audit log', trail.length === wanted.length, trail.map((t) => `${t.action}=${t.n}`).join(', '));
+    const { rows: leak } = await db.query(
+      'SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = ANY($1) AND detail LIKE $2', [[shAcct.id, edAcct.id, ed2Acct.id], `%${KID}%`]);
+    record('The audit log holds profile numbers, never the child’s name', leak[0].n === 0);
+
+    const limitsE = await api('/auditor/risk-thresholds', { token: auE0.token });
+    const edLimit = limitsE.json && limitsE.json.thresholds.find((t) => t.role === 'Educator');
+    record('Educators have their own risk limit on the auditor’s page', Boolean(edLimit) && edLimit.defaultThreshold === 0.4 && edLimit.min === 0.4 && edLimit.max === 0.6 && edLimit.editable === true);
+
+    // Verifying a new educator with their ECD centre.
+    const probeEmail = testEmail(`probe-educator-${word()}`);
+    const regBody = (extra) => ({ method: 'POST', body: { fullName: 'Probe Educator', email: probeEmail, requestedRole: 'Educator', reason: 'automated test', ...NOTICE, ...extra } });
+    record('An educator request without the ECD centre is refused (400)', (await api('/auth/register', regBody({ centrePhone: '0712 345 678' }))).status === 400);
+    record('An educator request without the centre phone is refused (400)', (await api('/auth/register', regBody({ ecdCentre: 'Probe ECD Centre' }))).status === 400);
+    const regEd = await api('/auth/register', regBody({ ecdCentre: 'Probe ECD Centre', centrePhone: '0712 345 678' }));
+    record('An educator can request an account with the centre and its phone (201)', regEd.status === 201, `status=${regEd.status}`);
+    const adE = await login(adAcct.email);
+    const listed = await api('/admin/registration-requests', { token: adE.token });
+    const row = listed.json && listed.json.requests.find((r) => r.id === regEd.json.requestId);
+    record('The admin sees the centre and its phone number', Boolean(row) && row.ecd_centre === 'Probe ECD Centre' && row.centre_phone === '0712 345 678');
+    const noNote = await api(`/admin/registration-requests/${regEd.json.requestId}/approve`, { method: 'POST', token: adE.token, body: { verificationNote: 'ok' } });
+    record('An educator cannot be approved without a verification note (400)', noNote.status === 400 && noNote.json.code === 'VERIFICATION_NOTE_REQUIRED', `status=${noNote.status}`);
+    const approved = await api(`/admin/registration-requests/${regEd.json.requestId}/approve`, { method: 'POST', token: adE.token,
+      body: { verificationNote: 'Called the centre; the head confirmed this educator teaches PP1' } });
+    const { rows: made } = await db.query('SELECT id, ecd_centre, verification_note, verified_by FROM users WHERE email = $1', [probeEmail]);
+    record('Approved with the note: the account keeps the centre, the note and who verified it', approved.status === 200 && Boolean(made[0])
+      && made[0].ecd_centre === 'Probe ECD Centre' && /head confirmed/.test(made[0].verification_note) && made[0].verified_by === adAcct.id, `status=${approved.status}`);
+    if (made[0]) await db.query('DELETE FROM users WHERE id = $1', [made[0].id]).catch(() => {});
+    await db.query('DELETE FROM registration_requests WHERE email = $1', [probeEmail]);
+  }
+
+  console.log('\n=== Download my data (DPIA G6) and monitoring retention (DPIA G1) ===');
+  {
+    // A fresh working day for the test caregiver: this run has already done
+    // many reads, and one more data action would (correctly) cross the limit.
+    await ageTestActivity([cgAcct.id]);
+    const cgE = await login(ACCOUNTS.cg.username, deviceA);
+    const auE = await login(auAcct.email);
+    const exp = await api('/children/export?format=json', { token: cgE.token, device: deviceA });
+    record('A caregiver downloads their data (200)', exp.status === 200 && Array.isArray(exp.json.children) && exp.json.account.email === cgAcct.email, `status=${exp.status}`);
+    record('The file holds their children, consent history and activity',
+      Boolean(exp.json) && exp.json.children.some((c) => c.fullName === 'Test Child' && Array.isArray(c.consentHistory) && c.consentHistory.length > 0)
+      && exp.json.yourActivity.length > 0);
+    const { rows: ownIds } = await db.runAsSystem(() => db.query('SELECT id FROM child_profiles WHERE caregiver_id = $1', [cgAcct.id]));
+    const own = new Set(ownIds.map((r) => r.id));
+    record("The file holds exactly this caregiver's children, no other family's",
+      Boolean(exp.json) && exp.json.children.length === own.size && exp.json.children.every((c) => own.has(c.childProfileId)));
+    record('Records are left out where records consent is withdrawn',
+      Boolean(exp.json) && exp.json.children.every((c) => Array.isArray(c.developmentalRecords) || typeof c.developmentalRecords === 'string'));
+    await ageTestActivity([cgAcct.id]);
+    const pdf = await api('/children/export', { token: cgE.token, device: deviceA });
+    record('By default the download is a readable PDF document', pdf.status === 200 && pdf.text.startsWith('%PDF-'), `status=${pdf.status}`);
+    await expectStatus('An auditor cannot download a caregiver export (403)', '/children/export', { token: auE.token }, 403);
+    const { rows: expLog } = await db.query("SELECT COUNT(*)::int AS n FROM audit_log WHERE user_id = $1 AND action = 'export_own_data'", [cgAcct.id]);
+    record('The download is in the audit log', expLog[0].n >= 1);
+
+    const adM = await login(ad2Acct.email);
+    const st = await api('/admin/retention/status', { token: adM.token });
+    record('Data Retention shows the monitoring period', st.status === 200 && st.json.monitoring && Number.isInteger(st.json.monitoring.days), st.json && JSON.stringify(st.json.monitoring && st.json.monitoring.due));
+    const { rows: old } = await db.query(
+      `INSERT INTO access_requests (user_id, action_type, pc_name, ip_address, requested_at)
+       VALUES ($1, 'view_own_child_records', 'old-test-device', '10.0.0.9', now() - interval '800 days') RETURNING id`, [cgAcct.id]);
+    await db.query(
+      `INSERT INTO risk_scores (access_request_id, isoforest_score, autoencoder_score, combined_score, role_threshold, is_flagged, features, drivers, created_at)
+       VALUES ($1, 0.1, 0.1, 0.1, 0.4, FALSE, '{"is_own_pc":1}', '[]', now() - interval '800 days')`, [old[0].id]);
+    record('Clearing without the password is refused (step-up)', [403, 429].includes((await api('/admin/retention/monitoring/clear', { method: 'POST', token: adM.token })).status));
+    await expectStatus('A caregiver cannot clear monitoring data (403)', '/admin/retention/monitoring/clear', { method: 'POST', token: cgE.token, device: deviceA }, 403);
+    const cl = await api('/admin/retention/monitoring/clear', { method: 'POST', token: adM.token, body: { password: PASS } });
+    record('Admin clears old monitoring details (200)', cl.status === 200 && cl.json.cleared.actions >= 1 && cl.json.cleared.scores >= 1, cl.json && JSON.stringify(cl.json.cleared));
+    const { rows: after } = await db.query(
+      `SELECT ar.pc_name, ar.ip_address, rs.features FROM access_requests ar JOIN risk_scores rs ON rs.access_request_id = ar.id WHERE ar.id = $1`, [old[0].id]);
+    record('Device, address and evidence are cleared; the action and score are kept',
+      after[0] && after[0].pc_name === null && after[0].ip_address === null && after[0].features === null);
+    const { rows: recent } = await db.query(
+      "SELECT COUNT(*)::int AS n FROM access_requests WHERE user_id = $1 AND requested_at > now() - interval '1 day' AND pc_name IS NOT NULL", [cgAcct.id]);
+    record('Recent monitoring details are untouched', recent[0].n > 0);
+    const { rows: clLog } = await db.query("SELECT COUNT(*)::int AS n FROM audit_log WHERE action = 'monitoring_data_cleared' AND user_id = $1", [ad2Acct.id]);
+    record('Clearing is in the audit log', clLog[0].n >= 1);
+    const tooShort = await api('/admin/settings/monitoring_retention_days', { method: 'POST', token: adM.token, body: { value: 30, reason: 'Trying a period that is too short', password: PASS } });
+    record('A monitoring period below 90 days is refused (400)', tooShort.status === 400, `status=${tooShort.status}`);
+  }
+
+  console.log('\n=== "Take action": report, pause until verified, explain, decide (db/013) ===');
+  {
+    const ceAcct = await ensureTestAccount(ACCOUNTS.ce);
+    const shAcct2 = await ensureTestAccount(ACCOUNTS.sh);
+    await db.query("UPDATE users SET ecd_centre = 'Test ECD Centre' WHERE id = $1", [ceAcct.id]);
+    await db.query("UPDATE account_cases SET status = 'verified', decided_by = $2, decided_at = now(), decision_note = 'closed by an earlier test run' WHERE user_id = $1 AND status IN ('reported', 'paused', 'explained')", [ceAcct.id, adAcct.id]);
+    await ageTestActivity([ceAcct.id]);
+    const devCE = 'test-device-case-educator';
+    // A child shared with this educator, so removing access can be checked.
+    const { rows: kid } = await db.runAsSystem(() => db.query(
+      'SELECT id FROM child_profiles WHERE caregiver_id = $1 AND archived_at IS NULL ORDER BY id LIMIT 1', [shAcct2.id]));
+    if (kid[0]) {
+      await db.query("UPDATE educator_access SET status = 'revoked', ended_at = now(), decided_by = $3 WHERE educator_id = $1 AND child_profile_id = $2 AND status IN ('pending', 'granted')", [ceAcct.id, kid[0].id, shAcct2.id]);
+      await db.query(
+        `INSERT INTO educator_access (child_profile_id, caregiver_id, educator_id, reason, status, decided_at, decided_by, expires_at)
+         VALUES ($1, $2, $3, 'Test: shared for the case check', 'granted', now(), $2, now() + interval '7 days')`, [kid[0].id, shAcct2.id, ceAcct.id]);
+    }
+    let ce = await login(ACCOUNTS.ce.username, devCE);
+    await api('/educator/children', { token: ce.token, device: devCE });
+    const auC = await login(auAcct.email);
+    const adC = await login(adAcct.email);
+    await api('/auditor/weekly-review/refresh', { method: 'POST', token: auC.token });
+    const week = await api('/auditor/weekly-review', { token: auC.token });
+    const row = week.json && week.json.people.find((p) => p.user_id === ceAcct.id);
+    record('The educator appears on People to Review (everyone active is listed)', Boolean(row), `status=${week.status}`);
+    if (row) {
+      const report = await api(`/auditor/weekly-review/${row.id}/decision`, { method: 'POST', token: auC.token,
+        body: { status: 'escalated', note: 'Test: reading far more than usual this week' } });
+      record('Take action opens a case for the admin (200)', report.status === 200 && Boolean(report.json.caseId) && report.json.adminsTold === true, `status=${report.status}`);
+      const caseId = report.json && report.json.caseId;
+      await expectStatus('An auditor cannot see or act on cases (403)', '/admin/cases', { token: auC.token }, 403);
+      const cases = await api('/admin/cases', { token: adC.token });
+      const c = cases.json && cases.json.cases.find((x) => x.id === caseId);
+      record('The admin sees the case with the auditor’s reason', Boolean(c) && c.status === 'reported' && /far more than usual/.test(c.reportNote));
+      const noPass = await api(`/admin/cases/${caseId}/pause`, { method: 'POST', token: adC.token, body: { note: 'Pausing while we check' } });
+      record('Pausing without the password is refused (step-up)', noPass.status === 403 && noPass.json.code === 'STEP_UP_REQUIRED');
+      const paused = await api(`/admin/cases/${caseId}/pause`, { method: 'POST', token: adC.token, body: { note: 'Pausing while we check', password: PASS } });
+      record('The admin pauses the account until verified (200)', paused.status === 200 && paused.json.status === 'paused', `status=${paused.status}`);
+      const kicked = await api('/educator/children', { token: ce.token, device: devCE });
+      record('The person’s open session ends at once (401 ACCOUNT_PAUSED)', kicked.status === 401 && kicked.json.code === 'ACCOUNT_PAUSED', `status=${kicked.status}`);
+      ce = await login(ACCOUNTS.ce.username, devCE);
+      record('The person can still sign in, and is told the account is paused', ce.paused === true);
+      const blocked = await api('/educator/children', { token: ce.token, device: devCE });
+      record('Every data request from a paused account is refused (403 ACCOUNT_PAUSED)', blocked.status === 403 && blocked.json.code === 'ACCOUNT_PAUSED', `status=${blocked.status}`);
+      if (kid[0]) {
+        const rec = await api(`/educator/children/${kid[0].id}/records`, { token: ce.token, device: devCE });
+        record('...including a child’s records it was granted', rec.status === 403 && rec.json.code === 'ACCOUNT_PAUSED');
+      }
+      const mine = await api('/auth/paused-case', { token: ce.token, device: devCE });
+      record('The paused person sees the pause, with no child data', mine.status === 200 && mine.json.paused === true && !JSON.stringify(mine.json).includes('Test Child'));
+      record('A too-short explanation is refused (400)', (await api('/auth/paused-case/explanation', { method: 'POST', token: ce.token, device: devCE, body: { explanation: 'busy' } })).status === 400);
+      const ex = await api('/auth/paused-case/explanation', { method: 'POST', token: ce.token, device: devCE,
+        body: { explanation: 'End-of-term progress reports for my PP1 class' } });
+      record('The person sends an explanation (200)', ex.status === 200 && ex.json.status === 'explained');
+      const ownTry = await api(`/admin/cases/${caseId}/decision`, { method: 'POST', token: ce.token, device: devCE,
+        body: { decision: 'verified', note: 'I verify myself', password: PASS } });
+      record('The person cannot decide their own case (403)', ownTry.status === 403);
+      const seen = (await api('/admin/cases', { token: adC.token })).json.cases.find((x) => x.id === caseId);
+      record('The admin sees the explanation beside the auditor’s reason', seen && seen.status === 'explained' && /PP1/.test(seen.explanation));
+      const ok = await api(`/admin/cases/${caseId}/decision`, { method: 'POST', token: adC.token,
+        body: { decision: 'verified', note: 'Called the centre: report week confirmed', password: PASS } });
+      record('The admin verifies it (200)', ok.status === 200 && ok.json.status === 'verified');
+      const back = await api('/educator/children', { token: ce.token, device: devCE });
+      record('Access is restored at once, with the person’s own password', back.status === 200, `status=${back.status}`);
+      const detail = await api(`/auditor/weekly-review/${row.id}`, { token: auC.token });
+      record('The auditor sees the outcome on People to Review', detail.json && detail.json.case && detail.json.case.status === 'verified'
+        && /PP1/.test(detail.json.case.explanation || ''));
+      record('A closed case cannot be decided again (409)', (await api(`/admin/cases/${caseId}/decision`, { method: 'POST', token: adC.token,
+        body: { decision: 'removed', note: 'Changing my mind later', password: PASS } })).status === 409);
+
+      // Second time: not verified, access removed.
+      const again = await api(`/auditor/weekly-review/${row.id}/decision`, { method: 'POST', token: auC.token,
+        body: { status: 'escalated', note: 'Test: still far above usual after the check' } });
+      const case2 = again.json && again.json.caseId;
+      const removed = await api(`/admin/cases/${case2}/decision`, { method: 'POST', token: adC.token,
+        body: { decision: 'removed', note: 'Centre says this person no longer teaches there', password: PASS } });
+      record('The admin removes access (200)', removed.status === 200 && removed.json.status === 'removed', `status=${removed.status}`);
+      const { rows: lockedRow } = await db.query('SELECT is_locked FROM users WHERE id = $1', [ceAcct.id]);
+      record('Removing access locks the account', lockedRow[0] && lockedRow[0].is_locked === true);
+      if (kid[0]) {
+        const { rows: grants } = await db.query(
+          "SELECT COUNT(*)::int AS n FROM educator_access WHERE educator_id = $1 AND status = 'granted'", [ceAcct.id]);
+        record('...and ends every child access the educator had', grants[0].n === 0 && removed.json.endedGrants >= 1);
+        const parentView = await api('/children/access', { token: (await login(ACCOUNTS.sh.username, 'test-device-sharing')).token, device: 'test-device-sharing' });
+        record('The parent sees that access was taken back', parentView.json && parentView.json.requests.some((r) => r.educatorName === ACCOUNTS.ce.name && r.status === 'revoked'));
+      }
+      const selfDecided = await db.query('UPDATE account_cases SET decided_by = user_id WHERE id = $1', [caseId])
+        .then(() => 'allowed', (e) => e.constraint || e.message);
+      record('Database: nobody can decide their own case (CHECK)', selfDecided === 'case_not_own', selfDecided);
+      const { rows: trail } = await db.query(
+        "SELECT action FROM audit_log WHERE action LIKE 'account_%' AND (detail LIKE $1 OR detail LIKE $2 OR detail = $3 OR detail = $4)",
+        [`case_id=${caseId},%`, `case_id=${case2},%`, `case_id=${caseId}`, `case_id=${case2}`]);
+      const acts = new Set(trail.map((t) => t.action));
+      record('Every step is in the audit log', ['account_case_reported', 'account_paused', 'account_case_explained', 'account_case_verified', 'account_access_removed'].every((a) => acts.has(a)),
+        [...acts].join(', '));
+    }
   }
 
   console.log('\n=== SUMMARY ===');

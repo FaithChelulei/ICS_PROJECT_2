@@ -1,0 +1,2136 @@
+{
+  "_about": "Experiment: does the detector meet clear success targets, for all roles?",
+  "seeds": [
+    42,
+    1,
+    2,
+    3,
+    4
+  ],
+  "summary": {
+    "Caregiver": {
+      "A_current": {
+        "T1_insiders_caught": {
+          "mean": 0.15294117647058822,
+          "min": 0.0,
+          "max": 0.29411764705882354,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.025179910666525675,
+          "min": 0.013928654337228197,
+          "max": 0.04198062432723358,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.3,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7999360022962477,
+          "min": 0.7634457173612179,
+          "max": 0.823611105454575,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.02027481710624992,
+          "min": 0.011963809358874328,
+          "max": 0.03198042217388497,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.006868648119210856,
+          "min": 0.0061134036374751646,
+          "max": 0.0072975879551390385,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.7611525666056261,
+          "n_runs": 5
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.012119361036818571,
+          "n_runs": 5
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.7878643568344851,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.006977352069208384,
+          "n_runs": 5
+        }
+      },
+      "B_pooled": {
+        "T1_insiders_caught": {
+          "mean": 0.3294117647058824,
+          "min": 0.17647058823529413,
+          "max": 0.47058823529411764,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.024136775142251564,
+          "min": 0.01025360050093926,
+          "max": 0.04828540673535291,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.02,
+          "min": 0.0,
+          "max": 0.1,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.80829022972383,
+          "min": 0.7808876672305091,
+          "max": 0.8470320380934031,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.01859383524661689,
+          "min": 0.013903900391529882,
+          "max": 0.022475622279112064,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.006868648119210856,
+          "min": 0.0061134036374751646,
+          "max": 0.0072975879551390385,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.7823670063553219,
+          "n_runs": 5
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.01207501971453078,
+          "n_runs": 5
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.7944846645660678,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.007486543890525163,
+          "n_runs": 5
+        }
+      },
+      "C_stacked": {
+        "T1_insiders_caught": {
+          "mean": 0.5647058823529412,
+          "min": 0.47058823529411764,
+          "max": 0.7058823529411765,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.01785759240230782,
+          "min": 0.012086464709072596,
+          "max": 0.029821540388227926,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.38,
+          "min": 0.1,
+          "max": 0.7,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9611608251196149,
+          "min": 0.9242403385233182,
+          "max": 0.9770258853317034,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.18954151948479075,
+          "min": 0.12317991152910719,
+          "max": 0.23039407738393958,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.006868648119210856,
+          "min": 0.0061134036374751646,
+          "max": 0.0072975879551390385,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.9372380640052734,
+          "n_runs": 5
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.13961556004755668,
+          "n_runs": 5
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.9576409634245666,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.1101324926916644,
+          "n_runs": 5
+        }
+      },
+      "D_weekly": {
+        "T1_insiders_caught": {
+          "mean": 0.7294117647058824,
+          "min": 0.5882352941176471,
+          "max": 0.8823529411764706,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.018796705937748643,
+          "min": 0.013868443480282017,
+          "max": 0.024220382264180145,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.74,
+          "min": 0.4,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8911445697907915,
+          "min": 0.7723113013517311,
+          "max": 0.9660187995392971,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.3165693146808968,
+          "min": 0.09152992978514694,
+          "max": 0.4615525348305198,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.006868648119210856,
+          "min": 0.0061134036374751646,
+          "max": 0.0072975879551390385,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n_runs": 5
+        }
+      }
+    },
+    "SecurityAuditor": {
+      "A_current": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.12202255311738071,
+          "min": 0.0,
+          "max": 0.23103448275862068,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.06000000000000001,
+          "min": 0.0,
+          "max": 0.2,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9441391941391941,
+          "min": 0.8882783882783883,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.7579365079365079,
+          "min": 0.5158730158730158,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_attack_share": {
+          "mean": 0.007246471939612734,
+          "min": 0.007220216606498195,
+          "max": 0.007272727272727273,
+          "n_runs": 2
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.7736865220168604,
+          "n_runs": 2
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.1689828384648227,
+          "n_runs": 2
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.6607107891783036,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.013615483475899779,
+          "n_runs": 5
+        }
+      },
+      "B_pooled": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.09544986405035923,
+          "min": 0.0,
+          "max": 0.27636363636363637,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.04,
+          "min": 0.0,
+          "max": 0.1,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9396936396936397,
+          "min": 0.9157509157509157,
+          "max": 0.9636363636363636,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.5331439393939394,
+          "min": 0.5208333333333334,
+          "max": 0.5454545454545454,
+          "n_runs": 2
+        },
+        "week_attack_share": {
+          "mean": 0.007246471939612734,
+          "min": 0.007220216606498195,
+          "max": 0.007272727272727273,
+          "n_runs": 2
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.8321931116218284,
+          "n_runs": 2
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.13946673103865279,
+          "n_runs": 2
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.7109327402739358,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.07763596803661685,
+          "n_runs": 5
+        }
+      },
+      "C_stacked": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.03863440965165103,
+          "min": 0.0,
+          "max": 0.09655172413793103,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.08,
+          "min": 0.0,
+          "max": 0.2,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "week_attack_share": {
+          "mean": 0.007246471939612734,
+          "min": 0.007220216606498195,
+          "max": 0.007272727272727273,
+          "n_runs": 2
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.9962450221072605,
+          "n_runs": 2
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.44860475962960433,
+          "n_runs": 2
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.7262159578455338,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.1489819143394513,
+          "n_runs": 5
+        }
+      },
+      "D_weekly": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n_runs": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.8020761245674741,
+          "min": 0.010380622837370242,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.04,
+          "min": 0.0,
+          "max": 0.1,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7431818181818182,
+          "min": 0.7363636363636363,
+          "max": 0.75,
+          "n_runs": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.29528990263647303,
+          "min": 0.08694344163658242,
+          "max": 0.5036363636363637,
+          "n_runs": 2
+        },
+        "week_attack_share": {
+          "mean": 0.007246471939612734,
+          "min": 0.007220216606498195,
+          "max": 0.007272727272727273,
+          "n_runs": 2
+        },
+        "insiders_in_test": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        }
+      }
+    },
+    "SysAdmin": {
+      "A_current": {
+        "T1_insiders_caught": {
+          "mean": 0.25,
+          "min": 0.0,
+          "max": 0.75,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.0772867753115186,
+          "min": 0.0,
+          "max": 0.2145922746781116,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.2,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8212570707787364,
+          "min": 0.7404397705544933,
+          "max": 0.8898426323319027,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.1130718624171692,
+          "min": 0.017119970822197163,
+          "max": 0.28133792012982967,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.7195459769742077,
+          "n_runs": 5
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.0348198556236188,
+          "n_runs": 5
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.7480571747322774,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.019951487701016214,
+          "n_runs": 5
+        }
+      },
+      "B_pooled": {
+        "T1_insiders_caught": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.5,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.05295012838225978,
+          "min": 0.0036101083032490976,
+          "max": 0.1491395793499044,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.13999999999999999,
+          "min": 0.0,
+          "max": 0.4,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7721884093846473,
+          "min": 0.6046845124282982,
+          "max": 0.9091559370529327,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.09644358152976103,
+          "min": 0.01413707734213352,
+          "max": 0.19783594624880155,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.6910041560399105,
+          "n_runs": 5
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.033622406322347795,
+          "n_runs": 5
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.6906738751564558,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.020584900629043508,
+          "n_runs": 5
+        }
+      },
+      "C_stacked": {
+        "T1_insiders_caught": {
+          "mean": 0.35,
+          "min": 0.25,
+          "max": 0.5,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.03116025304459441,
+          "min": 0.0018050541516245488,
+          "max": 0.11281070745697896,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.18000000000000002,
+          "min": 0.0,
+          "max": 0.3,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.824216866424514,
+          "min": 0.7194206008583691,
+          "max": 0.9509174311926605,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.21194707023835985,
+          "min": 0.04068449545960667,
+          "max": 0.5362417411581811,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        },
+        "session_label_period_roc_auc": {
+          "mean": 0.7723427756419707,
+          "n_runs": 5
+        },
+        "session_label_period_pr_auc": {
+          "mean": 0.11651483288943013,
+          "n_runs": 5
+        },
+        "session_label_event_roc_auc": {
+          "mean": 0.7544488666440856,
+          "n_runs": 5
+        },
+        "session_label_event_pr_auc": {
+          "mean": 0.03191160036638348,
+          "n_runs": 5
+        }
+      },
+      "D_weekly": {
+        "T1_insiders_caught": {
+          "mean": 0.55,
+          "min": 0.0,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.4086533262242746,
+          "min": 0.007339449541284404,
+          "max": 1.0,
+          "n_runs": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.12000000000000002,
+          "min": 0.0,
+          "max": 0.2,
+          "n_runs": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.6310220112934557,
+          "min": 0.4981949458483754,
+          "max": 0.7403669724770642,
+          "n_runs": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.15538596084281595,
+          "min": 0.02292768959435626,
+          "max": 0.5036429872495447,
+          "n_runs": 5
+        },
+        "week_attack_share": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n_runs": 5
+        },
+        "insiders_in_test": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n_runs": 5
+        }
+      }
+    }
+  },
+  "runs": {
+    "42": {
+      "Caregiver": {
+        "A_current": {
+          "limit": 0.4107652479927839,
+          "test_weeks": 12867,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.021524733876017534,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.11764705882352941,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8093609583903886,
+          "week_pr_auc": 0.01980128870992384,
+          "week_attack_share": 0.007072355638454962,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7778754115054375,
+              "pr_auc": 0.013267102865801444,
+              "attack_share": 0.005688438936988636
+            },
+            "label_event": {
+              "roc_auc": 0.804154880292344,
+              "pr_auc": 0.008122229576031202,
+              "attack_share": 0.0033829923193544748
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9480551125336866,
+          "test_weeks": 12867,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.01025360050093926,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.17647058823529413,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8470320380934031,
+          "week_pr_auc": 0.022475622279112064,
+          "week_attack_share": 0.007072355638454962,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.830501366184452,
+              "pr_auc": 0.01606928993989254,
+              "attack_share": 0.005688438936988636
+            },
+            "label_event": {
+              "roc_auc": 0.8581097938309943,
+              "pr_auc": 0.011309872328177756,
+              "attack_share": 0.0033829923193544748
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.9364673429297343,
+          "test_weeks": 12867,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.029821540388227926,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7058823529411765,
+          "T3_precision_top10": 0.7,
+          "week_roc_auc": 0.9746365093891707,
+          "week_pr_auc": 0.23039407738393958,
+          "week_attack_share": 0.007072355638454962,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.9628324608379053,
+              "pr_auc": 0.155738081459245,
+              "attack_share": 0.005688438936988636
+            },
+            "label_event": {
+              "roc_auc": 0.9727954183423689,
+              "pr_auc": 0.11915717022436158,
+              "attack_share": 0.0033829923193544748
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.3747648016617817,
+          "test_weeks": 12867,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.021055103318722606,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7647058823529411,
+          "T3_precision_top10": 0.7,
+          "week_roc_auc": 0.9088680183310742,
+          "week_pr_auc": 0.2650403167009232,
+          "week_attack_share": 0.007072355638454962
+        }
+      },
+      "SecurityAuditor": {
+        "A_current": {
+          "limit": 0.20356563627742658,
+          "test_weeks": 290,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.23103448275862068,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.5213261197785606,
+              "pr_auc": 0.002527923707001288,
+              "attack_share": 0.0020090406830738324
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9626187651186962,
+          "test_weeks": 290,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.05862068965517241,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.4906894816305989,
+              "pr_auc": 0.013396587166508257,
+              "attack_share": 0.0020090406830738324
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.06186057934624032,
+          "test_weeks": 290,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.09655172413793103,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.1124811273276296,
+              "pr_auc": 0.0016674423074174022,
+              "attack_share": 0.0020090406830738324
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.02011767572941331,
+          "test_weeks": 290,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 1.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0
+        }
+      },
+      "SysAdmin": {
+        "A_current": {
+          "limit": 0.8095395340962135,
+          "test_weeks": 549,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8068807339449542,
+          "week_pr_auc": 0.06556832298136646,
+          "week_attack_share": 0.007285974499089253,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.6226473412555515,
+              "pr_auc": 0.0045272363790646915,
+              "attack_share": 0.0026934817741066618
+            },
+            "label_event": {
+              "roc_auc": 0.6314488585295703,
+              "pr_auc": 0.004929134651251221,
+              "attack_share": 0.0010773927096426647
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9988414962795361,
+          "test_weeks": 549,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.003669724770642202,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.6330275229357798,
+          "week_pr_auc": 0.01798849316768728,
+          "week_attack_share": 0.007285974499089253,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.5973457568119073,
+              "pr_auc": 0.004012394317455609,
+              "attack_share": 0.0026934817741066618
+            },
+            "label_event": {
+              "roc_auc": 0.5901117502546588,
+              "pr_auc": 0.001712234717215355,
+              "attack_share": 0.0010773927096426647
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.7709061667967861,
+          "test_weeks": 549,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.003669724770642202,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9509174311926605,
+          "week_pr_auc": 0.5362417411581811,
+          "week_attack_share": 0.007285974499089253,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.8775552154603288,
+              "pr_auc": 0.3590532295534883,
+              "attack_share": 0.0026934817741066618
+            },
+            "label_event": {
+              "roc_auc": 0.8130392773683265,
+              "pr_auc": 0.03006169117569474,
+              "attack_share": 0.0010773927096426647
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.07955565765669091,
+          "test_weeks": 549,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.007339449541284404,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.7403669724770642,
+          "week_pr_auc": 0.5036429872495447,
+          "week_attack_share": 0.007285974499089253
+        }
+      },
+      "unseen_attack_type": {
+        "1": {
+          "C_without_type": {
+            "insiders": 8,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.021306296377929617
+          },
+          "B_pooled": {
+            "insiders": 8,
+            "caught": 0.125,
+            "normal_weeks_flagged": 0.018514436852545734
+          }
+        },
+        "2": {
+          "C_without_type": {
+            "insiders": 9,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.009844978326353684
+          },
+          "B_pooled": {
+            "insiders": 9,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.018514436852545734
+          }
+        },
+        "3": {
+          "C_without_type": {
+            "insiders": 4,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.02637572551612666
+          },
+          "B_pooled": {
+            "insiders": 4,
+            "caught": 0.75,
+            "normal_weeks_flagged": 0.018514436852545734
+          }
+        }
+      },
+      "people": {
+        "unsup": 371,
+        "clf": 215,
+        "val": 206,
+        "test": 208
+      },
+      "seconds": 85.8
+    },
+    "1": {
+      "Caregiver": {
+        "A_current": {
+          "limit": 0.3684816914981335,
+          "test_weeks": 13086,
+          "attack_weeks": 80,
+          "T2_normal_weeks_flagged": 0.04198062432723358,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.17647058823529413,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7634457173612179,
+          "week_pr_auc": 0.011963809358874328,
+          "week_attack_share": 0.0061134036374751646,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7341912630681283,
+              "pr_auc": 0.008957821750201659,
+              "attack_share": 0.004481960941323013
+            },
+            "label_event": {
+              "roc_auc": 0.7716929047044873,
+              "pr_auc": 0.005235843002334697,
+              "attack_share": 0.0025801859513323545
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9144673755365128,
+          "test_weeks": 13086,
+          "attack_weeks": 80,
+          "T2_normal_weeks_flagged": 0.04828540673535291,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.47058823529411764,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7808876672305091,
+          "week_pr_auc": 0.013903900391529882,
+          "week_attack_share": 0.0061134036374751646,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7599064931971704,
+              "pr_auc": 0.008807944386752998,
+              "attack_share": 0.004481960941323013
+            },
+            "label_event": {
+              "roc_auc": 0.7836386550324588,
+              "pr_auc": 0.005789670482820444,
+              "attack_share": 0.0025801859513323545
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.9318692389959772,
+          "test_weeks": 13086,
+          "attack_weeks": 80,
+          "T2_normal_weeks_flagged": 0.016146393972012917,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.6470588235294118,
+          "T3_precision_top10": 0.5,
+          "week_roc_auc": 0.9739408734430263,
+          "week_pr_auc": 0.22363515338936857,
+          "week_attack_share": 0.0061134036374751646,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.9548127101546086,
+              "pr_auc": 0.17022391598556058,
+              "attack_share": 0.004481960941323013
+            },
+            "label_event": {
+              "roc_auc": 0.9679123847101471,
+              "pr_auc": 0.11942762018901984,
+              "attack_share": 0.0025801859513323545
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.6635712782872709,
+          "test_weeks": 13086,
+          "attack_weeks": 80,
+          "T2_normal_weeks_flagged": 0.016992157465785022,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.8823529411764706,
+          "T3_precision_top10": 1.0,
+          "week_roc_auc": 0.9329554628632938,
+          "week_pr_auc": 0.4080503742558665,
+          "week_attack_share": 0.0061134036374751646
+        }
+      },
+      "SecurityAuditor": {
+        "A_current": {
+          "limit": 0.8109182324466571,
+          "test_weeks": 275,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8882783882783883,
+          "week_pr_auc": 0.5158730158730158,
+          "week_attack_share": 0.007272727272727273,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7538782816229117,
+              "pr_auc": 0.15560437741088284,
+              "attack_share": 0.0041592394533571005
+            },
+            "label_event": {
+              "roc_auc": 0.8842950624628196,
+              "pr_auc": 0.03835978835978836,
+              "attack_share": 0.0011883541295306002
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9914436680275771,
+          "test_weeks": 275,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9157509157509157,
+          "week_pr_auc": 0.5208333333333334,
+          "week_attack_share": 0.007272727272727273,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7653426525741561,
+              "pr_auc": 0.18128031798685973,
+              "attack_share": 0.0041592394533571005
+            },
+            "label_event": {
+              "roc_auc": 0.9687685901249257,
+              "pr_auc": 0.25943396226415094,
+              "attack_share": 0.0011883541295306002
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.28222303014707073,
+          "test_weeks": 275,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 0.01098901098901099,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "week_attack_share": 0.007272727272727273,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.9948431639959086,
+              "pr_auc": 0.34652924715036515,
+              "attack_share": 0.0041592394533571005
+            },
+            "label_event": {
+              "roc_auc": 0.9869125520523498,
+              "pr_auc": 0.06340579710144928,
+              "attack_share": 0.0011883541295306002
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.02234177752158352,
+          "test_weeks": 275,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 1.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.75,
+          "week_pr_auc": 0.5036363636363637,
+          "week_attack_share": 0.007272727272727273
+        }
+      },
+      "SysAdmin": {
+        "A_current": {
+          "limit": 0.22806643990869502,
+          "test_weeks": 478,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 0.2145922746781116,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.75,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.8898426323319027,
+          "week_pr_auc": 0.15393659342345656,
+          "week_attack_share": 0.02510460251046025,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7644154482119874,
+              "pr_auc": 0.06433647285847786,
+              "attack_share": 0.023653491705918493
+            },
+            "label_event": {
+              "roc_auc": 0.7986835903114973,
+              "pr_auc": 0.036219513188751044,
+              "attack_share": 0.009318042187180013
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9884191753779892,
+          "test_weeks": 478,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 0.09656652360515021,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.3,
+          "week_roc_auc": 0.9091559370529327,
+          "week_pr_auc": 0.18802036625465737,
+          "week_attack_share": 0.02510460251046025,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.6918786335147111,
+              "pr_auc": 0.05188941028916664,
+              "attack_share": 0.023653491705918493
+            },
+            "label_event": {
+              "roc_auc": 0.733180566203822,
+              "pr_auc": 0.029644034694120774,
+              "attack_share": 0.009318042187180013
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.6138200909785801,
+          "test_weeks": 478,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 0.02575107296137339,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.7194206008583691,
+          "week_pr_auc": 0.14660335794725374,
+          "week_attack_share": 0.02510460251046025,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.6911395019942477,
+              "pr_auc": 0.07046818756957562,
+              "attack_share": 0.023653491705918493
+            },
+            "label_event": {
+              "roc_auc": 0.7296294403271149,
+              "pr_auc": 0.040999656359650014,
+              "attack_share": 0.009318042187180013
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.02234177752158352,
+          "test_weeks": 478,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 1.0,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.574928469241774,
+          "week_pr_auc": 0.1320316132031613,
+          "week_attack_share": 0.02510460251046025
+        }
+      },
+      "unseen_attack_type": {
+        "1": {
+          "C_without_type": {
+            "insiders": 11,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.01738814114223354
+          },
+          "B_pooled": {
+            "insiders": 11,
+            "caught": 0.09090909090909091,
+            "normal_weeks_flagged": 0.020734812659148782
+          }
+        },
+        "2": {
+          "C_without_type": {
+            "insiders": 8,
+            "caught": 0.125,
+            "normal_weeks_flagged": 0.025754819934521646
+          },
+          "B_pooled": {
+            "insiders": 8,
+            "caught": 0.125,
+            "normal_weeks_flagged": 0.020734812659148782
+          }
+        },
+        "3": {
+          "C_without_type": {
+            "insiders": 3,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.015132775554747182
+          },
+          "B_pooled": {
+            "insiders": 3,
+            "caught": 1.0,
+            "normal_weeks_flagged": 0.020734812659148782
+          }
+        }
+      },
+      "people": {
+        "unsup": 371,
+        "clf": 215,
+        "val": 206,
+        "test": 208
+      },
+      "seconds": 94.0
+    },
+    "2": {
+      "Caregiver": {
+        "A_current": {
+          "limit": 0.39441641243353714,
+          "test_weeks": 13018,
+          "attack_weeks": 95,
+          "T2_normal_weeks_flagged": 0.013928654337228197,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.17647058823529413,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.823611105454575,
+          "week_pr_auc": 0.022519442857746052,
+          "week_attack_share": 0.0072975879551390385,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7856653158109064,
+              "pr_auc": 0.014930248370842975,
+              "attack_share": 0.006232214670398156
+            },
+            "label_event": {
+              "roc_auc": 0.8077815247428547,
+              "pr_auc": 0.00790919631782866,
+              "attack_share": 0.0031631429176171774
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9302244687975291,
+          "test_weeks": 13018,
+          "attack_weeks": 95,
+          "T2_normal_weeks_flagged": 0.017178673682581445,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.35294117647058826,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8090723597665526,
+          "week_pr_auc": 0.01997486670707506,
+          "week_attack_share": 0.0072975879551390385,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7926345281768628,
+              "pr_auc": 0.014099233458377724,
+              "attack_share": 0.006232214670398156
+            },
+            "label_event": {
+              "roc_auc": 0.800724278443674,
+              "pr_auc": 0.0074149214017703545,
+              "attack_share": 0.0031631429176171774
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.9596989672477025,
+          "test_weeks": 13018,
+          "attack_weeks": 95,
+          "T2_normal_weeks_flagged": 0.013696510098274394,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.47058823529411764,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9242403385233182,
+          "week_pr_auc": 0.12317991152910719,
+          "week_attack_share": 0.0072975879551390385,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.8693733456630919,
+              "pr_auc": 0.07823873566691263,
+              "attack_share": 0.006232214670398156
+            },
+            "label_event": {
+              "roc_auc": 0.9147166123112865,
+              "pr_auc": 0.07055095745210581,
+              "attack_share": 0.0031631429176171774
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.41734540397036807,
+          "test_weeks": 13018,
+          "attack_weeks": 95,
+          "T2_normal_weeks_flagged": 0.024220382264180145,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7058823529411765,
+          "T3_precision_top10": 0.4,
+          "week_roc_auc": 0.7723113013517311,
+          "week_pr_auc": 0.09152992978514694,
+          "week_attack_share": 0.0072975879551390385
+        }
+      },
+      "SecurityAuditor": {
+        "A_current": {
+          "limit": 0.1732119166403628,
+          "test_weeks": 288,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.21180555555555555,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.4973868223760093,
+              "pr_auc": 0.009947385818702774,
+              "attack_share": 0.009142857142857144
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9244641898369151,
+          "test_weeks": 288,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.11458333333333333,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.5624459342560554,
+              "pr_auc": 0.04124855622803008,
+              "attack_share": 0.009142857142857144
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.10821598790457808,
+          "test_weeks": 288,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.034722222222222224,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.8371359573241062,
+              "pr_auc": 0.4572237360786542,
+              "attack_share": 0.009142857142857144
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.022145103076372397,
+          "test_weeks": 288,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 1.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0
+        }
+      },
+      "SysAdmin": {
+        "A_current": {
+          "limit": 0.5159442019758168,
+          "test_weeks": 567,
+          "attack_weeks": 13,
+          "T2_normal_weeks_flagged": 0.009025270758122744,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.8785059705637324,
+          "week_pr_auc": 0.28133792012982967,
+          "week_attack_share": 0.02292768959435626,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7718563756372079,
+              "pr_auc": 0.06511171498269026,
+              "attack_share": 0.020499471243797283
+            },
+            "label_event": {
+              "roc_auc": 0.8299803327050725,
+              "pr_auc": 0.04018321382225177,
+              "attack_share": 0.007321239729927601
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9973008295798215,
+          "test_weeks": 567,
+          "attack_weeks": 13,
+          "T2_normal_weeks_flagged": 0.0036101083032490976,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.4,
+          "week_roc_auc": 0.8711469036378784,
+          "week_pr_auc": 0.19783594624880155,
+          "week_attack_share": 0.02292768959435626,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.753934309099993,
+              "pr_auc": 0.06791543557100227,
+              "attack_share": 0.020499471243797283
+            },
+            "label_event": {
+              "roc_auc": 0.74687144326987,
+              "pr_auc": 0.04944444955380936,
+              "attack_share": 0.007321239729927601
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.7241336296273155,
+          "test_weeks": 567,
+          "attack_weeks": 13,
+          "T2_normal_weeks_flagged": 0.0018050541516245488,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.861843932241044,
+          "week_pr_auc": 0.15575706306569012,
+          "week_attack_share": 0.02292768959435626,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7041764052186774,
+              "pr_auc": 0.051840488134051774,
+              "attack_share": 0.020499471243797283
+            },
+            "label_event": {
+              "roc_auc": 0.7009947462827902,
+              "pr_auc": 0.015536802160464838,
+              "attack_share": 0.007321239729927601
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.022145103076372397,
+          "test_weeks": 567,
+          "attack_weeks": 13,
+          "T2_normal_weeks_flagged": 1.0,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.4981949458483754,
+          "week_pr_auc": 0.02292768959435626,
+          "week_attack_share": 0.02292768959435626
+        }
+      },
+      "unseen_attack_type": {
+        "1": {
+          "C_without_type": {
+            "insiders": 9,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.016127860515800944
+          },
+          "B_pooled": {
+            "insiders": 9,
+            "caught": 0.2222222222222222,
+            "normal_weeks_flagged": 0.02717035960770069
+          }
+        },
+        "2": {
+          "C_without_type": {
+            "insiders": 10,
+            "caught": 0.1,
+            "normal_weeks_flagged": 0.017217580820922628
+          },
+          "B_pooled": {
+            "insiders": 10,
+            "caught": 0.1,
+            "normal_weeks_flagged": 0.02717035960770069
+          }
+        },
+        "3": {
+          "C_without_type": {
+            "insiders": 2,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.023683254631311296
+          },
+          "B_pooled": {
+            "insiders": 2,
+            "caught": 0.5,
+            "normal_weeks_flagged": 0.02717035960770069
+          }
+        }
+      },
+      "people": {
+        "unsup": 371,
+        "clf": 215,
+        "val": 206,
+        "test": 208
+      },
+      "seconds": 94.0
+    },
+    "3": {
+      "Caregiver": {
+        "A_current": {
+          "limit": 0.3633102978541378,
+          "test_weeks": 12976,
+          "attack_weeks": 89,
+          "T2_normal_weeks_flagged": 0.027236750213393342,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7915057679413886,
+          "week_pr_auc": 0.015109122430820394,
+          "week_attack_share": 0.006858816276202219,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7453213587164564,
+              "pr_auc": 0.009458799630875129,
+              "attack_share": 0.00481715341245216
+            },
+            "label_event": {
+              "roc_auc": 0.763991662154514,
+              "pr_auc": 0.0064687820872200204,
+              "attack_share": 0.003054485747745355
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.929686524492181,
+          "test_weeks": 12976,
+          "attack_weeks": 89,
+          "T2_normal_weeks_flagged": 0.01893380926515093,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.35294117647058826,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.8200717036504865,
+          "week_pr_auc": 0.020823413808377496,
+          "week_attack_share": 0.006858816276202219,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.8084946838769859,
+              "pr_auc": 0.011890512881974537,
+              "attack_share": 0.00481715341245216
+            },
+            "label_event": {
+              "roc_auc": 0.8050540146798771,
+              "pr_auc": 0.007626074260904235,
+              "attack_share": 0.003054485747745355
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.9166718124511212,
+          "test_weeks": 12976,
+          "attack_weeks": 89,
+          "T2_normal_weeks_flagged": 0.017537052843951267,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.5294117647058824,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.9770258853317034,
+          "week_pr_auc": 0.19682268840075207,
+          "week_attack_share": 0.006858816276202219,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.9703009799155173,
+              "pr_auc": 0.1680328721921754,
+              "attack_share": 0.00481715341245216
+            },
+            "label_event": {
+              "roc_auc": 0.9838203426734256,
+              "pr_auc": 0.12994853405526005,
+              "attack_share": 0.003054485747745355
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.08457664071847754,
+          "test_weeks": 12976,
+          "attack_weeks": 89,
+          "T2_normal_weeks_flagged": 0.017847443159773414,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.5882352941176471,
+          "T3_precision_top10": 0.8,
+          "week_roc_auc": 0.9660187995392971,
+          "week_pr_auc": 0.4615525348305198,
+          "week_attack_share": 0.006858816276202219
+        }
+      },
+      "SecurityAuditor": {
+        "A_current": {
+          "limit": 0.44637772103257284,
+          "test_weeks": 289,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.5200477960701009,
+              "pr_auc": 0.009145392780058485,
+              "attack_share": 0.00842548709847288
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9611468643202697,
+          "test_weeks": 289,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.02768166089965398,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.5637612851832182,
+              "pr_auc": 0.04910073452439494,
+              "attack_share": 0.00842548709847288
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.06647449139500153,
+          "test_weeks": 289,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.0,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0,
+          "session": {
+            "label_event": {
+              "roc_auc": 0.7009094530005311,
+              "pr_auc": 0.01427926287640232,
+              "attack_share": 0.00842548709847288
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.0018506904065130688,
+          "test_weeks": 289,
+          "attack_weeks": 0,
+          "T2_normal_weeks_flagged": 0.010380622837370242,
+          "insiders_in_test": 0,
+          "T1_insiders_caught": null,
+          "T3_precision_top10": 0.0
+        }
+      },
+      "SysAdmin": {
+        "A_current": {
+          "limit": 0.47057697235273005,
+          "test_weeks": 527,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.15105162523900573,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7404397705544933,
+          "week_pr_auc": 0.017119970822197163,
+          "week_attack_share": 0.007590132827324478,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.6843810918862958,
+              "pr_auc": 0.004766030107773239,
+              "attack_share": 0.0031728256812243376
+            },
+            "label_event": {
+              "roc_auc": 0.7022764075734927,
+              "pr_auc": 0.0018996929587901223,
+              "attack_share": 0.0011198208286674132
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9959763954847396,
+          "test_weeks": 527,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.1491395793499044,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.6046845124282982,
+          "week_pr_auc": 0.01413707734213352,
+          "week_attack_share": 0.007590132827324478,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.634960406180821,
+              "pr_auc": 0.00433405999580062,
+              "attack_share": 0.0031728256812243376
+            },
+            "label_event": {
+              "roc_auc": 0.5850149476831091,
+              "pr_auc": 0.0015050162192512938,
+              "attack_share": 0.0011198208286674132
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.4675653227446726,
+          "test_weeks": 527,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.11281070745697896,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.5,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7265774378585086,
+          "week_pr_auc": 0.04068449545960667,
+          "week_attack_share": 0.007590132827324478,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7624164344636937,
+              "pr_auc": 0.011276637092267996,
+              "attack_share": 0.0031728256812243376
+            },
+            "label_event": {
+              "roc_auc": 0.6864684541604384,
+              "pr_auc": 0.003390155676363219,
+              "attack_share": 0.0011198208286674132
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.0013224474818421136,
+          "test_weeks": 527,
+          "attack_weeks": 4,
+          "T2_normal_weeks_flagged": 0.019120458891013385,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7339866156787763,
+          "week_pr_auc": 0.03683382937843977,
+          "week_attack_share": 0.007590132827324478
+        }
+      },
+      "unseen_attack_type": {
+        "1": {
+          "C_without_type": {
+            "insiders": 9,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.014234615665377036
+          },
+          "B_pooled": {
+            "insiders": 9,
+            "caught": 0.2222222222222222,
+            "normal_weeks_flagged": 0.022118402803124316
+          }
+        },
+        "2": {
+          "C_without_type": {
+            "insiders": 8,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.02584130228483831
+          },
+          "B_pooled": {
+            "insiders": 8,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.022118402803124316
+          }
+        },
+        "3": {
+          "C_without_type": {
+            "insiders": 4,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.013066647200525586
+          },
+          "B_pooled": {
+            "insiders": 4,
+            "caught": 0.75,
+            "normal_weeks_flagged": 0.022118402803124316
+          }
+        }
+      },
+      "people": {
+        "unsup": 371,
+        "clf": 215,
+        "val": 206,
+        "test": 208
+      },
+      "seconds": 91.3
+    },
+    "4": {
+      "Caregiver": {
+        "A_current": {
+          "limit": 0.3704428183232727,
+          "test_weeks": 12998,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.021228790578755714,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.29411764705882354,
+          "T3_precision_top10": 0.3,
+          "week_roc_auc": 0.8117564623336686,
+          "week_pr_auc": 0.03198042217388497,
+          "week_attack_share": 0.0070010770887828895,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7627094839272024,
+              "pr_auc": 0.013982832566371648,
+              "attack_share": 0.005656418210017334
+            },
+            "label_event": {
+              "roc_auc": 0.7917008122782254,
+              "pr_auc": 0.0071507093626273395,
+              "attack_share": 0.003067694553416659
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9235002103654931,
+          "test_weeks": 12998,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.026032385527233283,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.29411764705882354,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7843873798781988,
+          "week_pr_auc": 0.015791373046989958,
+          "week_attack_share": 0.0070010770887828895,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7202979603411381,
+              "pr_auc": 0.009508117905656106,
+              "attack_share": 0.005656418210017334
+            },
+            "label_event": {
+              "roc_auc": 0.724896580843335,
+              "pr_auc": 0.005292180978953025,
+              "attack_share": 0.003067694553416659
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.9471682811352137,
+          "test_weeks": 12998,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.012086464709072596,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.47058823529411764,
+          "T3_precision_top10": 0.4,
+          "week_roc_auc": 0.955960518910856,
+          "week_pr_auc": 0.17367576672078627,
+          "week_attack_share": 0.0070010770887828895,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.9288708234552446,
+              "pr_auc": 0.12584419493388976,
+              "attack_share": 0.005656418210017334
+            },
+            "label_event": {
+              "roc_auc": 0.9489600590856044,
+              "pr_auc": 0.11157818153757475,
+              "attack_share": 0.003067694553416659
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.6136681713637248,
+          "test_weeks": 12998,
+          "attack_weeks": 91,
+          "T2_normal_weeks_flagged": 0.013868443480282017,
+          "insiders_in_test": 17,
+          "T1_insiders_caught": 0.7058823529411765,
+          "T3_precision_top10": 0.8,
+          "week_roc_auc": 0.8755692668685618,
+          "week_pr_auc": 0.3566734178320274,
+          "week_attack_share": 0.0070010770887828895
+        }
+      },
+      "SecurityAuditor": {
+        "A_current": {
+          "limit": 0.09240282262492051,
+          "test_weeks": 277,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 0.16727272727272727,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "week_attack_share": 0.007220216606498195,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7934947624108091,
+              "pr_auc": 0.18236129951876257,
+              "attack_share": 0.0037056643726839597
+            },
+            "label_event": {
+              "roc_auc": 0.8804981452040276,
+              "pr_auc": 0.00809692671394799,
+              "attack_share": 0.0010587612493382743
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.8729515926703622,
+          "test_weeks": 277,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 0.27636363636363637,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.9636363636363636,
+          "week_pr_auc": 0.5454545454545454,
+          "week_attack_share": 0.007220216606498195,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.8990435706695006,
+              "pr_auc": 0.09765314409044586,
+              "attack_share": 0.0037056643726839597
+            },
+            "label_event": {
+              "roc_auc": 0.9689984101748808,
+              "pr_auc": 0.025,
+              "attack_share": 0.0010587612493382743
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.023304266211310733,
+          "test_weeks": 277,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 0.05090909090909091,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 1.0,
+          "week_pr_auc": 1.0,
+          "week_attack_share": 0.007220216606498195,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.9976468802186124,
+              "pr_auc": 0.5506802721088435,
+              "attack_share": 0.0037056643726839597
+            },
+            "label_event": {
+              "roc_auc": 0.9936406995230525,
+              "pr_auc": 0.20833333333333331,
+              "attack_share": 0.0010587612493382743
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.014240529276268846,
+          "test_weeks": 277,
+          "attack_weeks": 2,
+          "T2_normal_weeks_flagged": 1.0,
+          "insiders_in_test": 1,
+          "T1_insiders_caught": 1.0,
+          "T3_precision_top10": 0.1,
+          "week_roc_auc": 0.7363636363636363,
+          "week_pr_auc": 0.08694344163658242,
+          "week_attack_share": 0.007220216606498195
+        }
+      },
+      "SysAdmin": {
+        "A_current": {
+          "limit": 0.907633510575748,
+          "test_weeks": 607,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 0.011764705882352941,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.7906162464985994,
+          "week_pr_auc": 0.0473965047289961,
+          "week_attack_share": 0.019769357495881382,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7544296278799962,
+              "pr_auc": 0.035357823790087964,
+              "attack_share": 0.018043461206558406
+            },
+            "label_event": {
+              "roc_auc": 0.7778966845417541,
+              "pr_auc": 0.016525883884036904,
+              "attack_share": 0.007138934651290499
+            }
+          }
+        },
+        "B_pooled": {
+          "limit": 0.9998113496545935,
+          "test_weeks": 607,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 0.011764705882352941,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.0,
+          "T3_precision_top10": 0.0,
+          "week_roc_auc": 0.8429271708683473,
+          "week_pr_auc": 0.06423602463552534,
+          "week_attack_share": 0.019769357495881382,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.7769016745921199,
+              "pr_auc": 0.03996073143831383,
+              "attack_share": 0.018043461206558406
+            },
+            "label_event": {
+              "roc_auc": 0.7981906683708201,
+              "pr_auc": 0.020618767960820746,
+              "attack_share": 0.007138934651290499
+            }
+          }
+        },
+        "C_stacked": {
+          "limit": 0.7335709178243804,
+          "test_weeks": 607,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 0.011764705882352941,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.3,
+          "week_roc_auc": 0.8623249299719887,
+          "week_pr_auc": 0.1804486935610676,
+          "week_attack_share": 0.019769357495881382,
+          "session": {
+            "label_period": {
+              "roc_auc": 0.8264263210729061,
+              "pr_auc": 0.08993562209776688,
+              "attack_share": 0.018043461206558406
+            },
+            "label_event": {
+              "roc_auc": 0.8421124150817576,
+              "pr_auc": 0.06956969645974458,
+              "attack_share": 0.007138934651290499
+            }
+          }
+        },
+        "D_weekly": {
+          "limit": 0.03485965166348327,
+          "test_weeks": 607,
+          "attack_weeks": 12,
+          "T2_normal_weeks_flagged": 0.01680672268907563,
+          "insiders_in_test": 4,
+          "T1_insiders_caught": 0.25,
+          "T3_precision_top10": 0.2,
+          "week_roc_auc": 0.6076330532212885,
+          "week_pr_auc": 0.0814936847885777,
+          "week_attack_share": 0.019769357495881382
+        }
+      },
+      "unseen_attack_type": {
+        "1": {
+          "C_without_type": {
+            "insiders": 9,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.01284749945561443
+          },
+          "B_pooled": {
+            "insiders": 9,
+            "caught": 0.1111111111111111,
+            "normal_weeks_flagged": 0.018073600929084707
+          }
+        },
+        "2": {
+          "C_without_type": {
+            "insiders": 10,
+            "caught": 0.1,
+            "normal_weeks_flagged": 0.02649343108078682
+          },
+          "B_pooled": {
+            "insiders": 10,
+            "caught": 0.1,
+            "normal_weeks_flagged": 0.018073600929084707
+          }
+        },
+        "3": {
+          "C_without_type": {
+            "insiders": 3,
+            "caught": 0.0,
+            "normal_weeks_flagged": 0.013283007911736953
+          },
+          "B_pooled": {
+            "insiders": 3,
+            "caught": 1.0,
+            "normal_weeks_flagged": 0.018073600929084707
+          }
+        }
+      },
+      "people": {
+        "unsup": 371,
+        "clf": 215,
+        "val": 206,
+        "test": 208
+      },
+      "seconds": 84.2
+    }
+  }
+}

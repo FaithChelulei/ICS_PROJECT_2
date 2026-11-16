@@ -1,4 +1,4 @@
-// System settings a SysAdmin can change on screen (FR-25). Only these two:
+// System settings a SysAdmin can change on screen (FR-25). Only these three:
 // keys, passwords and connection details stay in backend/.env and are never
 // editable or shown here. The default for each is its value in backend/.env.
 // The limits are repeated as CHECK constraints in
@@ -23,6 +23,16 @@ const SETTINGS = {
     max: 50,
     envName: 'REPORT_EXPORTS_PER_HOUR',
     fallback: 10,
+  },
+  // DPIA gap G1: monitoring data had no time limit.
+  monitoring_retention_days: {
+    label: 'Monitoring details kept for',
+    unit: 'days',
+    description: 'How long the device name, network address and model evidence of each recorded action are kept. After that they are cleared every night; the audit log itself is kept.',
+    min: 90,
+    max: 3650,
+    envName: 'MONITORING_RETENTION_DAYS',
+    fallback: 730,
   },
 };
 

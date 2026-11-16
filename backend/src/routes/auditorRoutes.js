@@ -12,11 +12,13 @@ const { downloadReport } = require('../controllers/reportsController');
 const { auditorOverview } = require('../controllers/overviewController');
 const riskThresholds = require('../controllers/riskThresholdController');
 const { getSetting } = require('../services/systemSettings');
+const weeklyReview = require('../controllers/weeklyReviewController');
 
 const router = express.Router();
 
 router.use(authenticate, requirePasswordChanged);
 router.param('riskScoreId', validateIdParam);
+router.param('id', validateIdParam);
 
 // Hard cap on report downloads per auditor, alongside the risk model. The
 // model catches large or fast scraping and off-hours use, but a slow trickle
@@ -51,5 +53,20 @@ router.get('/audit-log', requirePermission('view_audit_log'), asyncHandler(listA
 router.get('/reports/:report', requirePermission('export_reports'), reportExportLimit, asyncHandler(downloadReport));
 router.get('/risk-thresholds', requirePermission('manage_risk_thresholds'), asyncHandler(riskThresholds.list));
 router.post('/risk-thresholds/:role', requirePermission('manage_risk_thresholds'), requireStepUp, asyncHandler(riskThresholds.update));
+
+// Layer 2: "People to review this week". Refreshing re-scores every person's
+// week, so it is limited to a few times an hour (it also runs hourly).
+const weeklyRefreshLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 6,
+  keyGenerator: (req) => `user:${req.user.id}`,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'The weekly review can be refreshed 6 times an hour. It also refreshes by itself every hour.', code: 'REFRESH_RATE_LIMITED' },
+});
+router.get('/weekly-review', requirePermission('review_weekly'), asyncHandler(weeklyReview.list));
+router.post('/weekly-review/refresh', requirePermission('review_weekly'), weeklyRefreshLimit, asyncHandler(weeklyReview.refresh));
+router.get('/weekly-review/:id', requirePermission('review_weekly'), asyncHandler(weeklyReview.detail));
+router.post('/weekly-review/:id/decision', requirePermission('review_weekly'), asyncHandler(weeklyReview.decide));
 
 module.exports = router;

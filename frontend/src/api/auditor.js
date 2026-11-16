@@ -6,11 +6,6 @@ export const getAuditorOverview = () => apiFetch('/auditor/overview');
 // pending only, which would leave the other tabs and breach decisions empty.
 export const listFlagged = () => apiFetch('/auditor/flagged-sessions?status=all');
 
-export const getRiskThresholds = () => apiFetch('/auditor/risk-thresholds');
-
-// Needs the auditor's password again (step-up check).
-export const updateRiskThreshold = (role, threshold, reason, password) =>
-  apiFetch(`/auditor/risk-thresholds/${role}`, { method: 'POST', body: { threshold, reason, password } });
 
 export const reviewFlagged = (riskScoreId, status) =>
   apiFetch(`/auditor/flagged-sessions/${riskScoreId}/review`, {
@@ -18,7 +13,7 @@ export const reviewFlagged = (riskScoreId, status) =>
     body: { status },
   });
 
-// decision: 'notified_commissioner' | 'no_real_risk' (KDPA s.43)
+// decision: 'reported_to_admin' | 'no_real_risk' (KDPA s.43)
 export const recordBreachDecision = (riskScoreId, decision, reason) =>
   apiFetch(`/auditor/flagged-sessions/${riskScoreId}/breach-decision`, {
     method: 'POST',
@@ -35,3 +30,14 @@ export const downloadReport = (report, format, filters = {}) => {
   const params = Object.fromEntries(Object.entries({ ...filters, format }).filter(([, v]) => v));
   return apiDownload(`/auditor/reports/${report}?${new URLSearchParams(params)}`);
 };
+
+// Layer 2: "People to review this week". week = any date in the week (YYYY-MM-DD).
+export const getWeeklyReview = (week, role) => {
+  const qs = new URLSearchParams(Object.fromEntries(Object.entries({ week, role }).filter(([, v]) => v)));
+  return apiFetch(`/auditor/weekly-review${qs.toString() ? `?${qs}` : ''}`);
+};
+export const getWeeklyDetail = (id) => apiFetch(`/auditor/weekly-review/${id}`);
+// status: 'no_concern' | 'escalated'; note: at least 10 characters
+export const decideWeekly = (id, status, note) =>
+  apiFetch(`/auditor/weekly-review/${id}/decision`, { method: 'POST', body: { status, note } });
+export const refreshWeekly = () => apiFetch('/auditor/weekly-review/refresh', { method: 'POST' });

@@ -22,7 +22,8 @@ async function authenticateHandler(req, res, next) {
   }
 
   const { rows } = await db.query(
-    `SELECT s.revoked_at, s.revoked_reason, u.email, u.must_change_password
+    `SELECT s.revoked_at, s.revoked_reason, u.email, u.must_change_password,
+            EXISTS (SELECT 1 FROM account_cases c WHERE c.user_id = u.id AND c.status IN ('paused', 'explained')) AS paused
      FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.id = $1`,
     [payload.sessionId]
@@ -39,6 +40,12 @@ async function authenticateHandler(req, res, next) {
         code: 'SESSION_REVOKED_RISK',
       });
     }
+    if (session && session.revoked_reason === 'account_paused') {
+      return res.status(401).json({
+        error: 'Your access has been paused while some activity is checked. Sign in again to see what to do next.',
+        code: 'ACCOUNT_PAUSED',
+      });
+    }
     return res.status(401).json({ error: 'Session has been revoked, please log in again', code: 'SESSION_REVOKED' });
   }
 
@@ -48,6 +55,7 @@ async function authenticateHandler(req, res, next) {
     sessionId: payload.sessionId,
     email: session.email,
     mustChangePassword: session.must_change_password,
+    paused: session.paused === true,
   };
   // Everything downstream of this point (route handlers, services) runs as
   // this user, so the database's row-level security policies can see who
@@ -64,7 +72,16 @@ const authenticate = asyncHandler(authenticateHandler);
 // approval or account unlock) has been changed. Deliberately NOT applied
 // to /auth/me or /auth/change-password — those have to stay reachable
 // while this flag is still true, or the user could never clear it.
+// Also blocks every data route while the account is PAUSED until verified
+// (db/013_account_cases.sql): the person may only sign in, see the pause
+// and send an explanation (routes under /auth, outside this check).
 function requirePasswordChanged(req, res, next) {
+  if (req.user && req.user.paused) {
+    return res.status(403).json({
+      error: 'Your access is paused while some activity is checked. Please send your explanation.',
+      code: 'ACCOUNT_PAUSED',
+    });
+  }
   if (req.user && req.user.mustChangePassword) {
     return res.status(403).json({
       error: 'You must change your temporary password before continuing.',

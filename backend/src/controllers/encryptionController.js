@@ -7,6 +7,7 @@
 const { getStatus, reencryptAll } = require('../services/keyRotation');
 const { logAction } = require('../utils/auditLog');
 const { scoreAction, logOnlyAction, riskFields } = require('../services/actionScoring');
+const { claimApproval, releaseApproval, approvalRequired } = require('../services/approvals');
 
 async function status(req, res) {
   const result = await getStatus();
@@ -15,10 +16,14 @@ async function status(req, res) {
 }
 
 async function reencrypt(req, res) {
+  // Two-person approval (services/approvals.js).
+  const approval = await claimApproval(Number(req.body && req.body.approvalId), 'reencrypt_data');
+  if (!approval) return approvalRequired(req, res, 'reencrypt_data');
   let result;
   try {
     result = await reencryptAll();
   } catch (err) {
+    await releaseApproval(approval.id);
     console.error('[key-rotation] re-encryption failed, rolled back:', err.message);
     return res.status(500).json({ error: `Re-encryption failed and was rolled back: ${err.message}` });
   }
@@ -28,7 +33,7 @@ async function reencrypt(req, res) {
   await logAction({
     userId: req.user.id,
     action: 'reencrypt_child_data',
-    detail: `active_key=${result.activeKeyId}, rows=${result.updatedRows}, values=${result.updatedValues}`,
+    detail: `active_key=${result.activeKeyId}, rows=${result.updatedRows}, values=${result.updatedValues}, approval_id=${approval.id}`,
     accessRequestId: risk.accessRequestId,
   });
   res.json({ ...result, status: await getStatus(), ...riskFields(risk) });

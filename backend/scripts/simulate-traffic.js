@@ -10,7 +10,7 @@
 //   1. Creates dedicated simulated accounts (never real users):
 //      30 caregivers, 5 security auditors, 3 system administrators, plus
 //      7 scripted insiders who behave normally until their attack day.
-//   2. Replays two weeks of activity day by day with a simulated clock.
+//   2. Replays two weeks (or --weeks N) of activity day by day with a simulated clock.
 //      Each action goes through the live system's own code path:
 //      access_requests row -> computeFeatures() -> Flask /score.
 //      Nothing is emailed, no session is revoked and no risk_scores rows
@@ -18,7 +18,7 @@
 //   3. Week 1 (days 1-7) is the CALIBRATION week: from the normal users'
 //      scores it picks, per role, the lowest threshold that keeps false
 //      flags within the alert budget (default 1% of scored actions).
-//   4. Week 2 (days 8-14) is the EVALUATION week: it reports false flags
+//   4. The last week (days 8-14 by default) is the EVALUATION week: it reports false flags
 //      of normal users and whether (and how fast) each insider is caught,
 //      both at the current deployment thresholds and at the calibrated ones.
 //
@@ -30,7 +30,7 @@
 //
 // Run from backend/ with the ML service on :5001 (the backend API is not
 // needed):   npm run sim:traffic
-// Options:   --seed 42  --budget 0.01  --keep (keep the simulated rows)
+// Options:   --seed 42  --budget 0.01  --weeks 2 (2-8)  --keep (keep the simulated rows)
 // Output:    test/results/simulation_<timestamp>.json  (+ _actions.csv)
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
@@ -39,7 +39,8 @@ const path = require('path');
 const db = require('../src/config/db');
 const { computeFeatures } = require('../src/services/featureComputation');
 const { logAccessRequest } = require('../src/services/riskEngine');
-const { scoreSession } = require('../src/utils/mlClient');
+const { scoreSession, scoreWeek } = require('../src/utils/mlClient');
+const { groupIntoSessions, ruleFlags, localDate, linesFrom, calibrationGroup, CALIBRATION } = require('../src/services/weeklyReview');
 
 // ---------------------------------------------------------------- options
 const arg = (name, dflt) => {
@@ -49,8 +50,16 @@ const arg = (name, dflt) => {
 const SEED = Number(arg('seed', 42));
 const BUDGET = Number(arg('budget', 0.01));
 const KEEP = process.argv.includes('--keep');
-const DAYS = 14;
+// --no-calibration: score every week against the CERT lines only (for comparison).
+const NO_CALIBRATION = process.argv.includes('--no-calibration');
+// --weeks N (default 2): week 1 calibrates layer 1, the LAST week is the
+// evaluation week in which the insiders attack, the weeks between build up
+// the history the weekly review compares each person with.
+const WEEKS = Math.max(2, Math.min(8, Number(arg('weeks', 2))));
+const DAYS = WEEKS * 7;
 const CALIBRATION_DAYS = 7;
+const EVAL_FIRST_DAY = DAYS - 6;
+const SHIFT = DAYS - 14; // moves the insiders' attack days into the last week
 // A fixed Monday in the past, so simulated days never overlap real activity.
 const START = new Date(2026, 8, 7);
 const CURRENT = { Caregiver: 0.40, SecurityAuditor: 0.65, SysAdmin: 0.60 };
@@ -174,8 +183,8 @@ const INSIDERS = [
     tag: 'cg-bulk', role: 'Caregiver', day: 10,
     scenario: 'Caregiver bulk-reads records in usual hours (CERT scenario 2, data theft)',
     attack(sched, p) {
-      const start = at(10, p.late ? 19 : 10);
-      return sched.filter((s) => s.day !== 10).concat([{ day: 10, start, device: p.devices[0],
+      const start = at(10 + SHIFT, p.late ? 19 : 10);
+      return sched.filter((s) => s.day !== 10 + SHIFT).concat([{ day: 10 + SHIFT, start, device: p.devices[0],
         actions: attackActions(start, 40, [['view_own_child_records', 1]], 0.5, 1) }]);
     },
   },
@@ -183,8 +192,8 @@ const INSIDERS = [
     tag: 'cg-night', role: 'Caregiver', day: 11,
     scenario: 'Caregiver reads records at 23:10 (CERT scenario 1, after hours)',
     attack(sched, p) {
-      const start = at(11, 23 + 10 / 60);
-      return sched.concat([{ day: 11, start, device: p.devices[0],
+      const start = at(11 + SHIFT, 23 + 10 / 60);
+      return sched.concat([{ day: 11 + SHIFT, start, device: p.devices[0],
         actions: attackActions(start, 6, [['view_own_child_records', 1]], 2, 4) }]);
     },
   },
@@ -192,19 +201,19 @@ const INSIDERS = [
     tag: 'cg-stolen', role: 'Caregiver', day: 12,
     scenario: 'Stolen caregiver password used from an unrecognised device, after the owner worked that morning',
     attack(sched, p) {
-      const own = at(12, 8);
-      const thief = at(12, 15);
-      return sched.filter((s) => s.day !== 12).concat([
-        { day: 12, start: own, device: p.devices[0], actions: actionsFrom(own, 3, CAREGIVER_ACTIONS, 2, 5) },
-        { day: 12, start: thief, device: 'unrecognised-device', actions: attackActions(thief, 10, [['view_own_child_records', 1]], 1, 2) },
+      const own = at(12 + SHIFT, 8);
+      const thief = at(12 + SHIFT, 15);
+      return sched.filter((s) => s.day !== 12 + SHIFT).concat([
+        { day: 12 + SHIFT, start: own, device: p.devices[0], actions: actionsFrom(own, 3, CAREGIVER_ACTIONS, 2, 5) },
+        { day: 12 + SHIFT, start: thief, device: 'unrecognised-device', actions: attackActions(thief, 10, [['view_own_child_records', 1]], 1, 2) },
       ]);
     },
   },
   {
     tag: 'cg-quiet', role: 'Caregiver', day: 8,
-    scenario: 'Quiet insider: reads about twice the usual amount, in usual hours, all of week 2',
+    scenario: 'Quiet insider: reads about twice the usual amount, in usual hours, all of the last week',
     attack(sched) {
-      return sched.map((s) => (s.day < 8 ? s : { ...s,
+      return sched.map((s) => (s.day < 8 + SHIFT ? s : { ...s,
         actions: attackActions(s.start, Math.max(2, s.actions.length * 2), [['view_own_child_records', 1]], 1, 4) }));
     },
   },
@@ -212,8 +221,8 @@ const INSIDERS = [
     tag: 'aud-scrape', role: 'SecurityAuditor', day: 9,
     scenario: 'Auditor scrapes the audit log and reports: 25 actions in about 40 minutes',
     attack(sched) {
-      const start = at(9, 10);
-      return sched.filter((s) => s.day !== 9).concat([{ day: 9, start, device: 'office-pc',
+      const start = at(9 + SHIFT, 10);
+      return sched.filter((s) => s.day !== 9 + SHIFT).concat([{ day: 9 + SHIFT, start, device: 'office-pc',
         actions: attackActions(start, 25, [['export_report', 1], ['view_audit_log', 1]], 1, 2) }]);
     },
   },
@@ -221,8 +230,8 @@ const INSIDERS = [
     tag: 'adm-burst', role: 'SysAdmin', day: 10,
     scenario: 'Administrator fires 15 privileged actions in about 20 minutes (CERT scenario 3)',
     attack(sched) {
-      const start = at(10, 14);
-      return sched.filter((s) => s.day !== 10).concat([{ day: 10, start, device: 'admin-pc',
+      const start = at(10 + SHIFT, 14);
+      return sched.filter((s) => s.day !== 10 + SHIFT).concat([{ day: 10 + SHIFT, start, device: 'admin-pc',
         actions: attackActions(start, 15, [['unlock_account', 2], ['reencrypt_data', 1], ['approve_registration', 2]], 1, 1.5) }]);
     },
   },
@@ -230,8 +239,8 @@ const INSIDERS = [
     tag: 'adm-night', role: 'SysAdmin', day: 13,
     scenario: 'Administrator works at 22:00 on a Saturday',
     attack(sched) {
-      const start = at(13, 22);
-      return sched.concat([{ day: 13, start, device: 'admin-pc',
+      const start = at(13 + SHIFT, 22);
+      return sched.concat([{ day: 13 + SHIFT, start, device: 'admin-pc',
         actions: attackActions(start, 3, [['unlock_account', 1], ['reencrypt_data', 1]], 2, 4) }]);
     },
   },
@@ -277,7 +286,8 @@ async function replayUser(u, out) {
       const r = await scoreSession(u.role, features);
       if (!r) throw new Error('ML service did not answer -- start ml/service/app.py first');
       out.push({
-        user: u.tag, role: u.role, kind: u.kind, day: s.day, sessionStart: s.start.toISOString(), phase: s.day <= CALIBRATION_DAYS ? 'calibration' : 'evaluation',
+        user: u.tag, role: u.role, kind: u.kind, day: s.day, sessionStart: s.start.toISOString(), phase: s.day <= CALIBRATION_DAYS ? 'calibration' : s.day >= EVAL_FIRST_DAY ? 'evaluation' : 'history',
+        pc: pcName, sessionId,
         at: a.at.toISOString(), localHour: a.at.getHours() + a.at.getMinutes() / 60, action: a.type, attack: a.attack,
         ...features, iso: r.iso_score, ae: r.ae_score, risk: r.risk_score,
       });
@@ -366,7 +376,7 @@ function analyse(rows, counts) {
     const evalRows = rows.filter((r) => r.role === role && r.kind === 'normal' && r.phase === 'evaluation');
     result.false_alarms[role] = { current: falseAlarms(evalRows, CURRENT[role], counts[role]) };
     if (cal !== null) result.false_alarms[role].calibrated = falseAlarms(evalRows, cal, counts[role]);
-    // Week-2 trade-off at every threshold: false sign-outs vs. insiders caught.
+    // Last-week trade-off at every threshold: false sign-outs vs. insiders caught.
     const insiderRows = rows.filter((r) => r.role === role && r.kind === 'insider');
     const insiderTags = [...new Set(insiderRows.map((r) => r.user))];
     result.sweep[role] = [];
@@ -381,7 +391,7 @@ function analyse(rows, counts) {
   for (const ins of INSIDERS) {
     const r = rows.filter((x) => x.user === `ins-${ins.tag}`);
     result.insiders.push({
-      tag: ins.tag, role: ins.role, day: ins.day, scenario: ins.scenario,
+      tag: ins.tag, role: ins.role, day: ins.day + SHIFT, scenario: ins.scenario,
       current: insiderOutcome(r, CURRENT[ins.role]),
       calibrated: result.thresholds[ins.role].calibrated === null ? null : insiderOutcome(r, result.thresholds[ins.role].calibrated),
     });
@@ -396,16 +406,16 @@ function printSummary(a) {
   console.table(Object.fromEntries(ROLES.map((r) => [r, a.normal_scores[r]])));
   console.log(`Thresholds: current vs. calibrated (alert budget ${pct(BUDGET)} of normal actions)`);
   console.table(a.thresholds);
-  console.log(`False alarms for normal users, evaluation week (days ${CALIBRATION_DAYS + 1}-${DAYS})`);
+  console.log(`False alarms for normal users, evaluation week (days ${EVAL_FIRST_DAY}-${DAYS})`);
   console.table(Object.fromEntries(ROLES.flatMap((r) => Object.keys(a.false_alarms[r]).map((k) => {
     const { causes, ...rest } = a.false_alarms[r][k];
     return [`${r} @ ${k} ${a.thresholds[r][k]}`, { ...rest, causes: JSON.stringify(causes) }];
   }))));
   for (const r of ROLES) {
-    console.log(`Week-2 trade-off for ${r}: false sign-outs vs. insiders caught at each threshold`);
+    console.log(`Last-week trade-off for ${r}: false sign-outs vs. insiders caught at each threshold`);
     console.table(a.sweep[r]);
   }
-  console.log('Scripted insiders (week 2)');
+  console.log('Scripted insiders (last week)');
   console.table(a.insiders.map((i) => ({
     insider: i.tag, role: i.role,
     'current: caught': i.current.detected ? `yes, action ${i.current.actions_until_flag}` : 'no',
@@ -426,13 +436,101 @@ function writeFiles(rows, analysis, meta) {
 }
 
 // ------------------------------------------------------- main
+
+const FEATURE_KEYS = ['files_accessed_per_session', 'events_prev_day', 'events_prev_hour', 'unique_pcs_used_that_day',
+  'session_duration_minutes', 'is_after_hours', 'is_own_pc'];
+
+// ------------------------------------------------------- weekly review (layer 2)
+// The same grouping and scoring as the live weekly review
+// (services/weeklyReview.js -> ml /score_week), on the simulated weeks:
+// how many NORMAL people would the auditor's list show each week, and which
+// insiders are on it in the last week (when they attack). From week 3 on
+// everyone has at least two weeks of history, which is what the weekly
+// review needs to compare a person with themselves, so the steady-state
+// figure is the average of weeks 3 onwards.
+async function weeklyAnalysis(rows) {
+  const ordered = rows.slice().sort((a, b) => a.at.localeCompare(b.at));
+  const sessions = groupIntoSessions(ordered.map((r) => ({
+    user_id: r.user, role: r.role, requested_at: new Date(r.at), pc_name: r.pc, session_id: r.sessionId,
+    features: Object.fromEntries(FEATURE_KEYS.map((k) => [k, r[k]])),
+  })));
+  const kindOf = Object.fromEntries(rows.map((r) => [r.user, r.kind]));
+  const weeks = {};
+  // The live deployment calibration (services/weeklyReview.js): each week's
+  // lines come from the earlier weeks' ordinary results, exactly as the
+  // hourly job computes them from weekly_reviews. No week sees its own data.
+  const past = [];
+  const pct = (xs, q) => { const s = xs.slice().sort((a, b) => a - b); const pos = (s.length - 1) * q; const lo = Math.floor(pos); return s[lo] + (s[Math.ceil(pos)] - s[lo]) * (pos - lo); };
+  for (let w = 1; w <= WEEKS; w += 1) {
+    const monday = new Date(START.getTime() + (w - 1) * 7 * 24 * 60 * 60 * 1000);
+    const pastByRole = {};
+    for (const p of past) (pastByRole[calibrationGroup(p.role)] ||= []).push(p);
+    const cal = linesFrom(Object.entries(pastByRole).map(([role, ps]) => ({
+      role, n: ps.length, learned: pct(ps.map((p) => p.learned), CALIBRATION.quantile), change: pct(ps.map((p) => p.change), CALIBRATION.quantile) })));
+    const useLocal = !NO_CALIBRATION && Object.keys(cal.lines).length > 0;
+    const res = await scoreWeek(localDate(monday), sessions, useLocal ? cal.lines : null);
+    if (!res) throw new Error('ML service /score_week did not answer -- is the weekly model trained?');
+    const weekStart = `${localDate(monday)}T00:00:00`;
+    const weekEnd = `${localDate(new Date(monday.getTime() + 7 * 864e5))}T00:00:00`;
+    // Ordinary past weeks, as the live rule: below the line, or on the list
+    // and cleared by an auditor as "No concern" (a normal person here; an
+    // insider's listed week would be marked "Take action" and left out).
+    for (const p of res.people) {
+      if (p.parts && (!p.above_limit || kindOf[p.user] === 'normal' || w < WEEKS)) {
+        past.push({ role: p.role, learned: p.parts.learned, change: p.parts.change });
+      }
+    }
+    const people = res.people.map((p) => {
+      const flags = ruleFlags(p.role, sessions.filter((x) => x.user === p.user && x.start >= weekStart && x.start < weekEnd));
+      return { user: p.user, role: p.role, kind: kindOf[p.user], score: p.score, aboveLine: p.above_limit,
+        rule: flags.map((f) => f.code), listed: p.above_limit || flags.length > 0, reasons: p.reasons.map((r) => r.code) };
+    });
+    const byRole = {};
+    for (const role of ROLES) {
+      // Before their attack week the insiders behave normally, so they count as normal people then.
+      const normal = people.filter((p) => p.role === role && (p.kind === 'normal' || w < WEEKS));
+      byRole[role] = { normal_people: normal.length, normal_listed: normal.filter((p) => p.listed).length,
+        normal_listed_by_model: normal.filter((p) => p.aboveLine).length,
+        normal_listed_names: normal.filter((p) => p.listed).map((p) => `${p.user} ${round(p.score, 2)}${p.rule.length ? ` [${p.rule.join(',')}]` : ''} ${p.reasons.slice(0, 2).join('+')}`) };
+    }
+    weeks[`week${w}`] = { byRole, calibrated: useLocal ? Object.fromEntries(Object.entries(cal.basis).filter(([, v]) => v.calibrated).map(([r, v]) => [r, v.pastWeeks])) : {} };
+    if (w === WEEKS) weeks[`week${w}`].insiders = people.filter((p) => p.kind === 'insider').map((p) => ({ user: p.user, score: round(p.score, 3), listed: p.listed, aboveLine: p.aboveLine, rule: p.rule, reasons: p.reasons }));
+  }
+  const steady = {};
+  const from = Math.min(3, WEEKS);
+  for (const role of ROLES) {
+    let listed = 0; let people = 0; let model = 0;
+    for (let w = from; w <= WEEKS; w += 1) {
+      const v = weeks[`week${w}`].byRole[role];
+      listed += v.normal_listed; people += v.normal_people; model += v.normal_listed_by_model;
+    }
+    steady[role] = { weeks: `${from}-${WEEKS}`, person_weeks: people, listed, listed_share: people ? round(listed / people, 3) : null,
+      listed_by_model: model, model_share: people ? round(model / people, 3) : null };
+  }
+  return { weeks, steady_state: steady };
+}
+
+function printWeekly(w) {
+  console.log('\nWeekly review (layer 2): normal people on the list each week (listed by the model or a rule)');
+  for (const [wk, v] of Object.entries(w.weeks)) {
+    console.log(`  ${wk}: ` + ROLES.map((r) => `${r} ${v.byRole[r].normal_listed}/${v.byRole[r].normal_people} (model ${v.byRole[r].normal_listed_by_model})`).join(', ')
+      + (Object.keys(v.calibrated).length ? `   [own lines: ${Object.entries(v.calibrated).map(([r, n]) => `${r} from ${n} past weeks`).join(', ')}]` : '   [CERT lines]'));
+    for (const r of ROLES) for (const n of v.byRole[r].normal_listed_names) console.log(`      ${n}`);
+  }
+  console.log('  Steady state (weeks with at least two weeks of history):');
+  console.table(w.steady_state);
+  const last = Object.values(w.weeks).pop();
+  console.log('  Insiders in the last week (when they attack):');
+  for (const i of last.insiders) console.log(`    ${i.user.padEnd(16)} score ${i.score.toFixed(2).padStart(5)}  ${i.listed ? 'LISTED' : 'not listed'}${i.rule.length ? ` (rule: ${i.rule.join(', ')})` : ''}  ${i.reasons.join(', ')}`);
+}
+
 async function main() {
   const started = Date.now();
   await clearSimActivity();
   const counts = { Caregiver: 30, SecurityAuditor: 5, SysAdmin: 3 };
   const users = [];
   // Schedules are generated in a fixed order first, so a seed always gives
-  // the same two weeks regardless of how fast the database answers.
+  // the same weeks regardless of how fast the database answers.
   for (const role of ROLES) {
     for (let n = 1; n <= counts[role]; n += 1) {
       const tag = `${{ Caregiver: 'cg', SecurityAuditor: 'aud', SysAdmin: 'adm' }[role]}${String(n).padStart(2, '0')}`;
@@ -458,8 +556,10 @@ async function main() {
 
   const analysis = analyse(rows, counts);
   printSummary(analysis);
+  analysis.weekly_review = await weeklyAnalysis(rows);
+  printWeekly(analysis.weekly_review);
   const meta = {
-    ranAt: new Date().toISOString(), seed: SEED, alert_budget: BUDGET, days: DAYS, calibration_days: CALIBRATION_DAYS,
+    ranAt: new Date().toISOString(), seed: SEED, alert_budget: BUDGET, weeks: WEEKS, days: DAYS, calibration_days: CALIBRATION_DAYS, evaluation_days: `${EVAL_FIRST_DAY}-${DAYS}`,
     accounts: { normal: counts, insiders: INSIDERS.length }, scored_actions: rows.length,
     seconds: round((Date.now() - started) / 1000, 1),
     method: 'Simulated clock; each action goes through access_requests -> computeFeatures -> ML /score, as in the live app. No emails, revocations or risk_scores rows.',

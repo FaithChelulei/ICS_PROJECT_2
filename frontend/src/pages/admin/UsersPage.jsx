@@ -8,6 +8,7 @@ import { ADMIN_NAV as NAV } from './nav.js';
 
 const ROLES = [
   { id: 'Caregiver', label: 'Caregiver' },
+  { id: 'Educator', label: 'Educator' },
   { id: 'SecurityAuditor', label: 'Security Auditor' },
   { id: 'SysAdmin', label: 'System Admin' },
 ];
@@ -54,7 +55,7 @@ export default function UsersPage() {
   return (
     <Layout navItems={NAV} portalLabel="System Admin">
       <PageHeader title="Users and Roles" subtitle="Who can sign in, and what each person is allowed to do" />
-      <div className="p-8 max-w-5xl space-y-5">
+      <div className="p-4 md:p-8 max-w-5xl space-y-5">
         {error && <Alert>{error}</Alert>}
         {message && <Alert variant="success">{message}</Alert>}
         {warning && <Alert variant="warning">{warning}</Alert>}

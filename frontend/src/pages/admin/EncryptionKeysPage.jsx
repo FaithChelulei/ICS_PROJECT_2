@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout.jsx';
-import { getEncryptionStatus, reencryptData } from '../../api/admin';
+import { getEncryptionStatus } from '../../api/admin';
 import { PageHeader, Card, Button, Alert, Badge, Spinner, StatCard } from '../../components/ui.jsx';
-import StepUpDialog from '../../components/StepUpDialog.jsx';
 import { ADMIN_NAV as NAV } from './nav.js';
 
 export default function EncryptionKeysPage() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [confirming, setConfirming] = useState(false);
+  const navigate = useNavigate();
 
   async function load() {
     setLoading(true);
@@ -29,39 +27,18 @@ export default function EncryptionKeysPage() {
     load();
   }, []);
 
-  // Errors reach StepUpDialog, which shows them and stays open.
-  async function handleReencrypt(password) {
-    setBusy(true);
-    setError('');
-    setMessage('');
-    try {
-      const data = await reencryptData(password);
-      setStatus(data.status);
-      setConfirming(false);
-      setMessage(
-        data.updatedValues === 0
-          ? 'Everything was already on the active key.'
-          : `Re-encrypted ${data.updatedValues} value(s) in ${data.updatedRows} record(s) with key #${data.activeKeyId}.`
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <Layout navItems={NAV} portalLabel="System Admin">
       <PageHeader
         title="Encryption Key Management"
-        subtitle="Which keys protect child data, and moving data onto a new key"
         actions={
-          <Button onClick={() => setConfirming(true)} disabled={busy || loading || !status || status.needsReencryption === 0}>
-            {busy ? 'Re-encrypting…' : 'Re-encrypt to active key'}
+          <Button onClick={() => navigate('/admin/approvals?action=reencrypt_data')} disabled={loading || !status || status.needsReencryption === 0}>
+            Re-encrypt to active key
           </Button>
         }
       />
-      <div className="p-8 max-w-4xl">
+      <div className="p-4 md:p-8 max-w-4xl">
         {error && <Alert className="mb-6">{error}</Alert>}
-        {message && <Alert variant="success" className="mb-6">{message}</Alert>}
 
         {loading || !status ? (
           <Spinner />
@@ -81,9 +58,7 @@ export default function EncryptionKeysPage() {
 
             {status.protection?.mode === 'azure-key-vault' ? (
               <Alert variant="success" className="mb-6">
-                Protected by Azure Key Vault. The keys are stored locked by the master key{' '}
-                <span className="font-mono">{status.protection.masterKey}</span>, which never leaves the
-                vault, and are unlocked only in the server&rsquo;s memory.
+                Protected by Azure Key Vault · master key <span className="font-mono">{status.protection.masterKey}</span>
               </Alert>
             ) : (
               <Alert variant="warning" className="mb-6">
@@ -127,32 +102,9 @@ export default function EncryptionKeysPage() {
                 </div>
               ))}
             </Card>
-
-            <Card className="bg-sky">
-              <h2 className="font-display text-lg font-bold text-ink mb-2">Rotating to a new key</h2>
-              <ol className="list-decimal pl-5 space-y-1.5 text-[15px] text-slate-600">
-                <li>
-                  On the server, in the <span className="font-mono">backend</span> folder, run{' '}
-                  <span className="font-mono">npm run key:new</span>. It adds a new key to{' '}
-                  <span className="font-mono">.env</span> (locked by Key Vault when that is set up) and makes it
-                  active. Keys are never shown here.
-                </li>
-                <li>Restart the backend.</li>
-                <li>Click <strong>Re-encrypt to active key</strong> above.</li>
-                <li>When an old key shows “Can be retired”, delete it from <span className="font-mono">.env</span>.</li>
-              </ol>
-            </Card>
           </>
         )}
       </div>
-      {confirming && (
-        <StepUpDialog
-          message="Re-encrypting changes all stored child data. Enter your password to continue."
-          confirmLabel="Confirm and re-encrypt"
-          onConfirm={handleReencrypt}
-          onCancel={() => setConfirming(false)}
-        />
-      )}
     </Layout>
   );
 }

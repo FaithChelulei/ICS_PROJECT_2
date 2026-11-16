@@ -1,3 +1,4 @@
+const cases = require('../controllers/accountCaseController');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { login, verifyMfa, logout, me, changePassword } = require('../controllers/authController');
@@ -23,6 +24,9 @@ router.post('/logout', authenticate, asyncHandler(logout));
 // Deliberately NOT behind requirePasswordChanged -- these are exactly the
 // two routes that must stay reachable while that flag is still true.
 router.get('/me', authenticate, asyncHandler(me));
+// A paused account: see the pause and send an explanation (db/013).
+router.get('/paused-case', authenticate, asyncHandler(cases.myCase));
+router.post('/paused-case/explanation', authenticate, asyncHandler(cases.explain));
 router.post('/change-password', authenticate, asyncHandler(changePassword));
 // Public — anyone can ask for an account, nobody gets one without a
 // SysAdmin approving it (see adminRoutes.js).

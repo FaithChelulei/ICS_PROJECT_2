@@ -5,7 +5,7 @@ const { authenticate, requirePasswordChanged } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbac');
 const { requireStepUp } = require('../middleware/stepUp');
 const asyncHandler = require('../utils/asyncHandler');
-const { status, apply } = require('../controllers/retentionController');
+const { status, apply, clearMonitoring } = require('../controllers/retentionController');
 
 const router = express.Router();
 
@@ -13,5 +13,6 @@ router.use(authenticate, requirePasswordChanged, requirePermission('configure_sy
 
 router.get('/status', asyncHandler(status));
 router.post('/apply', requireStepUp, asyncHandler(apply));
+router.post('/monitoring/clear', requireStepUp, asyncHandler(clearMonitoring));
 
 module.exports = router;

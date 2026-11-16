@@ -37,6 +37,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('../src/config/db');
 const { recordAndScore, logAccessRequest } = require('../src/services/riskEngine');
+const { refreshWeek, localDate } = require('../src/services/weeklyReview');
 const { PRIVACY_NOTICE_VERSION } = require('../src/services/privacyNotice');
 
 const BASE = process.env.TEST_BASE || `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
@@ -84,6 +85,11 @@ async function login(acct, device) {
   if (!r.json || !r.json.token) throw new Error(`login failed for ${acct.email}: ${r.status}`);
   return r.json.token;
 }
+
+// Re-encryption needs a second admin's approval now: an attempt without one
+// is refused (409) but still logged and scored like the action, so for the
+// burst and night scenarios it counts as one more privileged action.
+const attempt = (r) => (r.status === 409 && r.json && r.json.code === 'APPROVAL_REQUIRED' ? { ...r, status: 200 } : r);
 
 const flaggedBy = (r) => Boolean(r.json && (r.json.riskNotice || r.json.code === 'SESSION_REVOKED_RISK'));
 
@@ -152,7 +158,8 @@ function report(row) {
   console.log(`${row.pass ? 'PASS' : 'FAIL'} - ${row.name}: ${what}`);
   if (row.response) {
     const r = row.response;
-    console.log(`       response: score ${r.score == null ? 'n/a' : r.score.toFixed(3)} vs ${r.threshold ?? 'n/a'} | session revoked: ${r.sessionRevoked} | next request refused: ${r.nextRequestRefused} | queued for auditor: ${r.queuedForAuditor} | in audit log: ${r.inAuditLog}`);
+    const extra = Object.entries(r).filter(([k]) => !['score', 'threshold', 'riskScoreId'].includes(k)).map(([k, v]) => `${k}: ${v}`).join(' | ');
+    console.log(`       response: score ${r.score == null ? 'n/a' : r.score.toFixed(3)} vs ${r.threshold ?? 'n/a'} | ${extra}`);
   }
 }
 
@@ -212,7 +219,7 @@ async function adminBurst() {
   const since = new Date();
   const device = 'anomaly-device-4';
   const token = await login(acct, device);
-  const run = await untilStopped(() => api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } }), 40);
+  const run = await untilStopped(() => api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } }).then(attempt), 40);
   report({
     name: '4. SysAdmin fires a burst of privileged actions', cert: 'Scenario 3 (disgruntled sysadmin)', expected: 'flag',
     detected: Boolean(run.stopped), stoppedBy: run.stopped, actions: run.actions, seconds: run.seconds,
@@ -251,7 +258,7 @@ async function nightTimeLive(n, role) {
       return api(`/children/${child}/records`, { token, device });
     },
     SecurityAuditor: () => api('/auditor/audit-log?limit=50', { token, device }),
-    SysAdmin: () => api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } }),
+    SysAdmin: () => api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } }).then(attempt),
   }[role];
   const run = await untilStopped(action, 3);
   report({
@@ -330,10 +337,205 @@ async function normalAdmin() {
   const token = await login(acct, device);
   await api('/admin/registration-requests', { token, device });
   await api('/admin/encryption/status', { token, device });
-  const re = await api('/admin/encryption/reencrypt', { method: 'POST', token, device, body: { password: PASS } });
+  // Re-encryption needs a second admin (two-person approval): a normal
+  // admin asks for it, with a reason.
+  const re = await api('/admin/approvals', { method: 'POST', token, device,
+    body: { action: 'reencrypt_data', reason: 'Routine key rotation this month', password: PASS } });
   await api('/admin/retention/status', { token, device });
   const s = await maxScore(acct, since);
-  report({ name: '10. Normal SysAdmin: check status, one re-encryption', expected: 'none', detected: s.flags > 0 || flaggedBy(re), score: s.max });
+  report({ name: '10. Normal SysAdmin: check status, ask for a re-encryption', expected: 'none', detected: s.flags > 0 || flaggedBy(re), score: s.max });
+}
+
+
+// ------------------------------------------------- Educator (SOFIA 3.1)
+// An educator only reads children a parent has shared with them. These set
+// the sharing up the real way: the parent registers a child (ECD age), the
+// educator asks for that child by name, and the parent grants the request.
+async function sharedChild(teacher, teacherToken, teacherDevice, tag) {
+  const parent = await account(`${tag}-parent`, 'Caregiver');
+  const pDevice = `anomaly-${tag}-parent`;
+  const pToken = await login(parent, pDevice);
+  const letters = (n) => Array.from({ length: n }, () => 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]).join('');
+  const childName = `Pupil ${letters(8)} ${letters(6)}`;
+  const dob = new Date(Date.now() - 4 * 365.25 * 86400000).toISOString().slice(0, 10);
+  const made = await api('/children', { method: 'POST', token: pToken, device: pDevice,
+    body: { fullName: childName, dateOfBirth: dob, developmentalRecordsConsent: true, ...NOTICE } });
+  if (made.status !== 201) throw new Error(`could not create child: ${made.status}`);
+  const child = made.json.childProfileId;
+  await api(`/children/${child}/records`, { method: 'POST', token: pToken, device: pDevice,
+    body: { milestone: 'Counts to ten', healthIndicator: 'Healthy', assessmentScore: 7 } });
+  const asked = await api('/educator/access-requests', { method: 'POST', token: teacherToken, device: teacherDevice,
+    body: { childName, reason: 'I am this child\'s educator at the centre' } });
+  const inbox = await api('/children/access', { token: pToken, device: pDevice });
+  const row = inbox.json && inbox.json.requests.find((r) => r.status === 'pending' && r.childProfileId === child);
+  const granted = row && await api(`/children/access/${row.id}/decision`, { method: 'POST', token: pToken, device: pDevice,
+    body: { decision: 'grant', days: 30 } });
+  if (!granted || granted.status !== 200) throw new Error(`could not share a child with the educator: ${asked.status}/${granted && granted.status}`);
+  return child;
+}
+
+async function teacherMassReading() {
+  const acct = await account('teacher-mass', 'Educator');
+  const since = new Date();
+  const device = 'anomaly-teacher-mass';
+  const token = await login(acct, device);
+  const child = await sharedChild(acct, token, device, 'teacher-mass');
+  const run = await untilStopped(() => api(`/educator/children/${child}/records`, { token, device }), 40);
+  report({
+    name: '14. Educator reads a shared child\'s records over and over', cert: 'Scenario 2 (data theft before leaving)', expected: 'flag',
+    detected: Boolean(run.stopped), stoppedBy: run.stopped, actions: run.actions, seconds: run.seconds,
+    response: run.stopped ? await verifyResponse(acct, token, since) : null,
+  });
+}
+
+async function teacherNewDevice() {
+  const acct = await account('teacher-stolen', 'Educator');
+  const since = new Date();
+  const own = 'anomaly-teacher-own-laptop';
+  const ownToken = await login(acct, own);
+  const child = await sharedChild(acct, ownToken, own, 'teacher-stolen');
+  await api(`/educator/children/${child}/records`, { token: ownToken, device: own });
+  const thief = `anomaly-unknown-${crypto.randomBytes(3).toString('hex')}`;
+  const token = await login(acct, thief);
+  const run = await untilStopped(() => api(`/educator/children/${child}/records`, { token, device: thief }), 5);
+  report({
+    name: '15. Educator account used from a new device', cert: 'Stolen credentials', expected: 'flag',
+    detected: Boolean(run.stopped), stoppedBy: run.stopped, actions: run.actions, seconds: run.seconds,
+    response: run.stopped ? await verifyResponse(acct, token, since) : null,
+  });
+}
+
+async function normalTeacher() {
+  const acct = await account('teacher-normal', 'Educator');
+  const since = new Date();
+  const device = 'anomaly-teacher-normal';
+  const token = await login(acct, device);
+  const child = await sharedChild(acct, token, device, 'teacher-normal');
+  let flagged = false;
+  for (let i = 0; i < 3; i++) flagged = flaggedBy(await api(`/educator/children/${child}/records`, { token, device })) || flagged;
+  const s = await maxScore(acct, since);
+  report({ name: '16. Normal educator: asks, is granted, reads a child\'s records', expected: 'none', detected: s.flags > 0 || flagged, score: s.max });
+}
+
+// ---------------------------------------------------------------- layer 2
+// The weekly review needs weeks of history. It is replayed through the REAL
+// risk engine with a replayed clock (like nightTime above): every past day's
+// actions are logged, their features computed by featureComputation.js and
+// scored by the live models, exactly as if they had happened then. Earlier
+// runs' activity is first moved 400 days back, out of the 30-day window.
+const DAY_MS = 24 * 60 * 60 * 1000;
+function mondayOf(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  return x;
+}
+
+async function replay(acct, role, actionType, { days, perDay, hour, minute = 0, gapMinutes, device, isNight = () => false }) {
+  await db.query("UPDATE access_requests SET requested_at = requested_at - interval '400 days' WHERE user_id = $1", [acct.id]);
+  let layer1Flags = 0;
+  for (const day of days) {
+    const t0 = new Date(day);
+    if (isNight(day)) t0.setHours(23, 10, 0, 0); else t0.setHours(hour, minute, 0, 0);
+    if (t0 > new Date()) continue;
+    const { rows } = await db.query('INSERT INTO sessions (user_id, issued_at) VALUES ($1, $2) RETURNING id', [acct.id, t0]);
+    const base = { userId: acct.id, pcName: device, ipAddress: '127.0.0.1', sessionId: rows[0].id };
+    await logAccessRequest({ ...base, actionType: 'login', now: t0 });
+    for (let i = 1; i <= perDay(day); i++) {
+      const r = await recordAndScore({ ...base, role, actionType, now: new Date(t0.getTime() + i * gapMinutes * 60000) });
+      if (r.flagged) { layer1Flags += 1; break; }
+    }
+  }
+  return layer1Flags;
+}
+
+function daysFrom(start, end) {
+  const out = [];
+  for (let t = new Date(start); t <= end; t = new Date(t.getTime() + DAY_MS)) out.push(new Date(t));
+  return out;
+}
+
+async function weeklyScenarios() {
+  // The scenarios use the LAST COMPLETE week (Monday to Sunday), so they
+  // test the same thing whatever day they run: on a Monday the current week
+  // has hardly begun, and "all week" would be a few hours.
+  const monday = new Date(mondayOf(new Date()).getTime() - 7 * DAY_MS);
+  const sunday = new Date(monday.getTime() + 6 * DAY_MS);
+  const history = daysFrom(new Date(monday.getTime() - 35 * DAY_MS), new Date(monday.getTime() - DAY_MS));
+  const thisWeek = daysFrom(monday, sunday);
+  const inWeek = (d) => d >= monday;
+
+  // 11. Quiet insider: same device, same hours, never fast enough to be
+  //     signed out -- but three times their own usual reading, all week.
+  const quiet = await account('weekly-quiet-insider', 'Caregiver');
+  const quietL1 = await replay(quiet, 'Caregiver', 'view_own_child_records',
+    { days: [...history, ...thisWeek], perDay: (d) => (inWeek(d) ? 9 : 3), hour: 9, gapMinutes: 6, device: 'anomaly-weekly-quiet' });
+  // 12. The same person's normal habits, with no change this week.
+  const steady = await account('weekly-normal-caregiver', 'Caregiver');
+  const steadyL1 = await replay(steady, 'Caregiver', 'view_own_child_records',
+    { days: [...history, ...thisWeek], perDay: () => 3, hour: 10, gapMinutes: 6, device: 'anomaly-weekly-steady' });
+  // 13. A System Administrator who works by day, then once at 23:10 this week.
+  const admin = await account('weekly-night-admin', 'SysAdmin');
+  const firstThisWeek = thisWeek[0];
+  await replay(admin, 'SysAdmin', 'approve_registration',
+    { days: [...history, ...thisWeek], perDay: () => 2, hour: 11, gapMinutes: 5, device: 'anomaly-weekly-admin',
+      isNight: (d) => d.getTime() === firstThisWeek.getTime() });
+
+  // 17. A teacher who reads about three times their own usual every day this
+  //     week: on their usual laptop, in school hours, never fast enough to be
+  //     signed out.
+  const teacher = await account('weekly-quiet-teacher', 'Educator');
+  const teacherL1 = await replay(teacher, 'Educator', 'view_shared_child_records',
+    { days: [...history, ...thisWeek], perDay: (d) => (inWeek(d) ? 9 : 3), hour: 10, gapMinutes: 6, device: 'anomaly-weekly-teacher' });
+
+  // An auditor re-scores the week, as the hourly job would.
+  const auditor = await account('weekly-auditor', 'SecurityAuditor');
+  const token = await login(auditor, 'anomaly-weekly-auditor');
+  // Score that week with the same code the hourly job runs (the page's
+  // "Re-score" button only re-scores the current week), then read it as the
+  // auditor's page does.
+  const refreshed = await refreshWeek(monday);
+  const list = await api(`/auditor/weekly-review?week=${localDate(monday)}`, { token, device: 'anomaly-weekly-auditor' });
+  if (!refreshed.ok || !list.json) throw new Error(`weekly review unavailable: ${refreshed.error || list.status}`);
+  const row = (a) => list.json.people.find((p) => p.user_id === a.id);
+  const caregivers = list.json.people.filter((p) => p.role === 'Caregiver');
+
+  const q = row(quiet);
+  report({
+    name: '11. Quiet insider: 3x their own usual reading all week, same device and hours (weekly review)',
+    cert: 'Scenario 2 (gradual data theft)', expected: 'flag', detected: Boolean(q && q.needs_review),
+    stoppedBy: q && q.needs_review ? 'weekly review' : null, actions: thisWeek.length * 9, seconds: 0,
+    response: q ? {
+      score: Number(q.score), threshold: 1,
+      listedAboveLine: Boolean(q.above_limit),
+      rankedFirstAmongCaregivers: caregivers.length > 0 && caregivers[0].user_id === quiet.id,
+      reasonShown: q.reasons.length > 0,
+      neverSignedOut: quietL1 === 0,
+    } : null,
+  });
+  const st = row(steady);
+  report({ name: '12. Normal caregiver, usual habits all week (weekly review)', expected: 'none',
+    detected: Boolean(st && st.needs_review) || steadyL1 > 0, score: st ? Number(st.score) : null });
+  const ad = row(admin);
+  report({
+    name: '13. System Administrator works once at 23:10 this week (always-review rule)', expected: 'flag',
+    detected: Boolean(ad && ad.rule_flags.some((f) => f.code === 'privileged_night')),
+    stoppedBy: 'always-review rule', actions: 1, seconds: 0,
+    response: ad ? { score: Number(ad.score), threshold: 1, listed: Boolean(ad.needs_review), ruleShown: ad.rule_flags.length > 0 } : null,
+  });
+  const t = row(teacher);
+  report({
+    name: '17. Quiet educator: 3x their own usual reading all week, same device and hours (weekly review)',
+    cert: 'Scenario 2 (gradual data theft)', expected: 'flag', detected: Boolean(t && t.needs_review),
+    stoppedBy: t && t.needs_review ? 'weekly review' : null, actions: thisWeek.length * 9, seconds: 0,
+    response: t ? {
+      score: Number(t.score), threshold: 1,
+      listedAsEducator: t.role === 'Educator',
+      listedAboveLine: Boolean(t.above_limit),
+      reasonShown: t.reasons.length > 0,
+      neverSignedOut: teacherL1 === 0,
+    } : null,
+  });
 }
 
 async function main() {
@@ -358,11 +560,17 @@ async function main() {
     await nightTime(5, 'Caregiver', 'view_own_child_records');
     await nightTime(6, 'SecurityAuditor', 'view_audit_log');
     await nightTime(7, 'SysAdmin', 'reencrypt_data');
+    await teacherMassReading();
+    await teacherNewDevice();
 
     console.log('\n=== Normal work (must NOT be flagged) ===');
     await normalCaregiver();
     await normalAuditor(flagId);
     await normalAdmin();
+    await normalTeacher();
+
+    console.log('\n=== Weekly review, layer 2 (replayed weeks through the live risk engine) ===');
+    await weeklyScenarios();
   }
 
   const attacks = results.filter((r) => r.expected === 'flag');
@@ -372,7 +580,10 @@ async function main() {
   console.log('\n=== SUMMARY ===');
   console.log(`Attacks stopped:      ${caught}/${attacks.length}`);
   if (normal.length) console.log(`False alarms:         ${falseAlarms}/${normal.length} normal sessions`);
-  console.log(`Full response worked: ${attacks.filter((r) => r.response && Object.values(r.response).every((v) => v !== false)).length}/${attacks.filter((r) => r.stoppedBy === 'risk model').length} model-flagged attacks (revoked, refused, queued, logged)`);
+  const byModel = attacks.filter((r) => r.stoppedBy === 'risk model');
+  console.log(`Full response worked: ${byModel.filter((r) => r.response && Object.values(r.response).every((v) => v !== false)).length}/${byModel.length} model-flagged attacks (revoked, refused, queued, logged)`);
+  const weekly = results.filter((r) => /weekly review|always-review/.test(r.name));
+  if (weekly.length) console.log(`Weekly review (layer 2): ${weekly.filter((r) => r.pass).length}/${weekly.length} scenarios as expected`);
   console.log(`${results.every((r) => r.pass) ? 'RESULT: PASS' : 'RESULT: FAIL'} -- ${results.filter((r) => r.pass).length}/${results.length} scenarios behaved as expected.`);
 
   const outDir = path.join(__dirname, 'results');

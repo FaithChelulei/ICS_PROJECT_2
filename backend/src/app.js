@@ -6,6 +6,7 @@ const childRecordsRoutes = require('./routes/childRecordsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const riskResponseRoutes = require('./routes/riskResponseRoutes');
 const auditorRoutes = require('./routes/auditorRoutes');
+const educatorRoutes = require('./routes/educatorRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
 const encryptionRoutes = require('./routes/encryptionRoutes');
 const retentionRoutes = require('./routes/retentionRoutes');
@@ -27,7 +28,9 @@ app.use(helmet({ strictTransportSecurity: process.env.NODE_ENV === 'production' 
 // every origin (the previous app.use(cors()) with no options). Falls back
 // to the Vite dev server's default so local dev keeps working if
 // FRONTEND_ORIGIN isn't set.
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'https://localhost:5173' }));
+// Content-Disposition is exposed so the website can read a download's file
+// name (reports, "Download my data"); without it every file was "report".
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'https://localhost:5173', exposedHeaders: ['Content-Disposition'] }));
 
 app.use(express.json());
 
@@ -54,6 +57,7 @@ app.use('/admin/retention', retentionRoutes);
 app.use('/admin/settings', systemSettingsRoutes);
 app.use('/risk-response', riskResponseRoutes);
 app.use('/auditor', auditorRoutes);
+app.use('/educator', educatorRoutes);
 
 app.use((err, req, res, next) => {
   // Body-parser errors (malformed JSON, etc.) carry their own 4xx status —

@@ -8,6 +8,13 @@ export default {
       // blue/slate theme everywhere these tokens are used, without
       // touching component structure or page logic.
       colors: {
+        // Secondary text darkened for legibility (Faith: "more visible").
+        // Every text-slate-400/500/600 in the app now reads clearly; the
+        // lighter shades (50-300) used for backgrounds and borders stay.
+        slate: {
+          50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1',
+          400: '#4b5563', 500: '#374151', 600: '#1f2937', 700: '#1e293b', 800: '#111827', 900: '#0b1220',
+        },
         ink: '#211C16',
         cream: {
           DEFAULT: '#FBF6ED',

@@ -46,7 +46,7 @@ function dateClauses(column, { from, to }, params, clauses) {
 function breachText(r) {
   const hoursSince = (to) => ((new Date(to) - new Date(r.created_at)) / 3600000).toFixed(0);
   if (r.breach_decision) {
-    const label = r.breach_decision === 'notified_commissioner' ? 'Commissioner notified' : 'No real risk of harm';
+    const label = r.breach_decision === 'reported_to_admin' ? 'Reported to the System Admin' : 'No real risk of harm';
     return `${label} (${hoursSince(r.breach_decided_at)} h)`;
   }
   if (r.auditor_status === 'escalated' || r.owner_response === 'not_me') {

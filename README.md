@@ -472,6 +472,24 @@ keys in `.env` still work for local development. The same status and
 re-encryption are available on the administrator's **Encryption Keys**
 page.
 
+### Rotating to a new key
+
+Do this when a key may have been exposed (a lost backup, a stolen laptop,
+an administrator with server access leaving) or simply on a regular
+schedule.
+
+1. On the server, in `backend/`, run `npm run key:new`. It adds a new key
+   to `.env` (locked by Key Vault when that is set up) and makes it the
+   active key. New data is encrypted with it from now on. Keys are never
+   shown on the website.
+2. Restart the backend.
+3. On the website, a System Administrator opens **Approvals**, asks for
+   **Re-encrypt all child data under the newest key** with a reason, and a
+   second System Administrator approves it. The approval can be used once,
+   within 24 hours. Running it moves every existing value onto the new key.
+4. When the **Encryption Keys** page shows an old key as **Can be
+   retired**, nothing depends on it any more: delete it from `.env`.
+
 ---
 
 ## Project status

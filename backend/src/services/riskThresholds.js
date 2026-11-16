@@ -12,6 +12,7 @@ const tiers = require('../../../ml/models/risk_tiers.json');
 
 const THRESHOLD_LIMITS = {
   Caregiver: { min: 0.35, max: 0.5 },
+  Educator: { min: 0.4, max: 0.6 },
   SecurityAuditor: { min: 0.55, max: 0.75 },
   SysAdmin: { min: 0.5, max: 0.7 },
 };

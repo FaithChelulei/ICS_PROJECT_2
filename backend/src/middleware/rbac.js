@@ -10,6 +10,13 @@ const PERMISSIONS = {
     'manage_own_consent',
     'correct_own_child_details',
     'archive_own_child_profile',
+    'manage_child_access',     // grant, refuse or revoke a teacher's access
+  ],
+  // SOFIA's optional, read-only Educator: nothing without a caregiver's
+  // approval for that one child (services/educatorAccess.js).
+  Educator: [
+    'request_child_access',
+    'view_shared_child_records',
   ],
   SecurityAuditor: [
     'view_flagged_sessions',
@@ -17,6 +24,7 @@ const PERMISSIONS = {
     'view_audit_log',
     'export_reports',
     'manage_risk_thresholds',
+    'review_weekly',          // layer 2: every role's weeks except their own
   ],
   SysAdmin: [
     'manage_users',
@@ -24,6 +32,8 @@ const PERMISSIONS = {
     'configure_system_settings',
     'view_audit_log',
     'manage_registration_requests',
+    'review_auditor_weeks',   // layer 2: Security Auditors' weeks, so auditors are reviewed too
+    'approve_powerful_actions', // two-person approval
   ],
 };
 

@@ -30,3 +30,15 @@ export const setConsent = (childProfileId, scope, consentGiven) =>
     method: 'POST',
     body: { scope, consentGiven },
   });
+
+// "Download my data" (KDPA s.26): one PDF with the account, the children,
+// their records and consent history, and the caregiver's activity.
+// (The server's GET /children/export -- a parent's full copy, KDPA s.26 -- is
+// kept but no page uses it since the Your Data page was removed.)
+
+// Teachers' access to my children ("Who can see my child").
+export const getChildAccess = () => apiFetch('/children/access');
+export const decideChildAccess = (accessId, decision, days) =>
+  apiFetch(`/children/access/${accessId}/decision`, { method: 'POST', body: { decision, days } });
+export const revokeChildAccess = (accessId) =>
+  apiFetch(`/children/access/${accessId}/revoke`, { method: 'POST' });

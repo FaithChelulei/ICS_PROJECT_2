@@ -54,17 +54,20 @@ const db = require('../config/db');
 const FILE_ACTION_TYPES = [
   // Caregiver
   'create_child_profile', 'view_own_child_records', 'submit_developmental_record', 'correct_child_details',
-  'archive_child_profile', 'restore_child_profile',
+  'archive_child_profile', 'restore_child_profile', 'export_own_data',
+  // Educator (a read of one child the caregiver has shared)
+  'view_shared_child_records',
   // Security Auditor
   'view_audit_log', 'review_flagged_session', 'export_report', 'record_breach_decision', 'change_risk_threshold',
+  'review_weekly_person',
   // SysAdmin
   'approve_registration', 'reject_registration', 'unlock_account', 'reencrypt_data', 'apply_retention',
-  'change_user_role', 'change_system_setting',
+  'change_user_role', 'change_system_setting', 'request_approval', 'decide_approval', 'clear_monitoring_data',
 ];
 
 // Roles whose CERT "session" is really a whole workday (see rationale
 // above). SysAdmin is deliberately excluded.
-const DAY_BASED_SHAPE_ROLES = ['Caregiver', 'SecurityAuditor'];
+const DAY_BASED_SHAPE_ROLES = ['Caregiver', 'Educator', 'SecurityAuditor'];
 
 function isAfterHours(date) {
   const hour = date.getHours();
@@ -80,7 +83,11 @@ function isAfterHours(date) {
 // user's own history instead of a fixed rule. The models are unchanged; the
 // features keep their training meaning ("outside this person's usual
 // hours", "a PC this person does not normally use").
-const BASELINE_ROLES = ['Caregiver'];
+// Educators are scored with the same general-staff models and get the same
+// per-person rules: without them a stolen teacher login used from a new
+// browser on the same day as the real teacher read as "two devices today"
+// (0.43, under the 0.45 limit) instead of "a device this person does not use".
+const BASELINE_ROLES = ['Caregiver', 'Educator'];
 const USUAL_HOURS_LOOKBACK_DAYS = 30;
 const USUAL_HOURS_WINDOW_MIN = 60;  // +/- one hour of this time of day
 const USUAL_HOURS_MIN_DAYS = 3;     // seen on at least 3 earlier days
@@ -140,6 +147,28 @@ async function caregiverDevicesToday(userId, dayStart, dayEnd) {
     else other += 1;
   }
   return (known > 0 ? 1 : 0) + other;
+}
+
+// A device this person already used on an earlier day WITHOUT it being
+// flagged, or confirmed with "This was me". A thief's device that was
+// flagged never becomes "known" just because a day has passed. Used to
+// decide whether a page that only lists data needs a risk check at all
+// (services/actionScoring.js scoreIfNewDevice).
+async function isKnownDevice(userId, pcName, now = new Date()) {
+  if (!pcName) return false;
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const { rows } = await db.query(
+    `SELECT EXISTS (SELECT 1 FROM access_requests WHERE user_id = $1 AND pc_name = $2 AND requested_at < $3) AS earlier,
+            EXISTS (SELECT 1 FROM access_requests ar JOIN risk_scores rs ON rs.access_request_id = ar.id
+                    WHERE ar.user_id = $1 AND ar.pc_name = $2 AND rs.is_flagged
+                      AND rs.owner_response IS DISTINCT FROM 'confirmed_benign') AS flagged,
+            EXISTS (SELECT 1 FROM access_requests ar JOIN risk_scores rs ON rs.access_request_id = ar.id
+                    WHERE ar.user_id = $1 AND ar.pc_name = $2 AND rs.owner_response = 'confirmed_benign') AS confirmed`,
+    [userId, pcName, dayStart]
+  );
+  const r = rows[0] || {};
+  return Boolean(r.confirmed || (r.earlier && !r.flagged));
 }
 
 // is_own_pc, live version. CERT's "own PC" is the machine a user normally
@@ -219,14 +248,26 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
   const useDayBasedShape = DAY_BASED_SHAPE_ROLES.includes(role);
   const useBaselines = BASELINE_ROLES.includes(role);
 
+  // events_prev_hour / _day count what CERT counted as events -- sign-ins
+  // and data actions (CERT: logons, file copies, USB connections) -- not
+  // every page the website displays. Counting page loads made ordinary
+  // browsing (Dashboard -> Consent -> Who Can See My Child) look like a
+  // burst: in a browser walkthrough a parent with 5 data actions reached 26
+  // "events" in the hour and was signed out on the fifth. Page loads stay in
+  // access_requests for the audit trail; they just do not raise the score.
+  // The current action always counts itself (requested_at = now), so the
+  // floor of 1 that training data has is kept.
+  const EVENT_TYPES = ['login', ...FILE_ACTION_TYPES];
   const [prevHour, prevDay, pcsToday, shape, isOwnPc, afterHours] = await Promise.all([
     db.query(
-      `SELECT COUNT(*) FROM access_requests WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3`,
-      [userId, oneHourAgo, nowDate]
+      `SELECT COUNT(*) FROM access_requests WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3
+         AND (action_type = ANY($4) OR requested_at = $3)`,
+      [userId, oneHourAgo, nowDate, EVENT_TYPES]
     ),
     db.query(
-      `SELECT COUNT(*) FROM access_requests WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3`,
-      [userId, oneDayAgo, nowDate]
+      `SELECT COUNT(*) FROM access_requests WHERE user_id = $1 AND requested_at >= $2 AND requested_at <= $3
+         AND (action_type = ANY($4) OR requested_at = $3)`,
+      [userId, oneDayAgo, nowDate, EVENT_TYPES]
     ),
     useBaselines
       ? caregiverDevicesToday(userId, dayStart, dayEnd).then((count) => ({ rows: [{ count }] }))
@@ -276,4 +317,4 @@ async function computeFeatures({ userId, sessionId, pcName, now, role }) {
   };
 }
 
-module.exports = { computeFeatures, FILE_ACTION_TYPES, isAfterHours };
+module.exports = { computeFeatures, FILE_ACTION_TYPES, isAfterHours, isKnownDevice, BASELINE_ROLES };

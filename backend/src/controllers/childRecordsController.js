@@ -16,6 +16,9 @@ const { recordAndScore, logAccessRequest } = require('../services/riskEngine');
 const { getPcName, getIpAddress } = require('../utils/requestMeta');
 const { hasConsent } = require('../services/consent');
 const { checkPrivacyNotice, PRIVACY_NOTICE_VERSION } = require('../services/privacyNotice');
+const { writeMyDataPdf } = require('../utils/reportFormats');
+const { nameIndexFor } = require('../services/nameIndex');
+const { scoreIfNewDevice } = require('../services/actionScoring');
 
 const RISK_NOTICE = 'Unusual activity detected during this action. You have been logged out as a precaution — check your email to confirm or report it.';
 
@@ -37,8 +40,11 @@ async function scoreAction(req, actionType, childProfileId = null) {
   });
 }
 
+// (History: listMyChildren used to be log-only for the reason below. Since
+// the person baselines it is scored on a device new to the caregiver --
+// see listMyChildren -- because it carries every child's details.)
 // listMyChildren fires automatically on every dashboard load, the instant
-// a caregiver logs in -- before they've done anything. Scoring it hits the
+// a caregiver logs in -- before they've done anything. Scoring it hit the
 // exact same problem riskEngine.js already documents for login itself:
 // the live feature vector is near-empty (~0 session duration, ~0 events),
 // which doesn't resemble ANY completed training session, so it reads as
@@ -133,6 +139,9 @@ async function createChildProfile(req, res) {
   try {
     // db.transaction applies the caregiver's identity, so the row-level
     // security policies allow these inserts only for their own child.
+    // Blind index of the name, so an educator's request can find this child
+    // without decrypting anything (services/nameIndex.js).
+    const nameIdx = nameIndexFor(fullName);
     const { childProfileId, createdAt } = await db.transaction(async (client) => {
       const { rows } = await client.query(
         'INSERT INTO child_profiles (caregiver_id, privacy_notice_version) VALUES ($1, $2) RETURNING id, created_at',
@@ -142,13 +151,15 @@ async function createChildProfile(req, res) {
 
       await client.query(
         `INSERT INTO child_identifiers
-           (child_profile_id, full_name_enc, date_of_birth_enc, family_background_enc)
-         VALUES ($1, $2, $3, $4)`,
+           (child_profile_id, full_name_enc, date_of_birth_enc, family_background_enc, name_index, name_index_key_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           id,
           encryptField(fullName),
           encryptField(dateOfBirth),
           familyBackground ? encryptField(familyBackground) : null,
+          nameIdx.nameIndex,
+          nameIdx.keyId,
         ]
       );
 
@@ -238,8 +249,13 @@ async function updateChildDetails(req, res) {
     return encryptField(dateOfBirth);
   });
   const sets = fields.map((f, i) => `${CORRECTABLE_FIELDS[f]} = $${i + 1}`);
+  if (fields.includes('fullName')) {
+    const { nameIndex, keyId } = nameIndexFor(fullName.trim());
+    values.push(nameIndex, keyId);
+    sets.push(`name_index = $${values.length - 1}`, `name_index_key_id = $${values.length}`);
+  }
   await db.query(
-    `UPDATE child_identifiers SET ${sets.join(', ')} WHERE child_profile_id = $${fields.length + 1}`,
+    `UPDATE child_identifiers SET ${sets.join(', ')} WHERE child_profile_id = $${values.length + 1}`,
     [...values, childProfileId]
   );
 
@@ -310,6 +326,12 @@ async function restoreChild(req, res) {
 // display. Proves decryption works, and that it's scoped to req.user.id
 // (not "all children in the system").
 async function listMyChildren(req, res) {
+  // Checked first on a device new to this caregiver: the list carries every
+  // child's name, birth date and background, so a stolen login must be
+  // stopped here, before any of it is decrypted. On the caregiver's usual
+  // devices it is only logged, so ordinary browsing never signs them out.
+  const risk = await scoreIfNewDevice(req, 'list_own_children');
+  if (risk.flagged) return res.status(401).json({ error: RISK_NOTICE, code: 'SESSION_REVOKED_RISK' });
   const { rows } = await db.query(
     `SELECT cp.id AS child_profile_id, cp.created_at, cp.archived_at, cp.identity_anonymised_at,
             ci.full_name_enc, ci.date_of_birth_enc, ci.family_background_enc,
@@ -342,8 +364,14 @@ async function listMyChildren(req, res) {
   // Dashboard / Consent / Child Record page visit, so counting it as a file
   // access (FILE_ACTION_TYPES) made plain navigation look like a burst of
   // record reads and got caregivers logged out after their first real action.
-  await logOnlyAction(req, 'list_own_children');
-  res.json({ children });
+  // (Checked above on a new device only; never counted as a data action.)
+  // Teachers waiting for this caregiver's answer, so the Dashboard can say
+  // so without a second request (every request is an event for the model).
+  const { rows: waiting } = await db.query(
+    "SELECT COUNT(*)::int AS n FROM educator_access WHERE status = 'pending' AND caregiver_id = $1",
+    [req.user.id]
+  );
+  res.json({ children, pendingAccessRequests: waiting[0].n });
 }
 
 // POST /children/:childProfileId/records — submit a developmental record
@@ -447,7 +475,111 @@ async function listRecords(req, res) {
   res.json({ records });
 }
 
+// GET /children/export -- "Download my data" (KDPA s.26 right of access;
+// DPIA gap G6). One JSON file with everything ChildGuard holds about this
+// caregiver and their children: the account, each child's identity, the
+// developmental records (where records consent is given, as everywhere
+// else), the full consent history, the caregiver's own activity log and any
+// automated flags on their sessions (s.35 transparency). Scored first, like
+// any read of child data: if it crosses the limit, nothing is sent.
+async function exportMyData(req, res) {
+  const risk = await scoreAction(req, 'export_own_data');
+  if (risk.flagged) {
+    await logAction({ userId: req.user.id, action: 'export_own_data_refused', detail: 'reason=risk_flagged', accessRequestId: risk.accessRequestId });
+    return res.status(401).json({ error: RISK_NOTICE, code: 'SESSION_REVOKED_RISK' });
+  }
+  const uid = req.user.id;
+  const [account, kids, consents, records, activity, flags, sharing] = await Promise.all([
+    db.query(`SELECT u.full_name, u.email, u.username, r.name AS role, u.created_at FROM users u
+              JOIN roles r ON r.id = u.role_id WHERE u.id = $1`, [uid]),
+    db.query(`SELECT cp.id, cp.created_at, cp.archived_at, cp.archive_reason, cp.identity_anonymised_at,
+                     ci.full_name_enc, ci.date_of_birth_enc, ci.family_background_enc
+              FROM child_profiles cp JOIN child_identifiers ci ON ci.child_profile_id = cp.id
+              WHERE cp.caregiver_id = $1 ORDER BY cp.id`, [uid]),
+    db.query(`SELECT child_profile_id, scope, consent_given, recorded_at FROM consent_records
+              WHERE child_profile_id IN (SELECT id FROM child_profiles WHERE caregiver_id = $1)
+              ORDER BY child_profile_id, recorded_at, id`, [uid]),
+    db.query(`SELECT dr.child_profile_id, dr.id, dr.created_at, dr.milestone_enc, dr.health_indicator_enc,
+                     dr.assessment_score_enc, dr.progress_notes_enc
+              FROM developmental_records dr
+              WHERE dr.child_profile_id IN (SELECT id FROM child_profiles WHERE caregiver_id = $1)
+              ORDER BY dr.child_profile_id, dr.created_at`, [uid]),
+    db.query(`SELECT requested_at, action_type, child_profile_id, pc_name AS device, ip_address
+              FROM access_requests WHERE user_id = $1 ORDER BY requested_at DESC LIMIT 5000`, [uid]),
+    db.query(`SELECT rs.created_at, ar.action_type, rs.combined_score, rs.role_threshold, rs.owner_response, rs.auditor_status
+              FROM risk_scores rs JOIN access_requests ar ON ar.id = rs.access_request_id
+              WHERE ar.user_id = $1 AND rs.is_flagged ORDER BY rs.created_at DESC`, [uid]),
+    // Teachers who asked to see a child, and what was decided.
+    db.query(`SELECT ea.child_profile_id, COALESCE(u.full_name, u.email) AS educator, ea.reason, ea.status,
+                     ea.requested_at, ea.decided_at, ea.expires_at, ea.ended_at
+              FROM educator_access ea JOIN users u ON u.id = ea.educator_id
+              WHERE ea.caregiver_id = $1
+              ORDER BY ea.requested_at DESC`, [uid]),
+  ]);
+  const consentBy = {};
+  for (const c of consents.rows) (consentBy[c.child_profile_id] ||= []).push(c);
+  const recordsConsent = (id) => {
+    const rows = (consentBy[id] || []).filter((c) => c.scope === 'developmental_records');
+    return rows.length > 0 && rows[rows.length - 1].consent_given === true;
+  };
+  const children = kids.rows.map((k) => ({
+    childProfileId: k.id,
+    createdAt: k.created_at,
+    fullName: decryptField(k.full_name_enc),
+    dateOfBirth: decryptField(k.date_of_birth_enc),
+    familyBackground: k.family_background_enc ? decryptField(k.family_background_enc) : null,
+    archivedAt: k.archived_at,
+    archiveReason: k.archive_reason,
+    identityAnonymisedAt: k.identity_anonymised_at,
+    consentHistory: (consentBy[k.id] || []).map((c) => ({ scope: c.scope, given: c.consent_given, at: c.recorded_at })),
+    developmentalRecords: recordsConsent(k.id)
+      ? records.rows.filter((r) => r.child_profile_id === k.id).map((r) => ({
+        id: r.id,
+        createdAt: r.created_at,
+        milestone: decryptField(r.milestone_enc),
+        healthIndicator: decryptField(r.health_indicator_enc),
+        assessmentScore: decryptField(r.assessment_score_enc),
+        progressNotes: r.progress_notes_enc ? decryptField(r.progress_notes_enc) : null,
+      }))
+      : 'Not included: consent to developmental records is withdrawn. Give it again to include them.',
+  }));
+  const file = {
+    about: 'Everything ChildGuard holds about you and your children, as at the time below (Kenya Data Protection Act s.26).',
+    exportedAt: new Date().toISOString(),
+    account: account.rows[0],
+    children,
+    yourActivity: activity.rows,
+    automatedFlagsOnYourSessions: flags.rows,
+    sharedWithTeachers: sharing.rows.map((s) => ({
+      child: s.child_profile_id
+        ? (children.find((c) => c.childProfileId === s.child_profile_id) || {}).fullName || `Child profile ${s.child_profile_id}`
+        : 'Not chosen',
+      teacher: s.educator, reason: s.reason,
+      status: s.status === 'granted' && new Date(s.expires_at) <= new Date() ? 'expired' : s.status,
+      requestedAt: s.requested_at, decidedAt: s.decided_at, until: s.expires_at, endedAt: s.ended_at,
+    })),
+    note: 'Device names and network addresses older than the monitoring period are cleared automatically. To correct a child\'s details, use Edit on the child\'s page.',
+  };
+  await logAction({
+    userId: uid,
+    action: 'export_own_data',
+    detail: `children=${children.length}, activity_rows=${activity.rows.length}`,
+    accessRequestId: risk.accessRequestId,
+  });
+  // A readable PDF by default (?format=json gives the same content as a
+  // machine-readable file).
+  const stamp = new Date().toISOString().slice(0, 10);
+  if (req.query.format === 'json') {
+    res.setHeader('Content-Disposition', `attachment; filename="childguard-my-data-${stamp}.json"`);
+    return res.json(file);
+  }
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="childguard-my-data-${stamp}.pdf"`);
+  writeMyDataPdf(file, res);
+}
+
 module.exports = {
+  exportMyData,
   createChildProfile,
   updateChildDetails,
   archiveChild,

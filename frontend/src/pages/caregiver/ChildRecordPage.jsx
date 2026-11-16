@@ -103,7 +103,7 @@ export default function ChildRecordPage() {
         }
       />
 
-      <div className="p-8 max-w-3xl">
+      <div className="p-4 md:p-8 max-w-3xl">
         {riskNotice && <Alert variant="warning" className="mb-6">{riskNotice}</Alert>}
         {error && <Alert className="mb-6">{error}</Alert>}
         {notice && <Alert variant="success" className="mb-6">{notice}</Alert>}
@@ -378,10 +378,12 @@ function RecordForm({ childProfileId, onSaved }) {
             />
           </Field>
         </div>
-        <Field label="Assessment Score">
+        <Field label="Assessment Score" hint="0 to 10: how well the child meets this milestone (10 = fully)">
           <input
             required
             type="number"
+            min="0"
+            max="10"
             step="0.1"
             value={form.assessmentScore}
             onChange={(e) => update('assessmentScore', e.target.value)}

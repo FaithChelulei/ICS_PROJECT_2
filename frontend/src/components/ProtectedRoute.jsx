@@ -15,12 +15,19 @@ export default function ProtectedRoute({ allowedRoles, children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // A paused account sees only the pause page (the server refuses its data).
+  if (user.paused && location.pathname !== '/paused') {
+    return <Navigate to="/paused" replace />;
+  }
+
   if (user.mustChangePassword && location.pathname !== '/change-password') {
     return <Navigate to="/change-password" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    // The page is for another role: back to the person's own home page, with
+    // a message saying why (the server refuses that role's data in any case).
+    return <Navigate to="/" replace state={{ refusedPage: location.pathname }} />;
   }
 
   return children;

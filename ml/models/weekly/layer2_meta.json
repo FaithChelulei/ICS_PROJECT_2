@@ -1,0 +1,718 @@
+{
+  "limits": {
+    "Caregiver": 0.806878862988867,
+    "SecurityAuditor": 0.8606386160187369,
+    "SysAdmin": 0.8606386160187369
+  },
+  "change_limits": {
+    "Caregiver": 0.7228832399999996,
+    "SecurityAuditor": 0.6590166399999999,
+    "SysAdmin": 0.6590166399999999
+  },
+  "typical": {
+    "Caregiver": {
+      "iso_top": 0.2883566494669941,
+      "ae_top": 0.34003660678973174,
+      "dev_files_accessed_per_session_mean": 0.0,
+      "dev_files_accessed_per_session_max": 0.0,
+      "dev_events_prev_day_mean": 0.010998800000000013,
+      "dev_events_prev_day_max": 0.567215,
+      "dev_events_prev_hour_mean": 0.0,
+      "dev_events_prev_hour_max": 0.0,
+      "dev_session_duration_minutes_mean": 0.001145000000000003,
+      "dev_session_duration_minutes_max": 0.127674,
+      "dev_is_after_hours_mean": 0.0,
+      "dev_is_after_hours_max": 0.0,
+      "dev_is_own_pc_mean": 0.0,
+      "dev_is_own_pc_max": 0.0,
+      "is_after_hours_mean": 0.0,
+      "is_after_hours_max": 0.0,
+      "is_own_pc_mean": 1.0,
+      "is_own_pc_max": 1.0,
+      "unique_pcs_used_that_day_mean": 1.0,
+      "unique_pcs_used_that_day_max": 1.0,
+      "new_pc_mean": 0.0,
+      "new_pc_max": 0.0,
+      "unusual_hour_mean": 0.0,
+      "unusual_hour_max": 0.0,
+      "role_Caregiver": 1.0,
+      "role_SecurityAuditor": 0.0,
+      "role_SysAdmin": 0.0
+    },
+    "SecurityAuditor": {
+      "iso_top": 0.8646597316115265,
+      "ae_top": 0.7422495700081859,
+      "dev_files_accessed_per_session_mean": 0.0,
+      "dev_files_accessed_per_session_max": 0.0,
+      "dev_events_prev_day_mean": 0.0023136999999999936,
+      "dev_events_prev_day_max": 0.590701,
+      "dev_events_prev_hour_mean": 0.0,
+      "dev_events_prev_hour_max": 0.0,
+      "dev_session_duration_minutes_mean": 0.0031801999999999976,
+      "dev_session_duration_minutes_max": 0.1285495,
+      "dev_is_after_hours_mean": 0.0,
+      "dev_is_after_hours_max": 0.0,
+      "dev_is_own_pc_mean": 0.0,
+      "dev_is_own_pc_max": 0.0,
+      "is_after_hours_mean": 0.0,
+      "is_after_hours_max": 0.0,
+      "is_own_pc_mean": 1.0,
+      "is_own_pc_max": 1.0,
+      "unique_pcs_used_that_day_mean": 1.0,
+      "unique_pcs_used_that_day_max": 1.0,
+      "new_pc_mean": 0.0,
+      "new_pc_max": 0.0,
+      "unusual_hour_mean": 0.0,
+      "unusual_hour_max": 0.0,
+      "role_Caregiver": 0.0,
+      "role_SecurityAuditor": 1.0,
+      "role_SysAdmin": 0.0
+    },
+    "SysAdmin": {
+      "iso_top": 0.9770720086826156,
+      "ae_top": 0.9803243104035024,
+      "dev_files_accessed_per_session_mean": 0.0,
+      "dev_files_accessed_per_session_max": 0.0,
+      "dev_events_prev_day_mean": 0.01199571428571428,
+      "dev_events_prev_day_max": 0.786776,
+      "dev_events_prev_hour_mean": -0.00034140000000001616,
+      "dev_events_prev_hour_max": 1.273043,
+      "dev_session_duration_minutes_mean": -0.005851304347826087,
+      "dev_session_duration_minutes_max": 1.502946,
+      "dev_is_after_hours_mean": -0.0007479473684210571,
+      "dev_is_after_hours_max": 0.552941,
+      "dev_is_own_pc_mean": -0.001886,
+      "dev_is_own_pc_max": 0.759036,
+      "is_after_hours_mean": 0.47058823529411764,
+      "is_after_hours_max": 1.0,
+      "is_own_pc_mean": 0.2631578947368421,
+      "is_own_pc_max": 1.0,
+      "unique_pcs_used_that_day_mean": 4.5,
+      "unique_pcs_used_that_day_max": 6.0,
+      "new_pc_mean": 0.6875,
+      "new_pc_max": 1.0,
+      "unusual_hour_mean": 0.058823529411764705,
+      "unusual_hour_max": 1.0,
+      "role_Caregiver": 0.0,
+      "role_SecurityAuditor": 0.0,
+      "role_SysAdmin": 1.0
+    }
+  },
+  "limit_quantile": 0.99,
+  "change_features": [
+    "dev_files_accessed_per_session",
+    "dev_events_prev_day",
+    "dev_events_prev_hour"
+  ],
+  "change_min_history": 7,
+  "change_min_sessions": 3,
+  "person_features": [
+    "dev_files_accessed_per_session",
+    "dev_events_prev_day",
+    "dev_events_prev_hour",
+    "dev_session_duration_minutes",
+    "dev_is_after_hours",
+    "dev_is_own_pc",
+    "is_after_hours",
+    "is_own_pc",
+    "unique_pcs_used_that_day",
+    "new_pc",
+    "unusual_hour"
+  ],
+  "week_features": [
+    "iso_top",
+    "ae_top",
+    "dev_files_accessed_per_session_mean",
+    "dev_files_accessed_per_session_max",
+    "dev_events_prev_day_mean",
+    "dev_events_prev_day_max",
+    "dev_events_prev_hour_mean",
+    "dev_events_prev_hour_max",
+    "dev_session_duration_minutes_mean",
+    "dev_session_duration_minutes_max",
+    "dev_is_after_hours_mean",
+    "dev_is_after_hours_max",
+    "dev_is_own_pc_mean",
+    "dev_is_own_pc_max",
+    "is_after_hours_mean",
+    "is_after_hours_max",
+    "is_own_pc_mean",
+    "is_own_pc_max",
+    "unique_pcs_used_that_day_mean",
+    "unique_pcs_used_that_day_max",
+    "new_pc_mean",
+    "new_pc_max",
+    "unusual_hour_mean",
+    "unusual_hour_max",
+    "role_Caregiver",
+    "role_SecurityAuditor",
+    "role_SysAdmin"
+  ],
+  "roles": [
+    "Caregiver",
+    "SecurityAuditor",
+    "SysAdmin"
+  ],
+  "ranks": "reference",
+  "trained_on": "CERT r4.2, all 1,000 people",
+  "groups": {
+    "unsup": 371,
+    "clf": 397,
+    "calib": 232
+  },
+  "label": "insiders.csv attack periods",
+  "evaluation": {
+    "Caregiver": {
+      "today": {
+        "T1_insiders_caught": {
+          "mean": 0.1764705882352941,
+          "min": 0.0,
+          "max": 0.29411764705882354,
+          "n": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.024917846473167186,
+          "min": 0.012458407490520776,
+          "max": 0.0420575119175765,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.13999999999999999,
+          "min": 0.0,
+          "max": 0.3,
+          "n": 5
+        },
+        "precision_at_limit": {
+          "mean": 0.01522081594616059,
+          "min": 0.0,
+          "max": 0.028985507246376812,
+          "n": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.8004733764031837,
+          "min": 0.7639964247270491,
+          "max": 0.8241267100274093,
+          "n": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.02567478193620897,
+          "min": 0.013168188627254118,
+          "max": 0.04199984844371231,
+          "n": 5
+        },
+        "attack_share": {
+          "mean": 0.006868648119210856,
+          "min": 0.0061134036374751646,
+          "max": 0.0072975879551390385,
+          "n": 5
+        },
+        "insiders": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n": 5
+        }
+      },
+      "layer2": {
+        "T1_insiders_caught": {
+          "mean": 0.8,
+          "min": 0.7058823529411765,
+          "max": 0.8823529411764706,
+          "n": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.014695561411945798,
+          "min": 0.009684667234833811,
+          "max": 0.02275872674150392,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.5,
+          "min": 0.2,
+          "max": 0.8,
+          "n": 5
+        },
+        "precision_at_limit": {
+          "mean": 0.15106634176348796,
+          "min": 0.10574018126888217,
+          "max": 0.1987179487179487,
+          "n": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9234138872494333,
+          "min": 0.8928255212045434,
+          "max": 0.9430695335339245,
+          "n": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.11151931269803457,
+          "min": 0.08057962742352767,
+          "max": 0.14181603906523496,
+          "n": 5
+        },
+        "attack_share": {
+          "mean": 0.006868648119210856,
+          "min": 0.0061134036374751646,
+          "max": 0.0072975879551390385,
+          "n": 5
+        },
+        "insiders": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n": 5
+        }
+      },
+      "layer2_rules": {
+        "T1_insiders_caught": {
+          "mean": 0.8,
+          "min": 0.7058823529411765,
+          "max": 0.8823529411764706,
+          "n": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.014695561411945798,
+          "min": 0.009684667234833811,
+          "max": 0.02275872674150392,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.5,
+          "min": 0.2,
+          "max": 0.8,
+          "n": 5
+        },
+        "precision_at_limit": {
+          "mean": 0.15106634176348796,
+          "min": 0.10574018126888217,
+          "max": 0.1987179487179487,
+          "n": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.9234138872494333,
+          "min": 0.8928255212045434,
+          "max": 0.9430695335339245,
+          "n": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.11151931269803457,
+          "min": 0.08057962742352767,
+          "max": 0.14181603906523496,
+          "n": 5
+        },
+        "attack_share": {
+          "mean": 0.006868648119210856,
+          "min": 0.0061134036374751646,
+          "max": 0.0072975879551390385,
+          "n": 5
+        },
+        "insiders": {
+          "mean": 17.0,
+          "min": 17.0,
+          "max": 17.0,
+          "n": 5
+        }
+      },
+      "synthetic": {
+        "unchanged": {
+          "model": 0.0,
+          "with_rules": 0.0,
+          "today": 0.016,
+          "people_weeks": 125
+        },
+        "burst": {
+          "model": 0.048,
+          "with_rules": 0.048,
+          "today": 0.14400000000000002,
+          "people_weeks": 125
+        },
+        "slow_scraping": {
+          "model": 0.984,
+          "with_rules": 0.984,
+          "today": 0.2,
+          "people_weeks": 125
+        },
+        "night": {
+          "model": 0.016,
+          "with_rules": 0.016,
+          "today": 0.064,
+          "people_weeks": 125
+        },
+        "new_device": {
+          "model": 0.0,
+          "with_rules": 0.0,
+          "today": 0.15999999999999998,
+          "people_weeks": 125
+        }
+      }
+    },
+    "SecurityAuditor": {
+      "today": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.1071134622082898,
+          "min": 0.0,
+          "max": 0.21180555555555555,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.15000000000000002,
+          "min": 0.1,
+          "max": 0.2,
+          "n": 2
+        },
+        "precision_at_limit": {
+          "mean": 0.2590909090909091,
+          "min": 0.0,
+          "max": 1.0,
+          "n": 4
+        },
+        "week_roc_auc": {
+          "mean": 0.9441391941391941,
+          "min": 0.8882783882783883,
+          "max": 1.0,
+          "n": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.7579365079365079,
+          "min": 0.5158730158730158,
+          "max": 1.0,
+          "n": 2
+        },
+        "attack_share": {
+          "mean": 0.007246471939612734,
+          "min": 0.007220216606498195,
+          "max": 0.007272727272727273,
+          "n": 2
+        },
+        "insiders": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n": 5
+        }
+      },
+      "layer2": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.004220880499606189,
+          "min": 0.0,
+          "max": 0.010344827586206896,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.1,
+          "max": 0.1,
+          "n": 2
+        },
+        "precision_at_limit": {
+          "mean": 0.25,
+          "min": 0.0,
+          "max": 0.5,
+          "n": 4
+        },
+        "week_roc_auc": {
+          "mean": 0.7781318681318681,
+          "min": 0.7362637362637362,
+          "max": 0.82,
+          "n": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.5083751525837515,
+          "min": 0.5068493150684932,
+          "max": 0.5099009900990099,
+          "n": 2
+        },
+        "attack_share": {
+          "mean": 0.007246471939612734,
+          "min": 0.007220216606498195,
+          "max": 0.007272727272727273,
+          "n": 2
+        },
+        "insiders": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n": 5
+        }
+      },
+      "layer2_rules": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n": 2
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.1538500637922843,
+          "min": 0.10726643598615918,
+          "max": 0.2271062271062271,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.1,
+          "max": 0.1,
+          "n": 2
+        },
+        "precision_at_limit": {
+          "mean": 0.009424603174603174,
+          "min": 0.0,
+          "max": 0.03125,
+          "n": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7781318681318681,
+          "min": 0.7362637362637362,
+          "max": 0.82,
+          "n": 2
+        },
+        "week_pr_auc": {
+          "mean": 0.5083751525837515,
+          "min": 0.5068493150684932,
+          "max": 0.5099009900990099,
+          "n": 2
+        },
+        "attack_share": {
+          "mean": 0.007246471939612734,
+          "min": 0.007220216606498195,
+          "max": 0.007272727272727273,
+          "n": 2
+        },
+        "insiders": {
+          "mean": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "n": 5
+        }
+      },
+      "synthetic": {
+        "unchanged": {
+          "model": 0.0,
+          "with_rules": 0.176,
+          "today": 0.10400000000000001,
+          "people_weeks": 125
+        },
+        "burst": {
+          "model": 0.14400000000000002,
+          "with_rules": 0.29600000000000004,
+          "today": 0.8,
+          "people_weeks": 125
+        },
+        "slow_scraping": {
+          "model": 0.984,
+          "with_rules": 0.984,
+          "today": 0.8,
+          "people_weeks": 125
+        },
+        "night": {
+          "model": 0.024,
+          "with_rules": 1.0,
+          "today": 0.31999999999999995,
+          "people_weeks": 125
+        },
+        "new_device": {
+          "model": 0.0,
+          "with_rules": 1.0,
+          "today": 0.41600000000000004,
+          "people_weeks": 125
+        }
+      }
+    },
+    "SysAdmin": {
+      "today": {
+        "T1_insiders_caught": {
+          "mean": 0.25,
+          "min": 0.0,
+          "max": 0.75,
+          "n": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.07849248895452839,
+          "min": 0.0,
+          "max": 0.2145922746781116,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.2,
+          "n": 5
+        },
+        "precision_at_limit": {
+          "mean": 0.0962033462033462,
+          "min": 0.0,
+          "max": 0.2857142857142857,
+          "n": 4
+        },
+        "week_roc_auc": {
+          "mean": 0.82744237067079,
+          "min": 0.7691204588910134,
+          "max": 0.8905579399141631,
+          "n": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.1129352453837152,
+          "min": 0.019452407728575972,
+          "max": 0.18477460124154668,
+          "n": 5
+        },
+        "attack_share": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n": 5
+        },
+        "insiders": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n": 5
+        }
+      },
+      "layer2": {
+        "T1_insiders_caught": {
+          "mean": 0.25,
+          "min": 0.0,
+          "max": 0.5,
+          "n": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 0.04789461623581918,
+          "min": 0.01263537906137184,
+          "max": 0.17208413001912046,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.08,
+          "min": 0.0,
+          "max": 0.2,
+          "n": 5
+        },
+        "precision_at_limit": {
+          "mean": 0.07610107284020326,
+          "min": 0.0,
+          "max": 0.14285714285714285,
+          "n": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7073041184505364,
+          "min": 0.6392668703138018,
+          "max": 0.8786697247706422,
+          "n": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.08580023717047888,
+          "min": 0.018728747318691178,
+          "max": 0.13942062701497643,
+          "n": 5
+        },
+        "attack_share": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n": 5
+        },
+        "insiders": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n": 5
+        }
+      },
+      "layer2_rules": {
+        "T1_insiders_caught": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n": 5
+        },
+        "T2_normal_weeks_flagged": {
+          "mean": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "n": 5
+        },
+        "T3_precision_top10": {
+          "mean": 0.1,
+          "min": 0.0,
+          "max": 0.2,
+          "n": 5
+        },
+        "precision_at_limit": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n": 5
+        },
+        "week_roc_auc": {
+          "mean": 0.7073041184505364,
+          "min": 0.6392668703138018,
+          "max": 0.8786697247706422,
+          "n": 5
+        },
+        "week_pr_auc": {
+          "mean": 0.08580023717047888,
+          "min": 0.018728747318691178,
+          "max": 0.13942062701497643,
+          "n": 5
+        },
+        "attack_share": {
+          "mean": 0.01653555138542232,
+          "min": 0.007285974499089253,
+          "max": 0.02510460251046025,
+          "n": 5
+        },
+        "insiders": {
+          "mean": 4.0,
+          "min": 4.0,
+          "max": 4.0,
+          "n": 5
+        }
+      },
+      "synthetic": {
+        "unchanged": {
+          "model": 0.072,
+          "with_rules": 1.0,
+          "today": 0.064,
+          "people_weeks": 125
+        },
+        "burst": {
+          "model": 0.41600000000000004,
+          "with_rules": 1.0,
+          "today": 0.39999999999999997,
+          "people_weeks": 125
+        },
+        "slow_scraping": {
+          "model": 0.96,
+          "with_rules": 1.0,
+          "today": 0.45600000000000007,
+          "people_weeks": 125
+        },
+        "night": {
+          "model": 0.06399999999999999,
+          "with_rules": 1.0,
+          "today": 0.14400000000000002,
+          "people_weeks": 125
+        },
+        "new_device": {
+          "model": 0.08,
+          "with_rules": 1.0,
+          "today": 0.2,
+          "people_weeks": 125
+        }
+      }
+    }
+  }
+}

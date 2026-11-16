@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const db = require('../config/db');
 const { encryptField, decryptField, keyIdOf, loadKeys, activeKeyId } = require('../utils/encryption');
 const { wrappedKeyEntries } = require('../utils/keyVault');
+const { backfillNameIndex } = require('./nameIndex');
 
 // Every encrypted column in the schema. Add here if a new *_enc column is
 // ever introduced, or rotation will silently skip it.
@@ -116,7 +117,9 @@ async function reencryptAllAsSystem() {
     }
   });
 
-  return { activeKeyId: active, updatedRows, updatedValues };
+  // Names re-encrypted under the new key get their fingerprint redone too.
+  const reindexedNames = await backfillNameIndex();
+  return { activeKeyId: active, updatedRows, updatedValues, reindexedNames };
 }
 
 // Decrypts every stored value (results discarded) -- proves the configured
