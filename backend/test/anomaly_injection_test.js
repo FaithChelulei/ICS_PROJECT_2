@@ -37,6 +37,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('../src/config/db');
 const { recordAndScore, logAccessRequest } = require('../src/services/riskEngine');
+const { refreshWeek, localDate } = require('../src/services/weeklyReview');
 const { PRIVACY_NOTICE_VERSION } = require('../src/services/privacyNotice');
 
 const BASE = process.env.TEST_BASE || `${process.env.TLS_CERT_FILE ? 'https' : 'http'}://localhost:4000`;
@@ -455,10 +456,13 @@ function daysFrom(start, end) {
 }
 
 async function weeklyScenarios() {
-  const monday = mondayOf(new Date());
-  const today = new Date();
+  // The scenarios use the LAST COMPLETE week (Monday to Sunday), so they
+  // test the same thing whatever day they run: on a Monday the current week
+  // has hardly begun, and "all week" would be a few hours.
+  const monday = new Date(mondayOf(new Date()).getTime() - 7 * DAY_MS);
+  const sunday = new Date(monday.getTime() + 6 * DAY_MS);
   const history = daysFrom(new Date(monday.getTime() - 35 * DAY_MS), new Date(monday.getTime() - DAY_MS));
-  const thisWeek = daysFrom(monday, today);
+  const thisWeek = daysFrom(monday, sunday);
   const inWeek = (d) => d >= monday;
 
   // 11. Quiet insider: same device, same hours, never fast enough to be
@@ -487,9 +491,12 @@ async function weeklyScenarios() {
   // An auditor re-scores the week, as the hourly job would.
   const auditor = await account('weekly-auditor', 'SecurityAuditor');
   const token = await login(auditor, 'anomaly-weekly-auditor');
-  const refreshed = await api('/auditor/weekly-review/refresh', { method: 'POST', token, device: 'anomaly-weekly-auditor' });
-  const list = await api('/auditor/weekly-review', { token, device: 'anomaly-weekly-auditor' });
-  if (refreshed.status !== 200 || !list.json) throw new Error(`weekly review unavailable: ${refreshed.status}`);
+  // Score that week with the same code the hourly job runs (the page's
+  // "Re-score" button only re-scores the current week), then read it as the
+  // auditor's page does.
+  const refreshed = await refreshWeek(monday);
+  const list = await api(`/auditor/weekly-review?week=${localDate(monday)}`, { token, device: 'anomaly-weekly-auditor' });
+  if (!refreshed.ok || !list.json) throw new Error(`weekly review unavailable: ${refreshed.error || list.status}`);
   const row = (a) => list.json.people.find((p) => p.user_id === a.id);
   const caregivers = list.json.people.filter((p) => p.role === 'Caregiver');
 
