@@ -21,6 +21,7 @@ Run:  .venv\\Scripts\\python.exe ml\\service\\app.py
 Listens on http://127.0.0.1:5001 by default (override with ML_SERVICE_PORT).
 """
 import hashlib
+import hmac
 import json
 import os
 from pathlib import Path
@@ -28,7 +29,11 @@ from pathlib import Path
 import joblib
 import numpy as np
 from flask import Flask, jsonify, request
-from tensorflow import keras
+# Keras 3 on its own: on a laptop it runs on TensorFlow (the default); when
+# hosted, KERAS_BACKEND=jax runs the same saved autoencoders without the
+# 1.9 GB TensorFlow package (outputs agree to about 0.000002).
+import keras
+from weekly import fast_predictor  # numpy forward pass of the Dense autoencoders
 
 BASE = Path(__file__).resolve().parent.parent
 MODELS = BASE / "models"
@@ -64,6 +69,22 @@ NORMAL_SESSION = {
 app = Flask(__name__)
 _registry = {}
 
+# When hosted, only the ChildGuard backend may ask for scores: it sends the
+# shared key ML_SHARED_KEY (set to the same value on both services) in the
+# X-ML-Key header. /health stays open (it returns no data, only which models
+# are loaded). On a laptop ML_SHARED_KEY is not set and nothing changes.
+_SHARED_KEY = os.environ.get("ML_SHARED_KEY", "")
+
+
+@app.before_request
+def _require_shared_key():
+    if not _SHARED_KEY or request.path == "/health":
+        return None
+    given = request.headers.get("X-ML-Key", "")
+    if not hmac.compare_digest(given.encode(), _SHARED_KEY.encode()):
+        return jsonify({"error": "not allowed"}), 403
+    return None
+
 
 def load_registry():
     """Load all 3 roles' artifacts once at startup, kept in memory."""
@@ -76,7 +97,7 @@ def load_registry():
 
         scaler = joblib.load(MODELS / f"scaler_{role}.joblib")
         iso = joblib.load(MODELS / f"isoforest_{role}.joblib")
-        ae = keras.models.load_model(MODELS / f"autoencoder_{role}.keras")
+        ae = fast_predictor(keras.models.load_model(MODELS / f"autoencoder_{role}.keras"))
 
         # Fingerprint of the exact model files, stored with every score so
         # a flag can always be traced to the model that produced it.

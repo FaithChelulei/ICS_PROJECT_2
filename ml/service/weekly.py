@@ -88,6 +88,38 @@ ROLE_COLS = [f"role_{r}" for r in ROLES]
 LINE_GROUPS = {"SecurityAuditor": ["SecurityAuditor", "SysAdmin"], "SysAdmin": ["SecurityAuditor", "SysAdmin"]}
 WINDOW = np.timedelta64(30, "D")
 DAY_NS = np.int64(86_400 * 10**9)
+
+
+class DenseNumpy:
+    """Runs a saved Keras autoencoder made only of Dense layers with plain
+    numpy, using its trained weights. Same numbers as Keras (float32 matrix
+    products), but no deep-learning engine is needed at scoring time and
+    each call takes about a millisecond -- on a small hosted server Keras
+    took 1-9 s per call. Anything that is not a plain Dense stack keeps the
+    Keras model (see fast_predictor)."""
+    _ACT = {"relu": lambda z: np.maximum(z, 0), "linear": lambda z: z,
+            "sigmoid": lambda z: 1 / (1 + np.exp(-z)), "tanh": np.tanh}
+
+    def __init__(self, layers):
+        self.layers = layers  # [(W, b, activation), ...]
+
+    def predict(self, x, verbose=0, batch_size=None):
+        h = np.asarray(x, dtype=np.float32)
+        for w, b, act in self.layers:
+            h = self._ACT[act](h @ w + b)
+        return h
+
+
+def fast_predictor(model):
+    """DenseNumpy for a plain Dense stack, otherwise the Keras model itself."""
+    layers = []
+    for layer in model.layers:
+        act = getattr(getattr(layer, "activation", None), "__name__", None)
+        weights = layer.get_weights()
+        if type(layer).__name__ != "Dense" or act not in DenseNumpy._ACT or len(weights) != 2:
+            return model
+        layers.append((weights[0].astype(np.float32), weights[1].astype(np.float32), act))
+    return DenseNumpy(layers) if layers else model
 MIN_HISTORY = 3
 # How the pooled anomaly models' session scores reach the weekly classifier:
 # "reference" ranks them against all CERT training sessions, "person"
@@ -384,12 +416,12 @@ class Layer2:
 
     @classmethod
     def load(cls, folder):
-        from tensorflow import keras
+        import keras  # TensorFlow on a laptop, or KERAS_BACKEND=jax when hosted (see app.py)
         folder = Path(folder)
         m = cls()
         m.scaler = joblib.load(folder / "layer2_scaler.joblib")
         m.iso = joblib.load(folder / "layer2_isoforest.joblib")
-        m.ae = keras.models.load_model(folder / "layer2_autoencoder.keras")
+        m.ae = fast_predictor(keras.models.load_model(folder / "layer2_autoencoder.keras"))
         ref = np.load(folder / "layer2_reference.npz")
         m.ref_iso, m.ref_ae = ref["iso"], ref["ae"]
         m.clf = joblib.load(folder / "layer2_weekly_classifier.joblib")
