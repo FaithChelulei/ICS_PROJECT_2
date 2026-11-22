@@ -14,6 +14,30 @@ const systemSettingsRoutes = require('./routes/systemSettingsRoutes');
 
 const app = express();
 
+// Behind a hosting proxy (Azure App Service ends HTTPS in front of the app),
+// every request arrives from the proxy's own address. TRUST_PROXY=1 tells
+// Express to take the visitor's address from the one proxy hop in front, so
+// sign-in rate limits and the audit log count each visitor separately.
+// Azure can append the visitor's port ("1.2.3.4:51234"); it is removed, or
+// each new connection would look like a new visitor to the rate limits.
+// Not set on a laptop, where there is no proxy (a forged header is ignored).
+if (process.env.TRUST_PROXY) {
+  app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
+  app.use((req, _res, next) => {
+    const xff = req.headers['x-forwarded-for'];
+    if (typeof xff === 'string') {
+      req.headers['x-forwarded-for'] = xff.split(',').map((part) => {
+        const p = part.trim();
+        const v4 = /^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/.exec(p);
+        if (v4) return v4[1];
+        const v6 = /^\[([0-9a-fA-F:.]+)\](?::\d+)?$/.exec(p);
+        return v6 ? v6[1] : p;
+      }).join(', ');
+    }
+    next();
+  });
+}
+
 // Security headers (CSP, no-sniff, etc.) -- API-only, so helmet's
 // defaults are safe here; nothing in this app serves HTML it needs to
 // relax CSP for.

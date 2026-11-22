@@ -2,6 +2,10 @@
 // Uses Node's native fetch (available since v18; this project runs v24, so
 // no node-fetch/axios dependency is needed).
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001';
+// When hosted, the scoring service only answers requests that carry this
+// shared key (ML_SHARED_KEY, the same value on both services); on a laptop
+// it is not set and nothing changes.
+const mlHeaders = () => ({ 'Content-Type': 'application/json', ...(process.env.ML_SHARED_KEY ? { 'X-ML-Key': process.env.ML_SHARED_KEY } : {}) });
 // Lazy: scoringHealth -> auditLog -> db would otherwise load at require time.
 const health = () => require('../services/scoringHealth');
 
@@ -12,7 +16,7 @@ async function scoreSession(role, features) {
   try {
     const response = await fetch(`${ML_SERVICE_URL}/score`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: mlHeaders(),
       body: JSON.stringify({ role, features }),
       signal: AbortSignal.timeout(5000),
     });
@@ -41,7 +45,7 @@ async function scoreWeek(date, sessions, localLines = null) {
   try {
     const response = await fetch(`${ML_SERVICE_URL}/score_week`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: mlHeaders(),
       body: JSON.stringify(localLines ? { date, sessions, local_lines: localLines } : { date, sessions }),
       signal: AbortSignal.timeout(60000),
     });
